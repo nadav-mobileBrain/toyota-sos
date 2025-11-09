@@ -2,7 +2,7 @@
   "master": {
     "tasks": [
       {
-        "id": 1,
+        "id": "1",
         "title": "Set up Next.js project with TypeScript, Tailwind, shadcn/ui, and RTL support",
         "description": "Initialize a Next.js project with TypeScript, configure Tailwind CSS with RTL support, integrate shadcn/ui component library, and set up Hebrew locale with dayjs for date formatting.",
         "details": "1. Create Next.js project with `create-next-app` using TypeScript template\n2. Install and configure Tailwind CSS with RTL plugin: `bun add -D tailwindcss-rtl`\n3. Update tailwind.config.ts to enable RTL: `{ direction: 'rtl' }`\n4. Install shadcn/ui: `bunx shadcn-ui@latest init`\n5. Configure fonts: Heebo or Assistant from Google Fonts\n6. Install dayjs: `bun add dayjs`\n7. Create lib/dayjs.ts with Hebrew locale and dd/mm/yyyy format\n8. Set up global styles with Toyota brand colors (#d60b25 primary, black/white secondary)\n9. Configure ESLint with max-lines rule (300 lines per .tsx file)\n10. Set up Prettier for code formatting\n11. Create folder structure: app/, components/, hooks/, lib/, styles/, tests/, public/\n12. Add viewport meta tags for PWA and mobile-first design",
@@ -18,7 +18,8 @@
             "dependencies": [],
             "details": "Use `create-next-app@latest` with the TypeScript template, enable strict mode in `tsconfig.json`, confirm `app/` directory structure, add basic scripts, and verify `bun run dev` and `bun run build` succeed without errors.",
             "status": "done",
-            "testStrategy": "Run `bun run dev` and open the app. Confirm TypeScript types, strict mode, and successful `bun run build`."
+            "testStrategy": "Run `bun run dev` and open the app. Confirm TypeScript types, strict mode, and successful `bun run build`.",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -29,7 +30,8 @@
             ],
             "details": "Install `tailwindcss`, `postcss`, `autoprefixer`, and `tailwindcss-rtl`. Initialize config, add `content` globs for `app/**/*.{ts,tsx}` and `components/**/*.{ts,tsx}`. Enable `darkMode:'class'`, include `tailwindcss-rtl` plugin, and set `{ direction: 'rtl' }`. Extend theme with Toyota colors (#d60b25 primary, black/white secondary). Add base `globals.css` with Tailwind layers and ensure `<html dir=\"rtl\" lang=\"he\">`.",
             "status": "done",
-            "testStrategy": "Create a sample page using Tailwind classes. Inspect DOM to confirm `dir=\"rtl\"`. Verify brand colors render and utilities work."
+            "testStrategy": "Create a sample page using Tailwind classes. Inspect DOM to confirm `dir=\"rtl\"`. Verify brand colors render and utilities work.",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -41,7 +43,8 @@
             ],
             "details": "Run `bunx shadcn-ui@latest init` targeting the `app` directory and Tailwind. Install core components (Button, Input, Dialog, Sheet, Toast). Configure Google Fonts (Heebo or Assistant) via `next/font` and apply in `app/layout.tsx`. Ensure component styles respect RTL and Toyota theme tokens. Add a demo page rendering components for visual check.",
             "status": "done",
-            "testStrategy": "Render demo components and verify visual correctness, RTL alignment, and that fonts load. Check no CSS collisions or console errors."
+            "testStrategy": "Render demo components and verify visual correctness, RTL alignment, and that fonts load. Check no CSS collisions or console errors.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -52,7 +55,8 @@
             ],
             "details": "Install `dayjs`, import `dayjs/locale/he`, set default locale to `he`, and add plugins (e.g., `localizedFormat`). Create `lib/dayjs.ts` exporting helpers to format dates as `dd/mm/yyyy` and common patterns. Add an example component using the helpers to validate rendering in Hebrew.",
             "status": "done",
-            "testStrategy": "Unit test the helper to return `dd/mm/yyyy` for a known date. Manual check a page shows Hebrew month/day names when applicable."
+            "testStrategy": "Unit test the helper to return `dd/mm/yyyy` for a known date. Manual check a page shows Hebrew month/day names when applicable.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -66,21 +70,25 @@
             ],
             "details": "Create folders: `app/`, `components/`, `hooks/`, `lib/`, `styles/`, `tests/`, `public/`. Configure ESLint with Next.js rules and add a `.tsx` override enforcing `max-lines: [\"error\", 300]`. Add Prettier config and align with ESLint. Update `app/layout.tsx` metadata and `<meta name=\"viewport\">` for mobile-first/PWA, plus basic `theme-color`. Ensure scripts for lint/format run clean.",
             "status": "done",
-            "testStrategy": "Run `bun run lint` and verify no violations including max-lines rule. Run Prettier check. Confirm meta tags in rendered HTML and basic Lighthouse PWA checks pass."
+            "testStrategy": "Run `bun run lint` and verify no violations including max-lines rule. Run Prettier check. Confirm meta tags in rendered HTML and basic Lighthouse PWA checks pass.",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Break down the project setup into: (1) Next.js and TypeScript initialization, (2) Tailwind CSS with RTL configuration, (3) shadcn/ui integration and component setup, (4) Internationalization with dayjs and Hebrew locale, (5) Project structure, ESLint, Prettier, and meta tags configuration."
       },
       {
-        "id": 2,
+        "id": "2",
         "title": "Set up Supabase project and configure authentication",
-        "description": "Create Supabase project, configure authentication with email/password (min 4 char password), set up RLS policies, and integrate Supabase client into Next.js application.",
-        "details": "1. Create Supabase project for production and staging environments\n2. Configure email/password auth with minimum password length of 4 characters\n3. Create auth.ts utility in lib/ for Supabase client initialization\n4. Set up environment variables: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY\n5. Create middleware.ts for route protection and role-based access\n6. Implement auth context/hook for global auth state management\n7. Create login page with email/password form\n8. Create signup page with role selection (driver/admin/manager/viewer)\n9. Implement logout functionality\n10. Set up session persistence across browser tabs\n11. Configure RLS policies framework (detailed policies in task 3)\n12. Create auth error handling and user feedback toasts",
+        "description": "Create Supabase projects, configure hybrid authentication (driver employee ID + admin username/password), set up RLS policies, and integrate Supabase client into Next.js application.",
+        "details": "1. Create Supabase projects for production and staging environments\n2. Configure hybrid authentication:\n   - Drivers: Employee ID only (direct DB lookup via profiles table)\n   - Admins/Office: Username + password via Supabase auth\n3. Create auth.ts utility in lib/ supporting both login flows\n4. Set up environment variables: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY\n5. Create middleware.ts for route protection based on role (driver/admin/viewer)\n6. Implement auth context/hook for global auth state management\n7. Create login page(s) with employee ID input for drivers, username/password for admins\n8. Implement logout functionality\n9. Set up session persistence (localStorage for drivers, Supabase for admins)\n10. Configure RLS policies framework (detailed policies in task 3)\n11. Create auth error handling and user feedback toasts\n12. Handle cross-tab sync for admin sessions via Supabase Realtime",
         "testStrategy": "Test login/signup flow with valid and invalid credentials. Verify password minimum length enforcement. Confirm auth state persists across page refreshes. Test logout clears session. Validate environment variables are correctly loaded. Test RLS policies prevent unauthorized access (integration test with service role).",
         "priority": "high",
         "dependencies": [
-          1
+          "1"
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -88,30 +96,34 @@
             "description": "Create two Supabase projects (production and staging) and wire their credentials into the Next.js app via environment variables.",
             "dependencies": [],
             "details": "Create production and staging projects in the Supabase dashboard. Copy each project's URL, anon key, and service role key. Add .env.local, .env.staging, and .env.production with NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY. Add a safe .env.example. Ensure service role key is used only on the server. Verify Next.js reads envs and exclude real secrets from VCS.",
-            "status": "pending",
-            "testStrategy": "Run `next dev` and log env usage server/client to confirm correct scoping. Validate keys exist and are not undefined. Confirm .env.example matches required keys without secrets."
+            "status": "done",
+            "testStrategy": "Run `next dev` and log env usage server/client to confirm correct scoping. Validate keys exist and are not undefined. Confirm .env.example matches required keys without secrets.",
+            "updatedAt": "2025-11-09T13:24:28.613Z",
+            "parentId": "undefined"
           },
           {
             "id": 2,
-            "title": "Configure email/password authentication with minimum 4-character password",
-            "description": "Enable email/password auth in Supabase and enforce a minimum password length of 4 characters.",
+            "title": "Configure Supabase for hybrid authentication (driver ID vs admin username/password)",
+            "description": "Set up Supabase auth for admin/office users with username+password and DB-based driver authentication via employee ID.",
             "dependencies": [
               1
             ],
-            "details": "In Supabase Auth settings, enable email/password. Set minimum password length to 4. Optionally disable email confirmations for local dev only. Configure redirect URLs for auth flows. Document password policy and error messages. Prepare to store user role metadata during signup until DB roles are finalized.",
+            "details": "In Supabase:\n1. Enable username/password auth (not email/password) in Auth settings\n2. Set minimum password length to 4 characters\n3. Configure redirect URLs for auth flows\n4. Create custom claims strategy for roles (admin, viewer, driver)\n\nDriver authentication will use a custom flow:\n- Driver provides employee_id only\n- App queries profiles table to verify employee_id exists and role is 'driver'\n- If match, create a session-like token locally (JWT stored in localStorage)\n\nAdmin/Office authentication:\n- Username + password via Supabase auth\n- User metadata stores role (admin, viewer)\n- Standard Supabase session flow",
             "status": "pending",
-            "testStrategy": "Attempt signup with 3-char password (expect failure) and 4+ char password (expect success). Verify error messages are surfaced."
+            "testStrategy": "Attempt signup with 3-char password (expect failure) and 4+ char password (expect success). Verify error messages are surfaced.",
+            "parentId": "undefined"
           },
           {
             "id": 3,
-            "title": "Create Supabase client utility in `lib/auth.ts` for browser/server usage",
-            "description": "Implement a centralized Supabase client factory for both browser and server contexts, including session persistence.",
+            "title": "Create Supabase client utility in `lib/auth.ts` supporting hybrid driver ID + admin auth",
+            "description": "Update lib/auth.ts to support both employee ID lookup for drivers and username/password for admins.",
             "dependencies": [
               1
             ],
-            "details": "Create `lib/auth.ts` exporting browser and server client creators using `@supabase/supabase-js`. Configure `persistSession: true` and appropriate storage. For server, pass request/response cookies helpers for Next.js App Router. Expose typed helpers (getSession, signIn, signOut) and common error handling.",
+            "details": "Update `lib/auth.ts` to include:\n\n1. Browser driver login:\n   - Function: loginAsDriver(employeeId: string)\n   - Query profiles table where role='driver' and employee_id matches\n   - If found, create local session with driver user data\n   - Return driver user + pseudo-session\n\n2. Browser admin login:\n   - Function: loginAsAdmin(username: string, password: string)\n   - Use Supabase auth.signInWithPassword (via username)\n   - Return admin user + session\n\n3. Session helpers:\n   - getSession() - detects driver (localStorage) or admin (Supabase)\n   - getRole() - returns 'driver', 'admin', or 'viewer'\n   - signOut() - clears driver session or calls Supabase signOut\n\n4. Error handling for both flows",
             "status": "pending",
-            "testStrategy": "Import the utility in a temporary route or API handler to validate it initializes correctly and returns a session when logged in. Check no service role key is ever used client-side."
+            "testStrategy": "Import the utility in a temporary route or API handler to validate it initializes correctly and returns a session when logged in. Check no service role key is ever used client-side.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -123,7 +135,8 @@
             ],
             "details": "Implement `middleware.ts` that reads the Supabase session (server client) and redirects unauthenticated users away from protected paths. Add a matcher for protected prefixes (e.g., /driver, /manager, /admin, /viewer). Map roles to allowed paths using claims (user_metadata/app_metadata) as a temporary scaffold until DB RLS in Task 3. Ensure no service role key is used in middleware.",
             "status": "pending",
-            "testStrategy": "While signed out, navigating to protected routes redirects to login. While signed in as a test role, routes allow/deny as configured. Validate matcher behavior with multiple paths."
+            "testStrategy": "While signed out, navigating to protected routes redirects to login. While signed in as a test role, routes allow/deny as configured. Validate matcher behavior with multiple paths.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -135,7 +148,8 @@
             ],
             "details": "Create `components/AuthProvider.tsx` to initialize the browser client, subscribe to `onAuthStateChange`, and store session/user/role. Expose `useAuth` hook returning state and sign-in/out helpers. Enable cross-tab updates via supabase-js session sync. Gracefully handle loading, error, and null states.",
             "status": "pending",
-            "testStrategy": "Render a test component reading `useAuth()` and verify it updates after login/logout and across a second tab. Confirm session remains after refresh."
+            "testStrategy": "Render a test component reading `useAuth()` and verify it updates after login/logout and across a second tab. Confirm session remains after refresh.",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -149,19 +163,24 @@
             ],
             "details": "Create `app/(auth)/login/page.tsx` and `app/(auth)/signup/page.tsx` using shadcn/ui components. Implement email/password login and signup with role stored in user metadata (temporary until profiles table). Add error/success toasts, redirects based on role, and a logout button using `supabase.auth.signOut`. Verify session persistence via the provider and route protection via middleware.",
             "status": "pending",
-            "testStrategy": "Manual E2E: sign up (invalid → error, valid → success), login (valid/invalid), observe redirects by role, refresh and open a new tab to confirm persistence, logout clears access and middleware blocks protected routes."
+            "testStrategy": "Manual E2E: sign up (invalid \u2192 error, valid \u2192 success), login (valid/invalid), observe redirects by role, refresh and open a new tab to confirm persistence, logout clears access and middleware blocks protected routes.",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 6,
+        "expansionPrompt": "Decompose into: (1) Supabase project creation and environment setup, (2) Email/password authentication configuration, (3) Supabase client initialization and utilities, (4) Middleware for route protection and role-based access control, (5) Auth context/hook for global state management, (6) Login/signup UI pages and logout functionality with session persistence.",
+        "updatedAt": "2025-11-09T13:24:28.613Z"
       },
       {
-        "id": 3,
+        "id": "3",
         "title": "Design and implement database schema with Drizzle ORM and RLS policies",
         "description": "Create comprehensive database schema using Drizzle ORM for all core tables (profiles, tasks, task_assignees, task_forms, signatures, images, notifications, clients, vehicles, feature_flags, task_audit_log) and implement Row Level Security policies.",
         "details": "1. Create schema.ts with Drizzle table definitions:\n   - profiles (id, email, role, name, created_at, updated_at)\n   - tasks (id, title, type, priority, status, estimated_start, estimated_end, address, details, client_id, vehicle_id, created_by, updated_by, created_at, updated_at, checklist_schema)\n   - task_assignees (id, task_id, driver_id, is_lead, assigned_at)\n   - task_forms (id, task_id, driver_id, form_data, submitted_at, gps_location)\n   - signatures (id, task_id, driver_id, signature_url, signed_at, signed_by_name)\n   - images (id, task_id, driver_id, image_url, uploaded_at, description)\n   - notifications (id, user_id, type, task_id, payload, read, created_at)\n   - clients (id, name, phone, email, created_at)\n   - vehicles (id, license_plate, model, vin, created_at)\n   - feature_flags (id, flag_name, enabled, created_at)\n   - task_audit_log (id, task_id, actor_id, action, before_data, after_data, changed_at)\n2. Create RLS policies:\n   - Drivers can view only their assigned tasks and own notifications\n   - Drivers can update only their own task status and forms\n   - Admins/Managers have full access to all tasks and can override status\n   - Viewers have read-only access to all data\n   - Audit log readable by admin/manager only\n3. Create database triggers for task_audit_log on INSERT/UPDATE\n4. Create view: overdue_tasks (status != 'completed' AND now() > estimated_end)\n5. Set up Drizzle migrations directory\n6. Create seed script for initial feature flags and test data",
         "testStrategy": "Run Drizzle migrations successfully. Verify all tables created with correct columns and types. Test RLS policies: driver cannot access other driver's tasks, viewer cannot update data, admin can override. Test audit trigger captures changes. Validate overdue_tasks view returns correct records. Run seed script and verify initial data.",
         "priority": "high",
         "dependencies": [
-          2
+          "2"
         ],
         "status": "pending",
         "subtasks": [
@@ -170,9 +189,10 @@
             "title": "Define Drizzle ORM schema for 11 core tables with relations and constraints",
             "description": "Create schema.ts with Drizzle table definitions for profiles, tasks, task_assignees, task_forms, signatures, images, notifications, clients, vehicles, feature_flags, and task_audit_log.",
             "dependencies": [],
-            "details": "Model all columns and types (timestamps, jsonb, text, enums), primary/foreign keys, unique indexes, and defaults. Add relations: tasks→clients/vehicles/profiles; task_assignees→tasks/profiles; task_forms/signatures/images→tasks/profiles; notifications→profiles; task_audit_log→tasks/profiles. Use enum types for role, task status, priority, and task type. Include checklist_schema/form_data/payload/before_data/after_data as jsonb. Ensure updated_at triggers or application-level updates.",
+            "details": "Model all columns and types (timestamps, jsonb, text, enums), primary/foreign keys, unique indexes, and defaults. Add relations: tasks\u2192clients/vehicles/profiles; task_assignees\u2192tasks/profiles; task_forms/signatures/images\u2192tasks/profiles; notifications\u2192profiles; task_audit_log\u2192tasks/profiles. Use enum types for role, task status, priority, and task type. Include checklist_schema/form_data/payload/before_data/after_data as jsonb. Ensure updated_at triggers or application-level updates.",
             "status": "pending",
-            "testStrategy": "Type-check schema, generate SQL with drizzle-kit, and verify FK/index creation in a local DB."
+            "testStrategy": "Type-check schema, generate SQL with drizzle-kit, and verify FK/index creation in a local DB.",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -183,7 +203,8 @@
             ],
             "details": "Enable RLS per table. Define policies using JWT claims (e.g., auth.uid and role) or session variables. Drivers: can select tasks assigned to them (via task_assignees), read their own notifications, update only their own task status and their own task_forms/signatures/images. Admins/Managers: full read/write; can override task status; audit log readable. Viewers: read-only across all tables except audit log (denied). Add USING and WITH CHECK clauses and explicit policy names.",
             "status": "pending",
-            "testStrategy": "Act as each role (via session/JWT claims) and verify allowed selects/updates succeed and forbidden actions fail."
+            "testStrategy": "Act as each role (via session/JWT claims) and verify allowed selects/updates succeed and forbidden actions fail.",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -194,7 +215,8 @@
             ],
             "details": "Implement log_task_changes() capturing TG_OP, actor_id from JWT/session, and before/after jsonb snapshots from OLD/NEW. Insert into task_audit_log with action, task_id, actor_id, changed_at=now(), and minimal payload. Attach AFTER INSERT OR UPDATE trigger on tasks. Ensure function is SECURITY DEFINER if needed and respects RLS on audit table appropriately.",
             "status": "pending",
-            "testStrategy": "Insert and update a task; verify corresponding audit rows contain correct before/after data and actor_id."
+            "testStrategy": "Insert and update a task; verify corresponding audit rows contain correct before/after data and actor_id.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -205,7 +227,8 @@
             ],
             "details": "Define CREATE VIEW overdue_tasks AS SELECT id, title, priority, estimated_end, client_id, vehicle_id, status FROM tasks WHERE status <> 'completed' AND now() > estimated_end. Optionally index underlying columns on tasks (status, estimated_end) to support fast queries. Expose view to roles via RLS-inherited rules or dedicated policies if necessary.",
             "status": "pending",
-            "testStrategy": "Insert sample tasks with past estimated_end and verify the view returns only overdue, non-completed tasks."
+            "testStrategy": "Insert sample tasks with past estimated_end and verify the view returns only overdue, non-completed tasks.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -219,7 +242,8 @@
             ],
             "details": "Create drizzle.config.ts, point to database URL, and include schema paths. Generate migrations that create tables first, then enable RLS and add policies, then create trigger function/triggers, and finally create the overdue_tasks view. Add npm scripts for generate/migrate. Apply migrations in the correct order and verify idempotency.",
             "status": "pending",
-            "testStrategy": "Run drizzle-kit generate and migrate on a fresh database; confirm all objects exist and migrations re-run cleanly on empty DB."
+            "testStrategy": "Run drizzle-kit generate and migrate on a fresh database; confirm all objects exist and migrations re-run cleanly on empty DB.",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -230,20 +254,24 @@
             ],
             "details": "Create a script using Drizzle client (or SQL) that runs with a service role to bypass RLS safely. Seed roles (driver, admin, manager, viewer) in profiles, several clients/vehicles, tasks with realistic timestamps and checklist_schema, task_assignees mapping drivers to tasks, basic notifications, and feature_flags. Ensure deterministic IDs and clean-up/reset behavior for repeatability.",
             "status": "pending",
-            "testStrategy": "Run seed, then query counts and perform role-scoped reads to validate RLS behavior with the seeded assignments and flags."
+            "testStrategy": "Run seed, then query counts and perform role-scoped reads to validate RLS behavior with the seeded assignments and flags.",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 6,
+        "expansionPrompt": "Divide into: (1) Drizzle ORM table definitions for all 11 tables with proper relationships, (2) Row Level Security policies for each role (driver, admin, manager, viewer), (3) Database triggers for audit logging, (4) Views for derived data (overdue_tasks), (5) Migrations setup and execution, (6) Seed script for initial data and feature flags."
       },
       {
-        "id": 4,
+        "id": "4",
         "title": "Implement driver mobile UI shell with bottom navigation and task list",
         "description": "Build the driver mobile interface with bottom navigation (Tasks, Notifications, Profile), Today/All/Overdue tabs, and task card components displaying priority, time window, address, and status.",
         "details": "1. Create app/driver/layout.tsx with bottom navigation using shadcn/ui Tabs\n2. Create components/driver/DriverHome.tsx for main tasks view\n3. Implement TaskCard component showing:\n   - Priority badge (low/medium/high with colors)\n   - Task title and type\n   - Time window (estimated_start to estimated_end in dd/mm/yyyy HH:mm format)\n   - Address with Waze button (deeplink: waze://?navigate=q={address})\n   - Status pill (pending/in_progress/blocked/completed/overdue)\n   - Client and vehicle info\n4. Create Tabs component for Today/All/Overdue filtering\n5. Implement task list with infinite scroll or pagination\n6. Add pull-to-refresh functionality\n7. Create empty state UI for no tasks\n8. Implement loading skeleton for task cards\n9. Add RTL layout classes and ensure touch targets are 44x44px minimum\n10. Create responsive design for mobile-first (320px+)\n11. Integrate Supabase real-time subscription for task updates\n12. Add error boundary and error state UI",
         "testStrategy": "Render driver home page and verify bottom navigation displays correctly. Test tab switching between Today/All/Overdue. Verify task cards display all required information. Test Waze button generates correct deeplink. Confirm RTL layout is applied. Test real-time updates when task is modified. Verify empty state displays when no tasks. Test loading states and error handling.",
         "priority": "high",
         "dependencies": [
-          1,
-          3
+          "1",
+          "3"
         ],
         "status": "pending",
         "subtasks": [
@@ -254,7 +282,8 @@
             "dependencies": [],
             "details": "Add `app/driver/layout.tsx` with shadcn/ui Tabs for three routes, a sticky bottom bar, safe-area padding, and mobile-first container. Use `Link` for navigation, highlight active tab, support RTL via `dir` or class toggles, and ensure touch targets are at least 44x44px.",
             "status": "pending",
-            "testStrategy": "Render `/driver` and verify bottom nav labels, active state, keyboard focus order, RTL flipping, and 44x44 hit areas."
+            "testStrategy": "Render `/driver` and verify bottom nav labels, active state, keyboard focus order, RTL flipping, and 44x44 hit areas.",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -265,7 +294,8 @@
             ],
             "details": "Create `components/driver/TaskCard.tsx` with props for id, title, type, priority, status, estimated_start/end, address, client, and vehicle. Add colored PriorityBadge (low/medium/high), StatusPill (pending/in_progress/blocked/completed/overdue), formatted time window (dd/mm/yyyy HH:mm), address with Waze deeplink `waze://?navigate=q={address}`, and accessible labels. Ensure compact, responsive layout and RTL-ready classes.",
             "status": "pending",
-            "testStrategy": "Render a sample TaskCard and verify badges, pills, time formatting, and Waze deeplink URL. Snapshot test for visual regressions."
+            "testStrategy": "Render a sample TaskCard and verify badges, pills, time formatting, and Waze deeplink URL. Snapshot test for visual regressions.",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -277,7 +307,8 @@
             ],
             "details": "Add `components/driver/DriverHome.tsx` to host tabs (Today/All/Overdue), fetch tasks, and filter: Today = tasks with estimated_start or window intersecting today; Overdue = due before now and not completed; All = default sort. Add pure helpers `isToday` and `isOverdue`, persist active tab in URL query, and wire tab change to re-fetch/apply filters.",
             "status": "pending",
-            "testStrategy": "Unit test date helpers for edge cases (midnight boundaries, time zones). Render and switch tabs, verifying list content updates appropriately."
+            "testStrategy": "Unit test date helpers for edge cases (midnight boundaries, time zones). Render and switch tabs, verifying list content updates appropriately.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -286,9 +317,10 @@
             "dependencies": [
               3
             ],
-            "details": "Implement IntersectionObserver with a sentinel to fetch next page (size ~20). Use keyset pagination by `updated_at, id` for stability; reset cursor when filters change. Provide fallback \"Load more\" button. Maintain `isLoadingMore`, `hasMore`, and `error` states. Preserve scroll position and ensure items don’t reorder unexpectedly.",
+            "details": "Implement IntersectionObserver with a sentinel to fetch next page (size ~20). Use keyset pagination by `updated_at, id` for stability; reset cursor when filters change. Provide fallback \"Load more\" button. Maintain `isLoadingMore`, `hasMore`, and `error` states. Preserve scroll position and ensure items don\u2019t reorder unexpectedly.",
             "status": "pending",
-            "testStrategy": "Mock paged API and simulate scrolling to sentinel; verify subsequent pages append and cursor resets on tab change. Check stable order across loads."
+            "testStrategy": "Mock paged API and simulate scrolling to sentinel; verify subsequent pages append and cursor resets on tab change. Check stable order across loads.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -300,7 +332,8 @@
             ],
             "details": "Implement pull-to-refresh gesture on mobile (overscroll container + threshold) that triggers a re-fetch. Create Supabase client channel subscribing to `tasks` changes (insert/update/delete) for the signed-in driver, merging updates immutably into current lists while respecting active filter/tab. Handle reconnect/backoff and deduplicate events.",
             "status": "pending",
-            "testStrategy": "Stub Supabase events and assert list updates (new, changed, removed). Simulate pull gesture to confirm refresh and no duplicate items."
+            "testStrategy": "Stub Supabase events and assert list updates (new, changed, removed). Simulate pull gesture to confirm refresh and no duplicate items.",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -315,19 +348,23 @@
             ],
             "details": "Create Skeleton components for TaskCard rows during initial and paginated loads. Add EmptyState for each tab with clear messaging. Wrap DriverHome in an ErrorBoundary with retry. Verify RTL layout mirroring and 44x44px touch targets. Add ARIA labels and roles, focus management on tab change, and announce loading/errors for screen readers.",
             "status": "pending",
-            "testStrategy": "Snapshot loading/empty/error UIs; run a11y check (e.g., axe) to verify no critical issues; manual RTL visual review and measure touch targets."
+            "testStrategy": "Snapshot loading/empty/error UIs; run a11y check (e.g., axe) to verify no critical issues; manual RTL visual review and measure touch targets.",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 6,
+        "expansionPrompt": "Break down into: (1) Bottom navigation layout with shadcn/ui Tabs, (2) TaskCard component with all required fields and styling, (3) Today/All/Overdue filtering logic, (4) Infinite scroll/pagination implementation, (5) Pull-to-refresh and real-time Supabase subscriptions, (6) Loading states, empty states, error boundaries, and RTL layout verification."
       },
       {
-        "id": 5,
+        "id": "5",
         "title": "Implement task details screen with checklist, forms, photos, and signature capture",
         "description": "Create task details view with sections for details, client, vehicle, address, schema-driven forms, photo upload, and digital signature capture using canvas-based signature pad.",
-        "details": "1. Create components/driver/TaskDetails.tsx with collapsible sections:\n   - Header: title, type, priority, status, last updated info\n   - Details section: description, client name, vehicle info\n   - Address section with Waze button\n2. Create ChecklistModal component:\n   - Render JSON schema-driven checklist dynamically\n   - Support boolean, string, and textarea fields\n   - Validate required fields before allowing progression\n   - Store submission in task_forms table with GPS location\n3. Create FormRenderer component for dynamic form rendering based on task type\n4. Implement ImageUpload component:\n   - Multi-file upload with drag-and-drop\n   - Client-side image compression (max 2MB per image)\n   - Show thumbnails with delete option\n   - Store to Supabase Storage with signed URLs\n5. Create SignaturePad component using canvas:\n   - Capture finger/stylus signature\n   - Clear and redraw options\n   - Save to Storage and create signature record\n6. Implement status update flow:\n   - pending → in_progress (requires checklist)\n   - in_progress → completed (requires forms/signature if required)\n   - blocked anytime (with optional reason)\n7. Add validation to prevent completion without required fields\n8. Create offline queue for form/photo/signature submissions\n9. Add success toast notifications\n10. Implement conflict resolution UI (show 'updated by X at hh:mm' if server version differs)",
+        "details": "1. Create components/driver/TaskDetails.tsx with collapsible sections:\n   - Header: title, type, priority, status, last updated info\n   - Details section: description, client name, vehicle info\n   - Address section with Waze button\n2. Create ChecklistModal component:\n   - Render JSON schema-driven checklist dynamically\n   - Support boolean, string, and textarea fields\n   - Validate required fields before allowing progression\n   - Store submission in task_forms table with GPS location\n3. Create FormRenderer component for dynamic form rendering based on task type\n4. Implement ImageUpload component:\n   - Multi-file upload with drag-and-drop\n   - Client-side image compression (max 2MB per image)\n   - Show thumbnails with delete option\n   - Store to Supabase Storage with signed URLs\n5. Create SignaturePad component using canvas:\n   - Capture finger/stylus signature\n   - Clear and redraw options\n   - Save to Storage and create signature record\n6. Implement status update flow:\n   - pending \u2192 in_progress (requires checklist)\n   - in_progress \u2192 completed (requires forms/signature if required)\n   - blocked anytime (with optional reason)\n7. Add validation to prevent completion without required fields\n8. Create offline queue for form/photo/signature submissions\n9. Add success toast notifications\n10. Implement conflict resolution UI (show 'updated by X at hh:mm' if server version differs)",
         "testStrategy": "Test checklist modal renders all fields from schema. Verify required fields validation prevents progression. Test image upload with compression and thumbnail display. Test signature pad captures and saves signature. Verify status transitions enforce required fields. Test offline queue stores submissions. Confirm forms/photos/signatures sync when online. Test conflict resolution displays correctly.",
         "priority": "high",
         "dependencies": [
-          4
+          "4"
         ],
         "status": "pending",
         "subtasks": [
@@ -338,7 +375,8 @@
             "dependencies": [],
             "details": "Implement `components/driver/TaskDetails.tsx` using Accordion/Collapsible for sections, render title/type/priority/status/updatedAt, show description, client and vehicle fields, and address with a Waze deeplink button. Wire to existing task data props and add basic loading/empty states.",
             "status": "pending",
-            "testStrategy": "Render screen with mock task; verify all sections toggle, header shows correct metadata, and Waze button formats deeplink correctly."
+            "testStrategy": "Render screen with mock task; verify all sections toggle, header shows correct metadata, and Waze button formats deeplink correctly.",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -349,7 +387,8 @@
             ],
             "details": "Build `ChecklistModal` that parses provided JSON schema to render fields dynamically, enforces required fields before progression, and on submit stores results to `task_forms` with GPS coordinates. Include open/close controls and persistence callback.",
             "status": "pending",
-            "testStrategy": "Unit-test dynamic field rendering and required validation; mock geolocation to ensure GPS saved; verify submission payload structure and modal lifecycle."
+            "testStrategy": "Unit-test dynamic field rendering and required validation; mock geolocation to ensure GPS saved; verify submission payload structure and modal lifecycle.",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -360,7 +399,8 @@
             ],
             "details": "Implement `FormRenderer` that accepts task type + schema, generates fields, handles controlled state, per-field validation, and emits a normalized submission payload compatible with backend `task_forms`. Support string, boolean, textarea, and future extension.",
             "status": "pending",
-            "testStrategy": "Snapshot and RTL tests for multiple schemas; validate required rules; ensure change events propagate; confirm payload normalization per schema."
+            "testStrategy": "Snapshot and RTL tests for multiple schemas; validate required rules; ensure change events propagate; confirm payload normalization per schema.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -371,7 +411,8 @@
             ],
             "details": "Create `ImageUpload` supporting drag-and-drop and file picker, compress images client-side to max 2MB, show thumbnails with remove action, upload to Supabase Storage, and return signed URL metadata for persistence. Handle retries and size/type errors.",
             "status": "pending",
-            "testStrategy": "Mock files and verify compression occurs, thumbnails render, delete works, and storage upload is called with correct metadata; test large and unsupported files."
+            "testStrategy": "Mock files and verify compression occurs, thumbnails render, delete works, and storage upload is called with correct metadata; test large and unsupported files.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -382,12 +423,13 @@
             ],
             "details": "Implement `SignaturePad` using HTML canvas with pressure-agnostic drawing, clear/reset, undo optional, export to PNG, upload to Supabase Storage, and return record reference for association to the task. Support high-DPI scaling and resizing.",
             "status": "pending",
-            "testStrategy": "Simulate draw events on canvas; verify image export, clear behavior, and successful upload callbacks; test resizing maintains fidelity."
+            "testStrategy": "Simulate draw events on canvas; verify image export, clear behavior, and successful upload callbacks; test resizing maintains fidelity.",
+            "parentId": "undefined"
           },
           {
             "id": 6,
             "title": "Implement status transition logic with prerequisite validation",
-            "description": "Add status machine: pending→in_progress (requires checklist), in_progress→completed (requires forms/signature if required), blocked anytime with reason.",
+            "description": "Add status machine: pending\u2192in_progress (requires checklist), in_progress\u2192completed (requires forms/signature if required), blocked anytime with reason.",
             "dependencies": [
               2,
               3,
@@ -395,7 +437,8 @@
             ],
             "details": "Create a status controller that enforces prerequisites, surfaces validation errors, and updates task status accordingly. Integrate with UI buttons, disable transitions until requirements met, and persist updates while handling optimistic UI states.",
             "status": "pending",
-            "testStrategy": "Unit-test guard conditions per transition; mock missing inputs to block transitions; verify successful transitions update UI and persistence calls."
+            "testStrategy": "Unit-test guard conditions per transition; mock missing inputs to block transitions; verify successful transitions update UI and persistence calls.",
+            "parentId": "undefined"
           },
           {
             "id": 7,
@@ -410,20 +453,24 @@
             ],
             "details": "Implement an offline-first queue using IndexedDB/local storage abstraction to stage submissions and retries with backoff. On version mismatch, show conflict banner with 'updated by X at hh:mm' and allow user to refresh/merge. Ensure resume on reconnect.",
             "status": "pending",
-            "testStrategy": "Simulate offline to queue items, then restore connectivity and verify flush order and retries; mock conflict responses to show resolution UI and confirm outcomes."
+            "testStrategy": "Simulate offline to queue items, then restore connectivity and verify flush order and retries; mock conflict responses to show resolution UI and confirm outcomes.",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 7,
+        "expansionPrompt": "Decompose into: (1) Task details layout with collapsible sections, (2) Schema-driven checklist modal with validation, (3) Dynamic form renderer for task types, (4) Image upload with compression and drag-and-drop, (5) Canvas-based signature pad component, (6) Status transition logic with validation, (7) Offline queue for submissions and conflict resolution UI."
       },
       {
-        "id": 6,
+        "id": "6",
         "title": "Implement notifications system with Web Push, in-app notifications center, and badge count",
         "description": "Build Web Push notification infrastructure, in-app notifications center with mark-as-read functionality, badge count synchronization across sessions, and real-time notification delivery.",
         "details": "1. Generate VAPID keys for Web Push (store in Supabase Edge config)\n2. Create Service Worker (public/sw.js) with:\n   - Push event listener\n   - Click action handler to deep link to task\n   - Notification click closes notification\n3. Create notification permission prompt component with explanation\n4. Implement push subscription flow:\n   - Request browser permission\n   - Subscribe to push service\n   - Send subscription to backend\n   - Store in profiles table\n5. Create Edge Function: POST /functions/v1/notify\n   - Accept task event (assigned/updated/started/completed/blocked)\n   - Query target users (drivers for assigned/updated, admins for started/completed/blocked)\n   - Send Web Push to subscribed users\n   - Create in-app notification record\n6. Create NotificationsList component:\n   - Display unread/read notifications\n   - Tap to open task\n   - Mark as read (single and bulk)\n   - Delete notification\n7. Implement badge count:\n   - Query unread notifications count\n   - Subscribe to real-time updates\n   - Sync across tabs/devices via Supabase Realtime\n   - Clear on mark-as-read\n8. Create notification payload types for all events\n9. Add notification settings page (enable/disable by type)\n10. Implement notification sound/vibration on mobile",
         "testStrategy": "Test VAPID key generation and configuration. Verify Service Worker registers and handles push events. Test permission prompt displays and handles user response. Verify push notification sends to correct users. Test in-app notification appears in center. Verify badge count updates in real-time. Test mark-as-read updates DB and broadcasts to other sessions. Test notification click deep links to task.",
         "priority": "high",
         "dependencies": [
-          2,
-          3
+          "2",
+          "3"
         ],
         "status": "pending",
         "subtasks": [
@@ -434,7 +481,8 @@
             "dependencies": [],
             "details": "Generate VAPID keys (e.g., via web-push CLI or script) and store them in Supabase Edge config as VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT. Expose the public key to the client as NEXT_PUBLIC_VAPID_PUBLIC_KEY. Document storage locations and rotate keys for non-prod environments. Validate base64url formatting and ensure subject is a mailto: or https:.",
             "status": "pending",
-            "testStrategy": "Verify keys load in runtime: log masked values in Edge Function and confirm client uses the exact public key in PushManager.subscribe(). Send a test push to a dummy subscription to confirm signature validity."
+            "testStrategy": "Verify keys load in runtime: log masked values in Edge Function and confirm client uses the exact public key in PushManager.subscribe(). Send a test push to a dummy subscription to confirm signature validity.",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -445,7 +493,8 @@
             ],
             "details": "Add public/sw.js with listeners for install/activate/push/notificationclick. On push, parse payload, call self.registration.showNotification with title, body, icon, badge, data (taskId, route). On click, focus an existing client or open a new window to the deep link (e.g., /tasks/[id]); close the notification after handling. Support notification actions and ensure versioning and skipWaiting/clients.claim as needed.",
             "status": "pending",
-            "testStrategy": "Register SW and validate it activates. Use DevTools or web-push CLI to send a sample payload and confirm notification displays. Click notification to ensure it opens/focuses the intended route and closes the notification."
+            "testStrategy": "Register SW and validate it activates. Use DevTools or web-push CLI to send a sample payload and confirm notification displays. Click notification to ensure it opens/focuses the intended route and closes the notification.",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -457,7 +506,8 @@
             ],
             "details": "Add a PermissionPrompt component (e.g., components/notifications/PermissionPrompt.tsx) explaining benefits and privacy. Implement subscribe flow in lib/push.ts: register SW, request Notification permission, call pushManager.subscribe with NEXT_PUBLIC_VAPID_PUBLIC_KEY, POST subscription to backend (Supabase RPC/Edge) and store JSON in profiles table (or push_subscriptions) keyed by user. Handle denied/default states, unsubscribes, errors, and re-subscribe on endpoint changes.",
             "status": "pending",
-            "testStrategy": "Manually test allowed/denied/default paths. Verify subscription JSON persisted to the correct user. Confirm re-subscribe logic on SW update and that duplicate endpoints are deduplicated."
+            "testStrategy": "Manually test allowed/denied/default paths. Verify subscription JSON persisted to the correct user. Confirm re-subscribe logic on SW update and that duplicate endpoints are deduplicated.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -469,7 +519,8 @@
             ],
             "details": "Implement supabase/functions/notify/index.ts to accept event payloads (assigned/updated/started/completed/blocked), query target users (drivers vs admins), fetch their push subscriptions, and send Web Push using VAPID keys. Insert in-app notifications into notifications table with read state. Add validation, input schema, error handling, retries for 410/404 to prune expired subscriptions, and basic idempotency (e.g., dedupe key). Enforce RLS and auth checks.",
             "status": "pending",
-            "testStrategy": "Call the function with mock task events and confirm: correct users resolved, push sent attempts made, and in-app notification rows inserted. Simulate expired endpoints and verify automatic cleanup."
+            "testStrategy": "Call the function with mock task events and confirm: correct users resolved, push sent attempts made, and in-app notification rows inserted. Simulate expired endpoints and verify automatic cleanup.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -480,7 +531,8 @@
             ],
             "details": "Add components/notifications/NotificationsList.tsx to query notifications table (paginated). Render unread/read groups with timestamps. Implement onClick to deep link to task route. Add mark-as-read (single and bulk) updating read_at, and delete action (soft or hard). Provide empty/skeleton states and accessibility. Ensure RLS-safe queries and optimistic UI updates.",
             "status": "pending",
-            "testStrategy": "Seed sample rows and verify list rendering, pagination, and grouping. Test single and bulk mark-as-read and delete flows update both UI and database correctly. Confirm deep links navigate to the task screen."
+            "testStrategy": "Seed sample rows and verify list rendering, pagination, and grouping. Test single and bulk mark-as-read and delete flows update both UI and database correctly. Confirm deep links navigate to the task screen.",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -492,7 +544,8 @@
             ],
             "details": "Create a badge component (e.g., components/notifications/Badge.tsx) that queries unread count and subscribes to Supabase Realtime on notifications and read events. Update count on inserts/updates/deletes. Sync across tabs using BroadcastChannel or storage events. Optionally use the Badging API where supported and fall back to UI badge. Clear count when notifications are marked read.",
             "status": "pending",
-            "testStrategy": "Open multiple tabs, trigger insert/read events, and ensure the badge updates in all tabs in real time. Refresh and confirm initial count hydration matches server state. Validate fallback when Realtime is unavailable."
+            "testStrategy": "Open multiple tabs, trigger insert/read events, and ensure the badge updates in all tabs in real time. Refresh and confirm initial count hydration matches server state. Validate fallback when Realtime is unavailable.",
+            "parentId": "undefined"
           },
           {
             "id": 7,
@@ -502,22 +555,26 @@
               3,
               5
             ],
-            "details": "Create app/settings/notifications/page.tsx with toggles for event types (assigned, updated, started, completed, blocked). Persist preferences in a notification_preferences table and respect them in the Edge Function routing. In SW, honor silent flag and play a short sound (user gesture–gated) and navigator.vibrate where supported. Add clear copy explaining effects and battery impact.",
+            "details": "Create app/settings/notifications/page.tsx with toggles for event types (assigned, updated, started, completed, blocked). Persist preferences in a notification_preferences table and respect them in the Edge Function routing. In SW, honor silent flag and play a short sound (user gesture\u2013gated) and navigator.vibrate where supported. Add clear copy explaining effects and battery impact.",
             "status": "pending",
-            "testStrategy": "Toggle preferences and send test events to verify filtering. On mobile or emulation, confirm vibration triggers and optional sound plays only when allowed. Ensure settings persist across sessions and apply to both push and in-app notifications."
+            "testStrategy": "Toggle preferences and send test events to verify filtering. On mobile or emulation, confirm vibration triggers and optional sound plays only when allowed. Ensure settings persist across sessions and apply to both push and in-app notifications.",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 7,
+        "expansionPrompt": "Break down into: (1) VAPID key generation and Web Push setup, (2) Service Worker implementation with push event handling, (3) Permission prompt and subscription flow, (4) Edge Function for push notification delivery, (5) In-app notifications center UI with mark-as-read, (6) Badge count synchronization across tabs/devices, (7) Notification settings and sound/vibration on mobile."
       },
       {
-        "id": 7,
+        "id": "7",
         "title": "Implement admin/manager task board with Kanban view, drag-and-drop reassignment, and task creation dialog",
         "description": "Build admin interface with Kanban board (by driver or status), drag-and-drop task reassignment, task creation/edit dialog with all fields, and bulk operations.",
         "details": "1. Create app/admin/tasks/page.tsx with TasksBoard component\n2. Implement Kanban board using @dnd-kit/core for drag-and-drop:\n   - Column view by driver (swimlanes) or by status\n   - Toggle between views\n   - Drag card to reassign to different driver/status\n   - Update task_assignees on drop\n3. Create TaskCard component for admin view (more compact than driver):\n   - Title, type, priority badge\n   - Driver name(s)\n   - Time window\n   - Status pill\n   - Quick action buttons (edit, delete, reassign)\n4. Implement TaskDialog component for create/edit:\n   - Type dropdown (all 7 types)\n   - Priority (low/medium/high)\n   - Title and details textarea\n   - Estimated start/end date-time pickers (dayjs)\n   - Address input with autocomplete (Google Places API)\n   - Client dropdown (with create new option)\n   - Vehicle dropdown (with create new option)\n   - Driver multi-select (lead + co-assignees)\n   - Checklist schema selector/editor\n   - Signature required toggle\n   - Submit button (create or update)\n5. Implement quick filters:\n   - Type filter\n   - Priority filter\n   - Overdue only toggle\n   - Manager filter (show only own assignments)\n6. Implement bulk operations:\n   - Multi-select checkboxes\n   - Bulk reassign to driver\n   - Bulk change priority\n   - Bulk delete\n7. Add search by title/client/vehicle\n8. Implement sorting by priority, time, driver\n9. Add real-time updates via Supabase Realtime\n10. Create success/error toasts for operations",
         "testStrategy": "Render task board and verify columns display correctly. Test drag-and-drop reassigns task to new driver. Verify task creation dialog validates required fields. Test autocomplete for address and client/vehicle dropdowns. Verify bulk operations apply to all selected tasks. Test filters update board correctly. Verify real-time updates reflect changes from other users. Test error handling for failed operations.",
         "priority": "high",
         "dependencies": [
-          1,
-          3
+          "1",
+          "3"
         ],
         "status": "pending",
         "subtasks": [
@@ -528,7 +585,8 @@
             "dependencies": [],
             "details": "Create `app/admin/tasks/page.tsx` rendering a `TasksBoard` component. Build initial columns and cards layout with responsive grid, set up `@dnd-kit/core` (sensors, DndContext, DragOverlay), placeholder handlers, and typed state for tasks, drivers, and statuses. Fetch initial data (tasks, drivers) via data hooks and show skeletons on load.",
             "status": "pending",
-            "testStrategy": "Render with mock data; verify columns and cards appear; confirm DnD sensors initialize and DragOverlay mounts without errors."
+            "testStrategy": "Render with mock data; verify columns and cards appear; confirm DnD sensors initialize and DragOverlay mounts without errors.",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -539,7 +597,8 @@
             ],
             "details": "Add segmented control or tabs to toggle between `groupBy=driver|status`. Compute columns from memoized selectors; ensure headers show driver names/avatars or status labels. Persist preference in URL query or localStorage. Handle empty-driver and empty-status columns consistently.",
             "status": "pending",
-            "testStrategy": "Toggle between views and confirm columns re-render correctly with stable card counts and accessible toggle semantics."
+            "testStrategy": "Toggle between views and confirm columns re-render correctly with stable card counts and accessible toggle semantics.",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -551,7 +610,8 @@
             ],
             "details": "Implement `onDragEnd` to detect source/target column. When grouped by driver, update `task_assignees` (lead/co-assignee rules); when grouped by status, update task status. Apply optimistic updates, show toast, then persist via Supabase RPC/updates; rollback on failure. Keep ordering stable and support keyboard DnD where possible.",
             "status": "pending",
-            "testStrategy": "Drag a task across columns and verify assignment/status updates in UI and DB; simulate API failure to confirm rollback and error toast."
+            "testStrategy": "Drag a task across columns and verify assignment/status updates in UI and DB; simulate API failure to confirm rollback and error toast.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -562,7 +622,8 @@
             ],
             "details": "Create `TaskDialog` using `react-hook-form` + `zod`. Fields: type (7 values), priority, title, details, start/end datetime (dayjs), address, client, vehicle, driver multi-select (lead+co), checklist schema selector, signature required. Support create and edit modes, prefill on edit, and integrate with TaskCard quick actions.",
             "status": "pending",
-            "testStrategy": "Validate required fields, date ranges, and type constraints. Create a task and verify appearance on board; edit a task and confirm changes persist."
+            "testStrategy": "Validate required fields, date ranges, and type constraints. Create a task and verify appearance on board; edit a task and confirm changes persist.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -573,7 +634,8 @@
             ],
             "details": "Wire address input to Google Places Autocomplete with debounce, selecting and storing structured address + lat/lng. Implement client and vehicle dropdowns loading options from Supabase; include inline \"Create new\" modals to insert records and refresh options. Ensure controlled form fields sync with TaskDialog state.",
             "status": "pending",
-            "testStrategy": "Type an address to see suggestions; select to populate fields. Add a new client/vehicle via inline flow and verify it becomes selectable; submit and ensure data saved correctly."
+            "testStrategy": "Type an address to see suggestions; select to populate fields. Add a new client/vehicle via inline flow and verify it becomes selectable; submit and ensure data saved correctly.",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -586,7 +648,8 @@
             ],
             "details": "Introduce per-card checkboxes and column-level select-all. Show a bulk action bar for reassign-to-driver, change priority, and delete. Execute batched Supabase updates/deletes with optimistic progress and granular error handling; confirm destructive actions; clear selection on success.",
             "status": "pending",
-            "testStrategy": "Select multiple tasks and perform each bulk action; verify all targeted tasks update. Induce partial failures to confirm error reporting and partial rollback behavior."
+            "testStrategy": "Select multiple tasks and perform each bulk action; verify all targeted tasks update. Induce partial failures to confirm error reporting and partial rollback behavior.",
+            "parentId": "undefined"
           },
           {
             "id": 7,
@@ -600,20 +663,24 @@
             ],
             "details": "Create quick filters (type, priority, overdue-only, manager-only), a debounced search across title/client/vehicle, and sorting by priority/time/driver. Compose client/server queries efficiently. Subscribe to Supabase Realtime for tasks/assignees; throttle updates and preserve user interactions. Use toast notifications for create/update/delete and DnD outcomes.",
             "status": "pending",
-            "testStrategy": "Apply filters and sorting to confirm correct results. Search by title and client. Trigger realtime updates and verify board refreshes smoothly. Confirm toasts show on success/error."
+            "testStrategy": "Apply filters and sorting to confirm correct results. Search by title and client. Trigger realtime updates and verify board refreshes smoothly. Confirm toasts show on success/error.",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 7,
+        "expansionPrompt": "Divide into: (1) Kanban board layout with @dnd-kit/core integration, (2) Column view toggle (by driver vs by status), (3) Drag-and-drop reassignment logic, (4) Task creation/edit dialog with all fields and validation, (5) Address autocomplete and client/vehicle dropdowns, (6) Bulk operations (multi-select, reassign, delete), (7) Filters, search, sorting, and real-time updates."
       },
       {
-        "id": 8,
+        "id": "8",
         "title": "Implement dashboard KPIs with charts, time period filters, and CSV export",
         "description": "Build admin dashboard with KPI cards and charts (tasks created/completed, on-time rate, avg times, overdue count, utilization, SLA breaches) with Today/Yesterday/Last 7/Last 30/Custom period filters and CSV export functionality.",
-        "details": "1. Create app/admin/dashboard/page.tsx with DashboardKPIs component\n2. Implement KPI cards:\n   - Tasks Created (count)\n   - Tasks Completed (count)\n   - On-time Completion Rate (%)\n   - Avg Assignment→Start Time (minutes)\n   - Avg Start→Complete Time (minutes)\n   - Overdue Task Count\n   - Driver Utilization (avg tasks/day)\n   - Cancellations/Reassignments (count)\n   - SLA Breaches (count)\n3. Create period filter component:\n   - Buttons: Today, Yesterday, Last 7, Last 30, Custom\n   - Custom date range picker (dayjs)\n   - Apply filter to all KPIs\n4. Implement charts using recharts (RTL-compatible):\n   - Line chart: Tasks Created/Completed over time\n   - Bar chart: Overdue by driver\n   - Pie chart: On-time vs Late completion\n   - Funnel: Assigned → Started → Completed\n5. Create CSV export for each KPI:\n   - Generate CSV with headers and data\n   - Download with timestamp filename\n6. Implement data queries:\n   - Use Drizzle ORM to calculate metrics\n   - Cache results for 5 minutes\n   - Real-time updates via Supabase Realtime\n7. Add loading states and error handling\n8. Implement RTL layout for charts (mirror axes)\n9. Create responsive design for mobile/desktop\n10. Add drill-down capability (click KPI to see details)",
+        "details": "1. Create app/admin/dashboard/page.tsx with DashboardKPIs component\n2. Implement KPI cards:\n   - Tasks Created (count)\n   - Tasks Completed (count)\n   - On-time Completion Rate (%)\n   - Avg Assignment\u2192Start Time (minutes)\n   - Avg Start\u2192Complete Time (minutes)\n   - Overdue Task Count\n   - Driver Utilization (avg tasks/day)\n   - Cancellations/Reassignments (count)\n   - SLA Breaches (count)\n3. Create period filter component:\n   - Buttons: Today, Yesterday, Last 7, Last 30, Custom\n   - Custom date range picker (dayjs)\n   - Apply filter to all KPIs\n4. Implement charts using recharts (RTL-compatible):\n   - Line chart: Tasks Created/Completed over time\n   - Bar chart: Overdue by driver\n   - Pie chart: On-time vs Late completion\n   - Funnel: Assigned \u2192 Started \u2192 Completed\n5. Create CSV export for each KPI:\n   - Generate CSV with headers and data\n   - Download with timestamp filename\n6. Implement data queries:\n   - Use Drizzle ORM to calculate metrics\n   - Cache results for 5 minutes\n   - Real-time updates via Supabase Realtime\n7. Add loading states and error handling\n8. Implement RTL layout for charts (mirror axes)\n9. Create responsive design for mobile/desktop\n10. Add drill-down capability (click KPI to see details)",
         "testStrategy": "Render dashboard and verify all KPI cards display. Test period filter updates all metrics. Verify CSV export generates correct data. Test charts render correctly in RTL. Verify calculations are accurate (sample data). Test real-time updates when new tasks created. Test error handling for failed queries. Verify responsive layout on mobile.",
         "priority": "medium",
         "dependencies": [
-          3,
-          7
+          "3",
+          "7"
         ],
         "status": "pending",
         "subtasks": [
@@ -622,9 +689,10 @@
             "title": "Implement Drizzle ORM data queries with 5-minute caching for all dashboard metrics",
             "description": "Create typed query functions to compute each KPI and chart dataset over a given period with timezone support and robust error handling.",
             "dependencies": [],
-            "details": "Add server-side utilities (e.g., lib/dashboard/queries.ts) using Drizzle ORM to compute: tasks created, tasks completed, on-time rate, avg assignment→start, avg start→complete, overdue count, driver utilization, cancellations/reassignments, SLA breaches. Provide chart datasets (time series, overdue by driver, on-time vs late, funnel). Parameterize by date range and timezone. Implement 5-minute caching via in-memory map or Next.js caching with cache keys per metric+range. Return stable, documented types.",
+            "details": "Add server-side utilities (e.g., lib/dashboard/queries.ts) using Drizzle ORM to compute: tasks created, tasks completed, on-time rate, avg assignment\u2192start, avg start\u2192complete, overdue count, driver utilization, cancellations/reassignments, SLA breaches. Provide chart datasets (time series, overdue by driver, on-time vs late, funnel). Parameterize by date range and timezone. Implement 5-minute caching via in-memory map or Next.js caching with cache keys per metric+range. Return stable, documented types.",
             "status": "pending",
-            "testStrategy": "Use seed/mocked data to validate each metric formula and edge cases (empty periods, timezone boundaries). Verify cache hit/miss behavior and that invalidation updates values after TTL."
+            "testStrategy": "Use seed/mocked data to validate each metric formula and edge cases (empty periods, timezone boundaries). Verify cache hit/miss behavior and that invalidation updates values after TTL.",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -635,7 +703,8 @@
             ],
             "details": "Create components/admin/dashboard/PeriodFilter.tsx that uses dayjs for date math and a date range picker for Custom. Expose onChange callback and context/provider so all KPI cards and charts consume the same period. Persist last selection in URL query or localStorage. Handle disabled/loading states and invalid ranges gracefully.",
             "status": "pending",
-            "testStrategy": "Simulate clicks on each preset and confirm computed start/end values. Verify custom picker outputs correct ranges. Ensure all subscribers receive updates and that URL/localStorage state rehydrates."
+            "testStrategy": "Simulate clicks on each preset and confirm computed start/end values. Verify custom picker outputs correct ranges. Ensure all subscribers receive updates and that URL/localStorage state rehydrates.",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -647,7 +716,8 @@
             ],
             "details": "Add components/admin/dashboard/kpis/* for each metric and a DashboardKPIs group in app/admin/dashboard/page.tsx. Use a shared Card UI with title, primary value, delta/secondary text, and an action area (CSV and drill-down placeholders). Fetch via query hooks/server actions with suspense-like loading skeletons and retryable error states. Use consistent number/percent formatting and color semantics for good/bad trends.",
             "status": "pending",
-            "testStrategy": "Render the dashboard and confirm all KPI cards mount, show skeletons, then display values. Change period and verify all cards update. Inject errors to confirm error UI and retry behavior."
+            "testStrategy": "Render the dashboard and confirm all KPI cards mount, show skeletons, then display values. Change period and verify all cards update. Inject errors to confirm error UI and retry behavior.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -657,9 +727,10 @@
               1,
               2
             ],
-            "details": "Create components/admin/dashboard/charts/* implementing: line chart (created vs completed over time), bar chart (overdue by driver), pie chart (on-time vs late), funnel (assigned→started→completed). Use ResponsiveContainer. For RTL, mirror axes using axis reversed props and wrapping containers that flip direction without breaking tooltips. Consume the shared period context and typed query data.",
+            "details": "Create components/admin/dashboard/charts/* implementing: line chart (created vs completed over time), bar chart (overdue by driver), pie chart (on-time vs late), funnel (assigned\u2192started\u2192completed). Use ResponsiveContainer. For RTL, mirror axes using axis reversed props and wrapping containers that flip direction without breaking tooltips. Consume the shared period context and typed query data.",
             "status": "pending",
-            "testStrategy": "Render charts with sample data and verify no runtime errors. Check tooltips and legends show expected values. Toggle RTL direction and confirm axis order and bars/lines mirror correctly. Resize viewport to ensure responsiveness."
+            "testStrategy": "Render charts with sample data and verify no runtime errors. Check tooltips and legends show expected values. Toggle RTL direction and confirm axis order and bars/lines mirror correctly. Resize viewport to ensure responsiveness.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -672,7 +743,8 @@
             ],
             "details": "Implement utils/csv.ts to transform arrays/records into CSV with UTF-8 BOM, escaped quotes, and consistent headers. Add per-metric mappers that use the current period selection. Trigger downloads via Blob + object URL with filenames like dashboard_<metric>_<YYYYMMDD_HHmmss>.csv including timezone. Connect export buttons in KPI cards and charts to their respective data sources.",
             "status": "pending",
-            "testStrategy": "Export CSV for each KPI and chart; open in a spreadsheet to verify headers, delimiters, and values. Confirm filename pattern and timezone. Test empty datasets generate valid CSV with headers only."
+            "testStrategy": "Export CSV for each KPI and chart; open in a spreadsheet to verify headers, delimiters, and values. Confirm filename pattern and timezone. Test empty datasets generate valid CSV with headers only.",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -687,21 +759,25 @@
             ],
             "details": "Use Supabase Realtime to listen for inserts/updates on tasks/assignments; debounce and refetch affected metrics. Implement drill-down: clicking a KPI opens a modal/drawer or navigates to a details table pre-filtered by metric and period, with pagination and CSV export. Finalize responsive grid for cards/charts, ensuring good spacing, no overflow, and RTL compatibility; add ARIA attributes for accessibility.",
             "status": "pending",
-            "testStrategy": "Mock realtime events to confirm auto-refresh. Click each KPI to open drill-down and verify filters apply. Test dashboard at common breakpoints (mobile, tablet, desktop) for layout stability and RTL correctness."
+            "testStrategy": "Mock realtime events to confirm auto-refresh. Click each KPI to open drill-down and verify filters apply. Test dashboard at common breakpoints (mobile, tablet, desktop) for layout stability and RTL correctness.",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 6,
+        "expansionPrompt": "Break down into: (1) KPI card components for 9 different metrics, (2) Period filter component with date range picker, (3) Data query logic using Drizzle ORM with caching, (4) Recharts integration with RTL support, (5) CSV export functionality for each metric, (6) Real-time updates, drill-down capability, and responsive design."
       },
       {
-        "id": 9,
+        "id": "9",
         "title": "Implement offline-first PWA with Service Worker, IndexedDB caching, and background sync queue",
         "description": "Build offline-first Progressive Web App with Service Worker for caching, IndexedDB for local storage, background sync queue for form/photo/signature submissions, and graceful offline UI states.",
         "details": "1. Create public/sw.js Service Worker with:\n   - Cache strategies: app shell (cache-first), API calls (network-first with fallback)\n   - Cache versioning for updates\n   - Skip waiting and claim clients for instant updates\n2. Create lib/indexeddb.ts for IndexedDB operations:\n   - Store: tasks (cached assigned tasks)\n   - Store: forms (queued form submissions)\n   - Store: images (queued image uploads with blob)\n   - Store: signatures (queued signature uploads with blob)\n   - Store: notifications (cached notifications)\n3. Implement offline detection:\n   - Listen to online/offline events\n   - Show banner when offline\n   - Disable network-dependent features\n4. Create background sync queue:\n   - Queue form submissions when offline\n   - Queue image uploads when offline\n   - Queue signature uploads when offline\n   - Retry with exponential backoff when online\n   - Show sync status in UI\n5. Implement conflict resolution:\n   - Server timestamp wins\n   - Show 'updated by X at hh:mm' ribbon if conflict\n   - Merge local changes with server version\n6. Create offline UI states:\n   - Toast: 'Saved offline, will sync when connected'\n   - Disable create/edit when offline\n   - Show cached data with 'offline' badge\n7. Implement manifest.json for PWA:\n   - App name, icons, theme colors\n   - Start URL, display mode (standalone)\n8. Add install prompt UX\n9. Create lib/sync.ts for sync orchestration\n10. Test with DevTools offline mode",
         "testStrategy": "Test Service Worker registers and caches app shell. Verify offline mode disables network features. Test form/photo/signature submissions queue when offline. Verify sync queue processes when online. Test conflict resolution shows correct message. Verify cached data displays when offline. Test install prompt appears on supported browsers. Test background sync with DevTools offline mode.",
         "priority": "high",
         "dependencies": [
-          1,
-          5,
-          6
+          "1",
+          "5",
+          "6"
         ],
         "status": "pending",
         "subtasks": [
@@ -712,7 +788,8 @@
             "dependencies": [],
             "details": "Add public/sw.js with versioned cache names (e.g., CACHE_V1). Precache app shell assets on install, remove old caches on activate, call self.skipWaiting() and self.clients.claim(). For fetch: use cache-first for static assets and network-first with cache fallback for API endpoints. Ensure proper routing for same-origin/third-party requests.",
             "status": "pending",
-            "testStrategy": "Register SW in app entry, verify caches in Application tab, simulate offline and confirm app shell loads; check API requests fall back to cache when offline."
+            "testStrategy": "Register SW in app entry, verify caches in Application tab, simulate offline and confirm app shell loads; check API requests fall back to cache when offline.",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -721,7 +798,8 @@
             "dependencies": [],
             "details": "Use idb (or vanilla IndexedDB) to create database with versioned upgrade. Stores: tasks (by id), forms (queue), images (queue with Blob), signatures (queue with Blob), notifications (by id). Provide typed helpers: put/get/getAll/delete/iterate, and transactional batch operations. Handle Blob serialization if needed.",
             "status": "pending",
-            "testStrategy": "Unit-test open/upgrade paths, create/read/update/delete records per store, store and retrieve image/signature blobs; verify graceful handling of missing keys."
+            "testStrategy": "Unit-test open/upgrade paths, create/read/update/delete records per store, store and retrieve image/signature blobs; verify graceful handling of missing keys.",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -733,7 +811,8 @@
             ],
             "details": "Create a connectivity hook/store subscribing to window 'online'/'offline'. Show a dismissible banner when offline, disable submit/upload buttons, and gate fetches. When offline, read from IndexedDB stores and render with an 'offline' badge. Persist last online timestamp if useful for UX.",
             "status": "pending",
-            "testStrategy": "Toggle network in DevTools; verify banner appears/disappears, buttons disable, and cached data renders with badge; confirm no network calls are attempted when offline."
+            "testStrategy": "Toggle network in DevTools; verify banner appears/disappears, buttons disable, and cached data renders with badge; confirm no network calls are attempted when offline.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -746,7 +825,8 @@
             ],
             "details": "Create a queue model per type with status and retryCount. In SW, listen for 'sync' events (tagged per queue) and process items; fallback to window 'online' to trigger sync if SyncManager unsupported. Implement exponential backoff and jitter, cap retries, mark success/failure, and emit progress via postMessage or BroadcastChannel. Update UI with sync state.",
             "status": "pending",
-            "testStrategy": "Submit items while offline, confirm they are queued. Go online and verify items send in order with retries on simulated failures; observe UI progress and final statuses."
+            "testStrategy": "Submit items while offline, confirm they are queued. Go online and verify items send in order with retries on simulated failures; observe UI progress and final statuses.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -756,9 +836,10 @@
               2,
               4
             ],
-            "details": "Define a merge function comparing local modifiedAt vs server updatedAt. If server newer, apply server version and attach metadata (updatedBy, time). For partial merges, reconcile fields that didn’t change locally. Persist resolved record to IndexedDB and reflect in UI with a ribbon: 'Updated by X at hh:mm'. Log conflicts for diagnostics.",
+            "details": "Define a merge function comparing local modifiedAt vs server updatedAt. If server newer, apply server version and attach metadata (updatedBy, time). For partial merges, reconcile fields that didn\u2019t change locally. Persist resolved record to IndexedDB and reflect in UI with a ribbon: 'Updated by X at hh:mm'. Log conflicts for diagnostics.",
             "status": "pending",
-            "testStrategy": "Craft simulated conflicts: local older/newer vs server. Verify server-wins behavior, partial merge correctness, and that the ribbon appears with accurate details."
+            "testStrategy": "Craft simulated conflicts: local older/newer vs server. Verify server-wins behavior, partial merge correctness, and that the ribbon appears with accurate details.",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -767,7 +848,8 @@
             "dependencies": [],
             "details": "Add public/manifest.json with multiple icon sizes (including maskable). Configure name/short_name, start_url, scope, display: 'standalone', theme_color, background_color, orientation. Link it in HTML head and ensure icons exist in public/. Validate with Lighthouse PWA checks.",
             "status": "pending",
-            "testStrategy": "Open Application > Manifest to verify fields and icons. Run Lighthouse PWA audit to confirm manifest is detected and valid."
+            "testStrategy": "Open Application > Manifest to verify fields and icons. Run Lighthouse PWA audit to confirm manifest is detected and valid.",
+            "parentId": "undefined"
           },
           {
             "id": 7,
@@ -778,7 +860,8 @@
             ],
             "details": "Add an InstallButton component that stores the deferred beforeinstallprompt event, shows CTA when eligible, and calls prompt(). Handle userChoice outcome and hide CTA afterward. Listen for window 'appinstalled' to confirm install and maybe track analytics. Persist dismissal to avoid nagging.",
             "status": "pending",
-            "testStrategy": "In a standalone-capable environment, verify the CTA appears, triggers the native prompt, and that 'appinstalled' fires; confirm CTA hides appropriately."
+            "testStrategy": "In a standalone-capable environment, verify the CTA appears, triggers the native prompt, and that 'appinstalled' fires; confirm CTA hides appropriately.",
+            "parentId": "undefined"
           },
           {
             "id": 8,
@@ -793,23 +876,27 @@
               6,
               7
             ],
-            "details": "Build lib/sync.ts to expose start/stopSync, registerQueue(type), and observers for progress. Use BroadcastChannel or postMessage to communicate with SW, and a central scheduler to sequence forms→images→signatures, respecting concurrency limits and backoff. Add logging hooks for debugging and metrics.",
+            "details": "Build lib/sync.ts to expose start/stopSync, registerQueue(type), and observers for progress. Use BroadcastChannel or postMessage to communicate with SW, and a central scheduler to sequence forms\u2192images\u2192signatures, respecting concurrency limits and backoff. Add logging hooks for debugging and metrics.",
             "status": "pending",
-            "testStrategy": "Run E2E: load app, go offline, create form/photo/signature; ensure cached display, queueing, and UI states. Go online; verify orchestrated sync order, retries, conflict resolution, and final consistency. Inspect caches/IDB in DevTools."
+            "testStrategy": "Run E2E: load app, go offline, create form/photo/signature; ensure cached display, queueing, and UI states. Go online; verify orchestrated sync order, retries, conflict resolution, and final consistency. Inspect caches/IDB in DevTools.",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 9,
+        "recommendedSubtasks": 8,
+        "expansionPrompt": "Decompose into: (1) Service Worker with cache strategies and versioning, (2) IndexedDB setup with multiple stores, (3) Offline detection and UI states, (4) Background sync queue with retry logic, (5) Conflict resolution with server timestamp wins, (6) Manifest.json and PWA configuration, (7) Install prompt UX, (8) Sync orchestration and testing with DevTools."
       },
       {
-        "id": 10,
+        "id": "10",
         "title": "Implement Mixpanel analytics integration, audit logging, and feature flags system",
         "description": "Integrate Mixpanel for event tracking with identity and super properties, implement task audit logging with before/after snapshots, and create feature flags system for gradual rollout and A/B testing.",
         "details": "1. Create lib/mixpanel.ts:\n   - Initialize Mixpanel with distinct_id = profile.id\n   - Set super properties: role, app_version, device_type\n   - Create helper functions for event tracking\n2. Implement event tracking for all key events:\n   - Task Created: { task_id, type, priority, assigned_to, created_by }\n   - Task Assigned: { task_id, driver_id }\n   - Task Started: { task_id, driver_id, start_ts }\n   - Task Completed: { task_id, driver_id, duration_ms, on_time: boolean }\n   - Task Blocked: { task_id, driver_id, reason }\n   - Form Submitted: { task_id, driver_id, form_type }\n   - Signature Captured: { task_id, signed_by_role }\n   - Notification Received: { type }\n   - Notification Opened: { type }\n3. Create audit logging:\n   - Trigger on task INSERT/UPDATE\n   - Capture before/after data\n   - Store actor_id, action, changed_at\n   - Create task_audit_log table (already in schema)\n4. Create AuditFeed component for admin:\n   - Display audit log for selected task\n   - Show who changed what and when\n   - Format timestamps in Hebrew\n5. Implement feature flags system:\n   - Create FeatureFlags component (admin only)\n   - Query feature_flags table\n   - Toggle flags on/off\n   - Cache flags in memory with 5-min TTL\n   - Create useFeatureFlag hook\n6. Create feature flag checks:\n   - Signature required (per task type)\n   - Multi-driver assignment\n   - Bulk operations\n   - PDF generation\n7. Add Mixpanel dashboard board:\n   - DAU/WAU by role\n   - On-time Completion Rate (Last 7/30)\n   - Overdue by Driver (bar)\n   - Task Lifecycle funnel\n8. Implement error tracking (optional: Sentry)\n9. Create lib/analytics.ts for centralized tracking\n10. Add analytics consent banner",
         "testStrategy": "Verify Mixpanel events send with correct properties. Test audit log captures task changes. Verify audit feed displays changes correctly. Test feature flag toggle updates behavior. Verify feature flags cache and expire correctly. Test analytics events track all required actions. Verify super properties set correctly. Test Mixpanel dashboard shows correct metrics.",
         "priority": "medium",
         "dependencies": [
-          2,
-          3,
-          7
+          "2",
+          "3",
+          "7"
         ],
         "status": "pending",
         "subtasks": [
@@ -820,7 +907,8 @@
             "dependencies": [],
             "details": "Create lib/mixpanel.ts to initialize with token (env var), identify users with distinct_id=profile.id, and set super properties (role, app_version, device_type). Expose track(), identify(), setSuperProperties(), init(). Add consent gating stub. Create lib/analytics.ts to centralize provider calls and enable future provider swaps.",
             "status": "pending",
-            "testStrategy": "Mock Mixpanel SDK and assert helper functions call it with correct payloads. Verify super properties are registered once per session and no events fire without consent."
+            "testStrategy": "Mock Mixpanel SDK and assert helper functions call it with correct payloads. Verify super properties are registered once per session and no events fire without consent.",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -831,7 +919,8 @@
             ],
             "details": "Wire analytics.track for: Task Created, Task Assigned, Task Started, Task Completed (duration_ms, on_time), Task Blocked, Form Submitted, Signature Captured, Notification Received, Notification Opened. Include task_id, type, priority, assigned_to/driver_id, timestamps (ISO), and context. Ensure idempotency, error handling, and standard property keys.",
             "status": "pending",
-            "testStrategy": "Use integration tests or component tests with mocked analytics to assert each event fires with expected properties. Validate on_time computation and that distinct_id and super properties are attached."
+            "testStrategy": "Use integration tests or component tests with mocked analytics to assert each event fires with expected properties. Validate on_time computation and that distinct_id and super properties are attached.",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -840,27 +929,30 @@
             "dependencies": [],
             "details": "Add DB trigger/function or app middleware to write to task_audit_log on INSERT/UPDATE. Persist task_id, actor_id, action (created/updated), changed_at, before JSON, after JSON. Compute field-level diffs for display. Add indexes on task_id and changed_at. Ensure sensitive fields are excluded or masked.",
             "status": "pending",
-            "testStrategy": "Simulate task creation and updates and verify audit rows contain correct before/after snapshots. Check null-before on INSERT, diffs on UPDATE, and index use for paginated queries."
+            "testStrategy": "Simulate task creation and updates and verify audit rows contain correct before/after snapshots. Check null-before on INSERT, diffs on UPDATE, and index use for paginated queries.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
-            "title": "Build admin AuditFeed UI to browse per‑task changes with Hebrew timestamps",
+            "title": "Build admin AuditFeed UI to browse per\u2011task changes with Hebrew timestamps",
             "description": "Create an admin-only component showing who changed what and when, with field-level diffs and localized time formatting.",
             "dependencies": [
               3
             ],
             "details": "Create components/admin/AuditFeed.tsx to fetch task_audit_log entries by task_id with pagination. Render actor name, action, and changed_at formatted in he-IL. Display added/removed/modified diffs, include filters and search, handle empty/error states, and provide copy-to-clipboard for raw JSON.",
             "status": "pending",
-            "testStrategy": "Render with fixtures and snapshot-test diff rendering. Verify he-IL formatting and RTL layout. Test pagination, filters, and unauthorized access is blocked."
+            "testStrategy": "Render with fixtures and snapshot-test diff rendering. Verify he-IL formatting and RTL layout. Test pagination, filters, and unauthorized access is blocked.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
-            "title": "Implement feature flags system with admin toggle UI, hook, and 5‑minute cache",
+            "title": "Implement feature flags system with admin toggle UI, hook, and 5\u2011minute cache",
             "description": "Provide a flags service with TTL cache, an admin management UI, and a hook for reads across the app.",
             "dependencies": [],
-            "details": "Create lib/flags.ts with getFlags(), isEnabled(key), setFlag(), and in-memory Map cache with 5‑minute TTL and invalidation. Build components/admin/FeatureFlags.tsx to list and toggle flags (persist to backend) with admin-only access. Add useFeatureFlag(key) hook that subscribes to cache updates. Log flag changes to audit if required.",
+            "details": "Create lib/flags.ts with getFlags(), isEnabled(key), setFlag(), and in-memory Map cache with 5\u2011minute TTL and invalidation. Build components/admin/FeatureFlags.tsx to list and toggle flags (persist to backend) with admin-only access. Add useFeatureFlag(key) hook that subscribes to cache updates. Log flag changes to audit if required.",
             "status": "pending",
-            "testStrategy": "Unit-test TTL caching and invalidation behavior. Mock backend to verify toggles persist and optimistic UI updates. Validate hook returns updated values after toggles and permissions are enforced."
+            "testStrategy": "Unit-test TTL caching and invalidation behavior. Mock backend to verify toggles persist and optimistic UI updates. Validate hook returns updated values after toggles and permissions are enforced.",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -873,15 +965,23 @@
             ],
             "details": "Insert useFeatureFlag checks for signature required (per task type), multi-driver assignment, bulk operations, and PDF generation. Add cohort/variant properties to events for A/B tests. In Mixpanel, configure boards: DAU/WAU by role, On-time Completion Rate (7/30), Overdue by Driver (bar), and Task Lifecycle funnel. Document board URLs and event definitions.",
             "status": "pending",
-            "testStrategy": "Manual and automated checks to verify features toggle on/off immediately. Assert events include cohort/flag properties. Validate Mixpanel boards populate using test data and reflect expected metrics/funnels."
+            "testStrategy": "Manual and automated checks to verify features toggle on/off immediately. Assert events include cohort/flag properties. Validate Mixpanel boards populate using test data and reflect expected metrics/funnels.",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 6,
+        "expansionPrompt": "Break down into: (1) Mixpanel initialization and event tracking setup, (2) Event tracking implementation for 8+ key events, (3) Task audit logging with before/after snapshots, (4) Audit feed UI component for admin, (5) Feature flags system with toggle UI and caching, (6) Feature flag checks and Mixpanel dashboard setup."
       }
     ],
     "metadata": {
-      "created": "2025-11-09T12:46:21.045Z",
-      "updated": "2025-11-09T13:09:04.491Z",
-      "description": "Tasks for master context"
+      "version": "1.0.0",
+      "lastModified": "2025-11-09T13:24:28.616Z",
+      "taskCount": 10,
+      "completedCount": 1,
+      "tags": [
+        "master"
+      ]
     }
   }
 }
