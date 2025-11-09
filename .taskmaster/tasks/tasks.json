@@ -239,7 +239,7 @@
             "description": "Create the driver layout with a sticky bottom navigation for Tasks, Notifications, and Profile.",
             "dependencies": [],
             "details": "Add `app/driver/layout.tsx` with shadcn/ui Tabs for three routes, a sticky bottom bar, safe-area padding, and mobile-first container. Use `Link` for navigation, highlight active tab, support RTL via `dir` or class toggles, and ensure touch targets are at least 44x44px.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Render `/driver` and verify bottom nav labels, active state, keyboard focus order, RTL flipping, and 44x44 hit areas.",
             "parentId": "undefined"
           },
