@@ -166,9 +166,10 @@
               4
             ],
             "details": "Create `app/(auth)/login/page.tsx` and `app/(auth)/signup/page.tsx` using shadcn/ui components. Implement email/password login and signup with role stored in user metadata (temporary until profiles table). Add error/success toasts, redirects based on role, and a logout button using `supabase.auth.signOut`. Verify session persistence via the provider and route protection via middleware.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Manual E2E: sign up (invalid \u2192 error, valid \u2192 success), login (valid/invalid), observe redirects by role, refresh and open a new tab to confirm persistence, logout clears access and middleware blocks protected routes.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-09T14:13:12.809199+00:00"
           }
         ],
         "complexity": 6,
