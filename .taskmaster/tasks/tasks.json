@@ -179,9 +179,9 @@
       },
       {
         "id": "3",
-        "title": "Design and implement database schema with Drizzle ORM and RLS policies",
-        "description": "Create comprehensive database schema using Drizzle ORM for all core tables (profiles, tasks, task_assignees, task_forms, signatures, images, notifications, clients, vehicles, feature_flags, task_audit_log) and implement Row Level Security policies.",
-        "details": "1. Create schema.ts with Drizzle table definitions:\n   - profiles (id, email, role, name, created_at, updated_at)\n   - tasks (id, title, type, priority, status, estimated_start, estimated_end, address, details, client_id, vehicle_id, created_by, updated_by, created_at, updated_at, checklist_schema)\n   - task_assignees (id, task_id, driver_id, is_lead, assigned_at)\n   - task_forms (id, task_id, driver_id, form_data, submitted_at, gps_location)\n   - signatures (id, task_id, driver_id, signature_url, signed_at, signed_by_name)\n   - images (id, task_id, driver_id, image_url, uploaded_at, description)\n   - notifications (id, user_id, type, task_id, payload, read, created_at)\n   - clients (id, name, phone, email, created_at)\n   - vehicles (id, license_plate, model, vin, created_at)\n   - feature_flags (id, flag_name, enabled, created_at)\n   - task_audit_log (id, task_id, actor_id, action, before_data, after_data, changed_at)\n2. Create RLS policies:\n   - Drivers can view only their assigned tasks and own notifications\n   - Drivers can update only their own task status and forms\n   - Admins/Managers have full access to all tasks and can override status\n   - Viewers have read-only access to all data\n   - Audit log readable by admin/manager only\n3. Create database triggers for task_audit_log on INSERT/UPDATE\n4. Create view: overdue_tasks (status != 'completed' AND now() > estimated_end)\n5. Set up Drizzle migrations directory\n6. Create seed script for initial feature flags and test data",
+        "title": "Design and implement database schema in Supabase (SQL) with RLS policies",
+        "description": "Create comprehensive database schema directly in Supabase (Postgres SQL) for all core tables (profiles, tasks, task_assignees, task_forms, signatures, images, notifications, clients, vehicles, feature_flags, task_audit_log) and implement Row Level Security policies.",
+        "details": "Use Supabase-native SQL migrations (supabase/migrations) to define schema, enums and policies.\n\n1. Define enums:\n   - role: driver | admin | manager | viewer\n   - task_status: pending | in_progress | blocked | completed\n   - task_priority: low | medium | high\n   - task_type: pickup_or_dropoff_car | replacement_car_delivery | drive_client_home | drive_client_to_dealership | licence_test | rescue_stuck_car | other\n2. Create tables with UUID PKs and timestamptz timestamps:\n   - profiles (id, email, role, name, created_at, updated_at)\n   - clients (id, name, phone, email, created_at)\n   - vehicles (id, license_plate, model, vin, created_at)\n   - tasks (id, title, type, priority, status, estimated_start, estimated_end, address, details, client_id, vehicle_id, created_by, updated_by, created_at, updated_at, checklist_schema jsonb)\n   - task_assignees (id, task_id, driver_id, is_lead, assigned_at)\n   - task_forms (id, task_id, driver_id, form_data jsonb, submitted_at, gps_location jsonb)\n   - signatures (id, task_id, driver_id, signature_url, signed_at, signed_by_name)\n   - images (id, task_id, driver_id, image_url, uploaded_at, description)\n   - notifications (id, user_id, type, task_id, payload jsonb, read, created_at)\n   - feature_flags (id, flag_name unique, enabled, created_at)\n   - task_audit_log (id, task_id, actor_id, action, before_data jsonb, after_data jsonb, changed_at)\n   Add FKs and helpful indexes (e.g., tasks(status, estimated_end), task_assignees(task_id, driver_id), notifications(user_id, read)).\n3. Create RLS policies:\n   - Drivers: select only assigned tasks and own notifications; update only own task status and own task_forms/signatures/images\n   - Admins/Managers: full access; audit log readable\n   - Viewers: read-only; audit log denied\n4. Triggers: AFTER INSERT/UPDATE on tasks to write before/after snapshots into task_audit_log\n5. Views: overdue_tasks where status <> 'completed' AND now() > estimated_end\n6. Migrations & seeds: keep SQL files under supabase/migrations; optional seed SQL or Edge Function for initial data and feature flags",
         "testStrategy": "Run Drizzle migrations successfully. Verify all tables created with correct columns and types. Test RLS policies: driver cannot access other driver's tasks, viewer cannot update data, admin can override. Test audit trigger captures changes. Validate overdue_tasks view returns correct records. Run seed script and verify initial data.",
         "priority": "high",
         "dependencies": [
@@ -191,12 +191,12 @@
         "subtasks": [
           {
             "id": 1,
-            "title": "Define Drizzle ORM schema for 11 core tables with relations and constraints",
-            "description": "Create schema.ts with Drizzle table definitions for profiles, tasks, task_assignees, task_forms, signatures, images, notifications, clients, vehicles, feature_flags, and task_audit_log.",
+            "title": "Define Supabase SQL schema for 11 core tables with relations and constraints",
+            "description": "Create SQL DDL for profiles, tasks, task_assignees, task_forms, signatures, images, notifications, clients, vehicles, feature_flags, and task_audit_log.",
             "dependencies": [],
-            "details": "Model all columns and types (timestamps, jsonb, text, enums), primary/foreign keys, unique indexes, and defaults. Add relations: tasks\u2192clients/vehicles/profiles; task_assignees\u2192tasks/profiles; task_forms/signatures/images\u2192tasks/profiles; notifications\u2192profiles; task_audit_log\u2192tasks/profiles. Use enum types for role, task status, priority, and task type. Include checklist_schema/form_data/payload/before_data/after_data as jsonb. Ensure updated_at triggers or application-level updates.",
+            "details": "Model all columns and types (timestamptz, jsonb, text, enums), PK/FKs, unique indexes and defaults. Add relations: tasks\u2192clients/vehicles/profiles; task_assignees\u2192tasks/profiles; task_forms/signatures/images\u2192tasks/profiles; notifications\u2192profiles; task_audit_log\u2192tasks/profiles. Use enum types listed for role, status, priority, and task_type from the PRD (pickup_or_dropoff_car, replacement_car_delivery, drive_client_home, drive_client_to_dealership, licence_test, rescue_stuck_car, other). Ensure updated_at is maintained (trigger or app-level).",
             "status": "pending",
-            "testStrategy": "Type-check schema, generate SQL with drizzle-kit, and verify FK/index creation in a local DB.",
+            "testStrategy": "Apply SQL in Supabase; verify tables, FKs and indexes via Dashboard > Table editor; run EXPLAIN on indexed queries.",
             "parentId": "undefined"
           },
           {
@@ -237,27 +237,27 @@
           },
           {
             "id": 5,
-            "title": "Configure Drizzle migrations and apply schema, RLS, triggers, and view",
-            "description": "Set up drizzle-kit config, generate migrations for all objects, and run them against the database.",
+            "title": "Organize Supabase SQL migrations and apply schema, RLS, triggers, and view",
+            "description": "Create SQL migration files in supabase/migrations for all objects and apply them in order.",
             "dependencies": [
               1,
               2,
               3,
               4
             ],
-            "details": "Create drizzle.config.ts, point to database URL, and include schema paths. Generate migrations that create tables first, then enable RLS and add policies, then create trigger function/triggers, and finally create the overdue_tasks view. Add npm scripts for generate/migrate. Apply migrations in the correct order and verify idempotency.",
+            "details": "Create ordered SQL files: 01_tables.sql \u2192 02_rls.sql \u2192 03_triggers.sql \u2192 04_views.sql \u2192 05_seed.sql. Apply using Supabase SQL editor/CLI. Ensure idempotency and document rollback notes.",
             "status": "pending",
-            "testStrategy": "Run drizzle-kit generate and migrate on a fresh database; confirm all objects exist and migrations re-run cleanly on empty DB.",
+            "testStrategy": "Run migrations on a fresh project; confirm all objects exist and re-apply runs cleanly on empty DB.",
             "parentId": "undefined"
           },
           {
             "id": 6,
             "title": "Implement seed script for initial feature flags and test data",
-            "description": "Write a TypeScript seed script to insert profiles, clients, vehicles, tasks, assignments, notifications, and feature flags.",
+            "description": "Seed initial data using SQL or a Supabase Edge Function to insert profiles, clients, vehicles, tasks, assignments, notifications, and feature flags.",
             "dependencies": [
               5
             ],
-            "details": "Create a script using Drizzle client (or SQL) that runs with a service role to bypass RLS safely. Seed roles (driver, admin, manager, viewer) in profiles, several clients/vehicles, tasks with realistic timestamps and checklist_schema, task_assignees mapping drivers to tasks, basic notifications, and feature_flags. Ensure deterministic IDs and clean-up/reset behavior for repeatability.",
+            "details": "Create SQL seed (or Edge Function) that runs with service role to bypass RLS safely. Seed roles (driver, admin, manager, viewer) in profiles, several clients/vehicles, tasks with realistic timestamps and checklist_schema, task_assignees mapping drivers to tasks, basic notifications, and feature_flags. Ensure deterministic IDs and clean-up/reset behavior for repeatability.",
             "status": "pending",
             "testStrategy": "Run seed, then query counts and perform role-scoped reads to validate RLS behavior with the seeded assignments and flags.",
             "parentId": "undefined"
@@ -680,7 +680,7 @@
         "id": "8",
         "title": "Implement dashboard KPIs with charts, time period filters, and CSV export",
         "description": "Build admin dashboard with KPI cards and charts (tasks created/completed, on-time rate, avg times, overdue count, utilization, SLA breaches) with Today/Yesterday/Last 7/Last 30/Custom period filters and CSV export functionality.",
-        "details": "1. Create app/admin/dashboard/page.tsx with DashboardKPIs component\n2. Implement KPI cards:\n   - Tasks Created (count)\n   - Tasks Completed (count)\n   - On-time Completion Rate (%)\n   - Avg Assignment\u2192Start Time (minutes)\n   - Avg Start\u2192Complete Time (minutes)\n   - Overdue Task Count\n   - Driver Utilization (avg tasks/day)\n   - Cancellations/Reassignments (count)\n   - SLA Breaches (count)\n3. Create period filter component:\n   - Buttons: Today, Yesterday, Last 7, Last 30, Custom\n   - Custom date range picker (dayjs)\n   - Apply filter to all KPIs\n4. Implement charts using recharts (RTL-compatible):\n   - Line chart: Tasks Created/Completed over time\n   - Bar chart: Overdue by driver\n   - Pie chart: On-time vs Late completion\n   - Funnel: Assigned \u2192 Started \u2192 Completed\n5. Create CSV export for each KPI:\n   - Generate CSV with headers and data\n   - Download with timestamp filename\n6. Implement data queries:\n   - Use Drizzle ORM to calculate metrics\n   - Cache results for 5 minutes\n   - Real-time updates via Supabase Realtime\n7. Add loading states and error handling\n8. Implement RTL layout for charts (mirror axes)\n9. Create responsive design for mobile/desktop\n10. Add drill-down capability (click KPI to see details)",
+        "details": "1. Create app/admin/dashboard/page.tsx with DashboardKPIs component\n2. Implement KPI cards:\n   - Tasks Created (count)\n   - Tasks Completed (count)\n   - On-time Completion Rate (%)\n   - Avg Assignment\u2192Start Time (minutes)\n   - Avg Start\u2192Complete Time (minutes)\n   - Overdue Task Count\n   - Driver Utilization (avg tasks/day)\n   - Cancellations/Reassignments (count)\n   - SLA Breaches (count)\n3. Create period filter component:\n   - Buttons: Today, Yesterday, Last 7, Last 30, Custom\n   - Custom date range picker (dayjs)\n   - Apply filter to all KPIs\n4. Implement charts using recharts (RTL-compatible):\n   - Line chart: Tasks Created/Completed over time\n   - Bar chart: Overdue by driver\n   - Pie chart: On-time vs Late completion\n   - Funnel: Assigned \u2192 Started \u2192 Completed\n5. Create CSV export for each KPI:\n   - Generate CSV with headers and data\n   - Download with timestamp filename\n6. Implement data queries:\n   - Use Supabase SQL views/materialized views or RPC to calculate metrics\n   - Cache results for 5 minutes\n   - Real-time updates via Supabase Realtime\n7. Add loading states and error handling\n8. Implement RTL layout for charts (mirror axes)\n9. Create responsive design for mobile/desktop\n10. Add drill-down capability (click KPI to see details)",
         "testStrategy": "Render dashboard and verify all KPI cards display. Test period filter updates all metrics. Verify CSV export generates correct data. Test charts render correctly in RTL. Verify calculations are accurate (sample data). Test real-time updates when new tasks created. Test error handling for failed queries. Verify responsive layout on mobile.",
         "priority": "medium",
         "dependencies": [
@@ -691,10 +691,10 @@
         "subtasks": [
           {
             "id": 1,
-            "title": "Implement Drizzle ORM data queries with 5-minute caching for all dashboard metrics",
-            "description": "Create typed query functions to compute each KPI and chart dataset over a given period with timezone support and robust error handling.",
+          "title": "Implement Supabase SQL/RPC data queries with 5-minute caching for all dashboard metrics",
+          "description": "Create SQL views/materialized views or RPC endpoints to compute each KPI and chart dataset over a given period with timezone support and robust error handling.",
             "dependencies": [],
-            "details": "Add server-side utilities (e.g., lib/dashboard/queries.ts) using Drizzle ORM to compute: tasks created, tasks completed, on-time rate, avg assignment\u2192start, avg start\u2192complete, overdue count, driver utilization, cancellations/reassignments, SLA breaches. Provide chart datasets (time series, overdue by driver, on-time vs late, funnel). Parameterize by date range and timezone. Implement 5-minute caching via in-memory map or Next.js caching with cache keys per metric+range. Return stable, documented types.",
+          "details": "Add server-side utilities (e.g., lib/dashboard/queries.ts) that call Supabase SQL views/materialized views or RPC to compute: tasks created, tasks completed, on-time rate, avg assignment\u2192start, avg start\u2192complete, overdue count, driver utilization, cancellations/reassignments, SLA breaches. Provide chart datasets (time series, overdue by driver, on-time vs late, funnel). Parameterize by date range and timezone. Implement 5-minute caching via in-memory map or Next.js caching with cache keys per metric+range. Return stable, documented types.",
             "status": "pending",
             "testStrategy": "Use seed/mocked data to validate each metric formula and edge cases (empty periods, timezone boundaries). Verify cache hit/miss behavior and that invalidation updates values after TTL.",
             "parentId": "undefined"
