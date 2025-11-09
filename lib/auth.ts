@@ -1,36 +1,44 @@
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient, User, Session } from '@supabase/supabase-js';
 
-// Determine which environment to use (default to PROD)
-const ENV = process.env.NEXT_PUBLIC_ENVIRONMENT || 'PROD';
+// Client-side: Get config from window.__SUPABASE_CONFIG__ (injected by SupabaseConfigProvider)
+const getSupabaseConfigBrowser = () => {
+  if (typeof window !== 'undefined' && window.__SUPABASE_CONFIG__) {
+    return {
+      url: window.__SUPABASE_CONFIG__.url,
+      key: window.__SUPABASE_CONFIG__.key,
+    };
+  }
 
-// Get environment variables - ONLY called at runtime, never at build time
-const getSupabaseConfig = () => {
+  throw new Error('Supabase config not available on client');
+};
+
+// Server-side: Get config from process.env
+const getSupabaseConfigServer = () => {
+  const env = process.env.NEXT_PUBLIC_ENVIRONMENT || 'PROD';
+
   const url =
-    process.env[`NEXT_PUBLIC_SUPABASE_URL_${ENV.toUpperCase()}`] ||
+    process.env[`NEXT_PUBLIC_SUPABASE_URL_${env.toUpperCase()}`] ||
     process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   const key =
-    process.env[`NEXT_PUBLIC_SUPABASE_ANON_KEY_${ENV.toUpperCase()}`] ||
+    process.env[`NEXT_PUBLIC_SUPABASE_ANON_KEY_${env.toUpperCase()}`] ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  const serviceKey =
-    process.env[`SUPABASE_SERVICE_ROLE_KEY_${ENV.toUpperCase()}`] ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY;
-
   if (!url) {
-    throw new Error(
-      `Missing Supabase URL. Please set NEXT_PUBLIC_SUPABASE_URL_${ENV.toUpperCase()} in .env.local`
-    );
+    throw new Error(`Missing Supabase URL. Please set NEXT_PUBLIC_SUPABASE_URL_${env.toUpperCase()} in .env.local`);
   }
 
   if (!key) {
-    throw new Error(
-      `Missing Supabase Anon Key. Please set NEXT_PUBLIC_SUPABASE_ANON_KEY_${ENV.toUpperCase()} in .env.local`
-    );
+    throw new Error(`Missing Supabase Anon Key. Please set NEXT_PUBLIC_SUPABASE_ANON_KEY_${env.toUpperCase()} in .env.local`);
   }
 
-  return { url, key, serviceKey };
+  return { url, key };
+};
+
+// Choose appropriate config getter based on runtime
+const getSupabaseConfig = () => {
+  return typeof window !== 'undefined' ? getSupabaseConfigBrowser() : getSupabaseConfigServer();
 };
 
 // Session storage key for driver sessions (localStorage)
