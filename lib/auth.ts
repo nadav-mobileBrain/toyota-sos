@@ -1,17 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient, User, Session } from '@supabase/supabase-js';
 
-// Determine which environment to use
-const ENV = process.env.NEXT_PUBLIC_ENVIRONMENT || 'prod';
+// Determine which environment to use (default to PROD)
+const ENV = process.env.NEXT_PUBLIC_ENVIRONMENT || 'PROD';
 const SUPABASE_URL =
-  process.env[`NEXT_PUBLIC_SUPABASE_URL_${ENV.toUpperCase()}`] ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL;
+  process.env[`NEXT_PUBLIC_SUPABASE_URL_${ENV.toUpperCase()}`];
 const SUPABASE_ANON_KEY =
-  process.env[`NEXT_PUBLIC_SUPABASE_ANON_KEY_${ENV.toUpperCase()}`] ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  process.env[`NEXT_PUBLIC_SUPABASE_ANON_KEY_${ENV.toUpperCase()}`];
 const SUPABASE_SERVICE_ROLE_KEY =
-  process.env[`SUPABASE_SERVICE_ROLE_KEY_${ENV.toUpperCase()}`] ||
-  process.env.SUPABASE_SERVICE_ROLE_KEY;
+  process.env[`SUPABASE_SERVICE_ROLE_KEY_${ENV.toUpperCase()}`];
 
 // Validate environment variables
 if (!SUPABASE_URL) {
