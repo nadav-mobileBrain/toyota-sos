@@ -23,15 +23,19 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
       >
         <div className="max-w-xl mx-auto grid grid-cols-3 gap-1 p-2">
           {tabs.map((t) => {
-            const active = pathname === t.href;
+            const active =
+              pathname === t.href || pathname.startsWith(t.href + '/');
             return (
               <Link
                 key={t.href}
                 href={t.href}
                 className={[
                   'text-center rounded-md py-2 text-sm font-medium transition-colors',
-                  active ? 'bg-toyota-primary text-black' : 'text-gray-700 hover:bg-gray-100',
+                  active
+                    ? 'bg-toyota-primary text-white ring-1 ring-toyota-primary'
+                    : 'text-gray-700 hover:bg-gray-100',
                 ].join(' ')}
+                aria-current={active ? 'page' : undefined}
               >
                 {t.label}
               </Link>
