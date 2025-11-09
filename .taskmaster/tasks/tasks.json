@@ -88,7 +88,7 @@
         "dependencies": [
           "1"
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -175,7 +175,7 @@
         "complexity": 6,
         "recommendedSubtasks": 6,
         "expansionPrompt": "Decompose into: (1) Supabase project creation and environment setup, (2) Email/password authentication configuration, (3) Supabase client initialization and utilities, (4) Middleware for route protection and role-based access control, (5) Auth context/hook for global state management, (6) Login/signup UI pages and logout functionality with session persistence.",
-        "updatedAt": "2025-11-09T14:10:57.201Z"
+        "updatedAt": "2025-11-09T14:14:26.008287+00:00"
       },
       {
         "id": "3",
