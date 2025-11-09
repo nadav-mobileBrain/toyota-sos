@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2025-11-09T12:48:52.511Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Taskmaster",
+		"usedResearch": false
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Set up Next.js project with TypeScript, Tailwind, shadcn/ui, and RTL support",
+			"complexityScore": 4,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down the project setup into: (1) Next.js and TypeScript initialization, (2) Tailwind CSS with RTL configuration, (3) shadcn/ui integration and component setup, (4) Internationalization with dayjs and Hebrew locale, (5) Project structure, ESLint, Prettier, and meta tags configuration.",
+			"reasoning": "This is a foundational setup task with multiple independent configuration steps. While each step is straightforward (following official documentation), the coordination of multiple tools (Next.js, TypeScript, Tailwind, shadcn/ui, dayjs) and ensuring RTL support across all components adds moderate complexity. No complex business logic, but requires attention to configuration details and testing that all pieces integrate correctly."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Set up Supabase project and configure authentication",
+			"complexityScore": 6,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Decompose into: (1) Supabase project creation and environment setup, (2) Email/password authentication configuration, (3) Supabase client initialization and utilities, (4) Middleware for route protection and role-based access control, (5) Auth context/hook for global state management, (6) Login/signup UI pages and logout functionality with session persistence.",
+			"reasoning": "Moderate-to-high complexity due to security considerations (RLS policies, environment variables, service role keys), state management requirements, and the need to coordinate authentication across multiple layers (client, middleware, context). Requires understanding of Supabase auth patterns and Next.js middleware. Testing involves multiple scenarios (valid/invalid credentials, session persistence, role-based access)."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Design and implement database schema with Drizzle ORM and RLS policies",
+			"complexityScore": 8,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Divide into: (1) Drizzle ORM table definitions for all 11 tables with proper relationships, (2) Row Level Security policies for each role (driver, admin, manager, viewer), (3) Database triggers for audit logging, (4) Views for derived data (overdue_tasks), (5) Migrations setup and execution, (6) Seed script for initial data and feature flags.",
+			"reasoning": "High complexity due to: (1) 11 interdependent tables requiring careful schema design, (2) Complex RLS policies with role-based access control across multiple tables, (3) Database triggers for audit logging, (4) Need to understand both Drizzle ORM and PostgreSQL/Supabase specifics, (5) Data integrity and security considerations. Requires careful testing of RLS policies and trigger behavior. This is a critical foundation for the entire system."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "Implement driver mobile UI shell with bottom navigation and task list",
+			"complexityScore": 6,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Break down into: (1) Bottom navigation layout with shadcn/ui Tabs, (2) TaskCard component with all required fields and styling, (3) Today/All/Overdue filtering logic, (4) Infinite scroll/pagination implementation, (5) Pull-to-refresh and real-time Supabase subscriptions, (6) Loading states, empty states, error boundaries, and RTL layout verification.",
+			"reasoning": "Moderate-to-high complexity due to: (1) Multiple UI components requiring coordination, (2) Real-time data synchronization with Supabase, (3) RTL layout considerations affecting all components, (4) Mobile-specific UX patterns (pull-to-refresh, touch targets), (5) State management for filtering and pagination. Requires careful testing of real-time updates and RTL rendering. Depends on completed schema and auth."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Implement task details screen with checklist, forms, photos, and signature capture",
+			"complexityScore": 8,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Decompose into: (1) Task details layout with collapsible sections, (2) Schema-driven checklist modal with validation, (3) Dynamic form renderer for task types, (4) Image upload with compression and drag-and-drop, (5) Canvas-based signature pad component, (6) Status transition logic with validation, (7) Offline queue for submissions and conflict resolution UI.",
+			"reasoning": "High complexity due to: (1) Multiple specialized components (checklist, form renderer, signature pad, image uploader), (2) Complex state management for multi-step workflows, (3) Client-side image compression and file handling, (4) Canvas API for signature capture, (5) Offline-first queue management, (6) Conflict resolution logic, (7) Validation across multiple fields and steps. Requires extensive testing of edge cases and offline scenarios."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Implement notifications system with Web Push, in-app notifications center, and badge count",
+			"complexityScore": 7,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Break down into: (1) VAPID key generation and Web Push setup, (2) Service Worker implementation with push event handling, (3) Permission prompt and subscription flow, (4) Edge Function for push notification delivery, (5) In-app notifications center UI with mark-as-read, (6) Badge count synchronization across tabs/devices, (7) Notification settings and sound/vibration on mobile.",
+			"reasoning": "High complexity due to: (1) Multiple technologies (Web Push API, Service Workers, Supabase Edge Functions), (2) Cross-tab/device synchronization requirements, (3) Real-time updates via Supabase Realtime, (4) Browser permission handling and fallbacks, (5) Complex notification routing logic (different users for different events), (6) Mobile-specific features (sound, vibration). Requires testing across multiple browsers and devices."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Implement admin/manager task board with Kanban view, drag-and-drop reassignment, and task creation dialog",
+			"complexityScore": 7,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Divide into: (1) Kanban board layout with @dnd-kit/core integration, (2) Column view toggle (by driver vs by status), (3) Drag-and-drop reassignment logic, (4) Task creation/edit dialog with all fields and validation, (5) Address autocomplete and client/vehicle dropdowns, (6) Bulk operations (multi-select, reassign, delete), (7) Filters, search, sorting, and real-time updates.",
+			"reasoning": "High complexity due to: (1) Drag-and-drop implementation with @dnd-kit requires careful state management, (2) Complex dialog with multiple input types and validations, (3) Google Places API integration for address autocomplete, (4) Bulk operations requiring careful transaction handling, (5) Real-time updates from other users, (6) Multiple filter and sort combinations. Requires extensive testing of drag-and-drop edge cases and concurrent updates."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Implement dashboard KPIs with charts, time period filters, and CSV export",
+			"complexityScore": 6,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Break down into: (1) KPI card components for 9 different metrics, (2) Period filter component with date range picker, (3) Data query logic using Drizzle ORM with caching, (4) Recharts integration with RTL support, (5) CSV export functionality for each metric, (6) Real-time updates, drill-down capability, and responsive design.",
+			"reasoning": "Moderate-to-high complexity due to: (1) Multiple KPI calculations requiring complex SQL queries, (2) Recharts integration with RTL considerations, (3) Caching strategy for performance, (4) CSV generation and download, (5) Real-time updates via Supabase Realtime, (6) Responsive design for mobile/desktop. Requires careful testing of metric calculations and chart rendering in RTL mode."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Implement offline-first PWA with Service Worker, IndexedDB caching, and background sync queue",
+			"complexityScore": 9,
+			"recommendedSubtasks": 8,
+			"expansionPrompt": "Decompose into: (1) Service Worker with cache strategies and versioning, (2) IndexedDB setup with multiple stores, (3) Offline detection and UI states, (4) Background sync queue with retry logic, (5) Conflict resolution with server timestamp wins, (6) Manifest.json and PWA configuration, (7) Install prompt UX, (8) Sync orchestration and testing with DevTools.",
+			"reasoning": "Very high complexity due to: (1) Service Worker implementation with multiple cache strategies, (2) IndexedDB for local storage with blob handling, (3) Background sync with exponential backoff retry logic, (4) Conflict resolution between local and server data, (5) Offline/online state management, (6) PWA manifest and install prompts, (7) Complex testing scenarios (offline mode, sync timing, conflicts). This is one of the most technically challenging tasks requiring deep understanding of browser APIs."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Implement Mixpanel analytics integration, audit logging, and feature flags system",
+			"complexityScore": 6,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Break down into: (1) Mixpanel initialization and event tracking setup, (2) Event tracking implementation for 8+ key events, (3) Task audit logging with before/after snapshots, (4) Audit feed UI component for admin, (5) Feature flags system with toggle UI and caching, (6) Feature flag checks and Mixpanel dashboard setup.",
+			"reasoning": "Moderate-to-high complexity due to: (1) Mixpanel integration across multiple components, (2) Comprehensive event tracking requiring careful property selection, (3) Audit logging with before/after data capture, (4) Feature flags system with caching and TTL, (5) Admin UI for feature flag management, (6) Coordination with multiple features. Requires careful testing of event properties and audit log accuracy."
+		}
+	]
+}

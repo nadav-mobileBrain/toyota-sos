@@ -1,0 +1,469 @@
+
+# Toyota S.O.S Driver Management App — PRD (`prd.md`)
+
+> **Status**: v1.0 (Detailed)  
+> **Owner**: You (development on your org, transfer later)  
+> **Stack**: Next.js (TS) + Tailwind + shadcn/ui + Supabase (Auth, DB, Storage, Realtime) + Drizzle ORM + Mixpanel  
+> **Lang/Locale**: Hebrew-only (RTL), date format `dd/mm/yyyy` (use dayjs)  
+> **Platforms**: PWA (mobile-first for Drivers; Admins on mobile/desktop)  
+> **Brand**: Toyota S.O.S — Primary `#d60b25`, Secondary black/white
+
+---
+
+## 1) Product Overview
+
+The **Toyota S.O.S Driver Management App** streamlines daily driver assignments for a single Toyota dealership (5–10 drivers, 2–3 admins/managers, 1 viewer). It enables:
+- Real‑time task creation, assignment, and tracking
+- Driver mobile workflow with checklists, photos, and **digital signatures**
+- **Web Push** notifications (Drivers & Admins)
+- **Dashboard KPIs** and overdue monitoring
+- **Offline‑first** driver experience with background sync
+- Full **Hebrew RTL** UI and responsive design
+
+**Primary Objectives**
+- Increase on‑time task completion and reduce coordination overhead
+- Give admins visibility and control with simple drag & drop
+- Ensure accurate records (audit logs, signatures, photos)
+
+**Non‑Goals (v1)**
+- Multi‑tenant (single dealership only)
+- Native background GPS tracking (navigation links only)
+- Videos/voice notes (images only)
+
+---
+
+## 2) Personas & Roles
+
+### Personas
+- **Driver** (mobile): Sees daily tasks, navigates with Waze, fills checklists & forms, captures photos & signatures, updates status in real time, works offline if needed.
+- **Admin** (desktop/mobile): Creates and assigns tasks, monitors progress & KPIs, resolves overdue/blocked tasks, bulk assigns, exports reports.
+- **Driver Manager** (desktop/mobile): Same as Admin for now (feature‑flag ready to narrow later).
+- **Office Viewer** (desktop): Read‑only access to dashboard & tasks.
+
+### Role Matrix
+| Capability | Driver | Admin | Manager | Viewer |
+|---|---:|---:|---:|---:|
+| View assigned tasks | ✅ | ✅ | ✅ | ✅ |
+| Update own task status | ✅ | ✅ (override) | ✅ (override) | ❌ |
+| Create/update/assign tasks | ❌ | ✅ | ✅ | ❌ |
+| Drag & Drop between drivers | ❌ | ✅ | ✅ | ❌ |
+| View KPIs Dashboard | Limited (personal) | ✅ | ✅ | ✅ |
+| Export CSV / Generate PDFs | ❌ | ✅ | ✅ | ❌ |
+| Feature flags screen | ❌ | ✅ | ✅ | ❌ |
+
+> **Viewer** = “Office” role (read‑only).
+
+---
+
+## 3) Key Use Cases (User Stories)
+
+### Drivers
+1. **Morning Plan**: As a Driver, I can see all my tasks for today with priority, ETA window, and status.  
+2. **Navigate**: As a Driver, I can open the task address in **Waze** (fallback to Google Maps).  
+3. **Checklist**: Before starting, I must complete a **pre‑task checklist** (schema‑driven).  
+4. **Evidence**: I can upload multiple **photos** (damage, delivery proof) and collect **finger signature** for required tasks.  
+5. **Status**: I can set **In Progress**, **Blocked**, or **Completed**; completion enforces required forms/signature.  
+6. **Notifications**: I receive **push** for new/updated tasks and see a **bell badge**; reading clears counters across sessions.  
+7. **Offline**: If offline, I can still view cached tasks and **queue** status/form/photo/signature updates for later sync.
+
+### Admins/Managers
+1. **Create/Assign**: I can create tasks with type, details, priority, estimated times, address, and assign to 1 or more drivers (multi‑driver supported).  
+2. **Drag & Drop**: I can reassign tasks by dragging cards between drivers/columns.  
+3. **Overdue**: I can filter/sort **Overdue** tasks; overdue = now() > estimated_end and status != completed.  
+4. **Monitoring**: I see **KPIs** (today/7/30d/custom) and get push when a driver **starts** or **completes** a task.  
+5. **Bulk Ops**: I can bulk‑assign selected tasks to a driver.  
+6. **Audit**: I can see **who changed what and when** (task audit feed).  
+7. **Exports**: I can export tasks, forms, signature list, and images manifest to **CSV**; generate **PDF** documents (e.g., signed handover).
+
+### Viewer (Office)
+- **View‑only** dashboard and task board; no edit actions.
+
+---
+
+## 4) Features & Requirements
+
+### 4.1 Task Model (Types & Fields)
+**Task Types** (enum):
+- pickup_or_dropoff_car (bring/pick up a car to/from client)
+- replacement_car_delivery (deliver backup car)
+- drive_client_home
+- drive_client_to_dealership
+- licence_test (take car to license test)
+- rescue_stuck_car
+- other
+
+**Core Fields**
+- Title, Type, Priority (low/medium/high), Status (pending/in_progress/blocked/completed/overdue)
+- Estimated window (`estimated_start`, `estimated_end`), Overdue logic based on `estimated_end`
+- Address (manual input + autocomplete), Waze deep link
+- Details (free text), Client & Vehicle references (first‑class)
+- Assignment: **lead** driver + optional **co‑assignees** (multi‑driver)
+- Checklist schema (JSON), Required forms Signature requirement (per type/flag)
+- Created/Updated by (admin/manager identity + timestamps)
+
+**Status Rules**
+- Driver can set: pending → in_progress → completed, or blocked anytime.  
+- Admin override allowed; **Last‑write‑wins**.  
+- Completion requires passing **required fields** (forms/signatures/images per schema/flag).
+
+### 4.2 Forms & Checklists
+- Schema‑driven forms (JSON) per **task type**; editable later without code.  
+- Examples:  
+  - **Pickup/Delivery**: client name, **client & car license checkboxes**, photos, **signature**.  
+  - **Damage/Accident Report**: multiple photos, location, textual description; **defect markers** (text + images).  
+- Store submissions in `task_forms` with GPS+timestamp metadata.  
+- Signatures stored to Storage + metadata record in `signatures`.
+
+### 4.3 Notifications
+- **Drivers** receive push on: Task **assigned** and **updated**.  
+- **Admins** receive push on: Driver **started** and **completed** a task, or **blocked**.  
+- One‑by‑one delivery (no digest).  
+- In‑app **Notifications Center** with bell badge (count of unread).  
+- Badge count sync across sessions/devices (mark‑as‑read updates shared).
+
+### 4.4 KPIs (Dashboard)
+- Tasks Created / Completed (by period)
+- On‑time completion rate
+- Avg assignment→start time; Avg start→complete time
+- Overdue task count (by driver/type)
+- Driver utilization (# tasks/day)
+- Cancellations/reassignments
+- SLA breaches (based on estimated_end)
+
+Time filters: **Today / Yesterday / Last 7 / Last 30 / Custom**.  
+Exportable csv for each widget.
+
+### 4.5 PWA & Offline
+- **Web Push** via browser permission (iOS/Android supported on modern versions)  
+- Service Worker: cache shell + critical APIs; background sync queue for forms/images/signatures; IndexedDB storage.  
+- Graceful UI states when offline; retry & conflict handling (server timestamp wins).
+
+### 4.6 Internationalization & RTL
+- Hebrew only, **RTL** layout across app, components, and charts.  
+- Fonts: **Heebo** or **Assistant**.  
+- Dates via **dayjs** (`dd/mm/yyyy`).  
+- Numbers and currency formatting as needed (₪).
+
+### 4.7 Accessibility
+- High‑contrast palette using Toyota red on white/black.  
+- Focus outlines, ARIA labels on interactive controls.  
+- Minimum touch targets: 44×44px.
+
+---
+
+## 5) Information Architecture & Navigation
+
+### Driver (Mobile)
+- **Bottom Nav**: Tasks (default) · Notifications · Profile
+- **Tasks Screen**
+  - Tabs: **Today** / All / Overdue
+  - Cards: priority badge, time window, address (Waze button), status pill
+  - Actions: Start → Checklist modal → In Progress → Complete (forms & signature) → Submit
+- **Task Details**
+  - Header: title, type, priority, status
+  - Sections: Details, Client, Vehicle, Address, Forms, Photos, Signature
+  - Buttons: Open in **Waze**, Upload Photo, Sign
+- **Notifications**
+  - List of unread/read; tap to open task; **Mark all read**
+
+### Admin/Manager (Desktop/Mobile)
+- **Sidebar**: Dashboard · Tasks Board · Overdue · Drivers · Clients · Vehicles · Exports · (Feature Flags)
+- **Dashboard**: KPI cards + charts (period filters)
+- **Tasks Board** (Kanban or Swimlanes by driver)
+  - Columns by **Driver** (drag card to reassign) or by **Status**
+  - Quick filters: Type, Priority, Overdue only, Manager
+- **Task Create/Edit Dialog**
+  - Fields: type, priority, estimated window, address (autocomplete), details, client, vehicle, drivers, checklist schema link
+- **Overdue Table**: sortable by driver/type/age; bulk select; quick reassignment
+- **Drivers/Clients/Vehicles** CRUD
+
+### Viewer (Office)
+- Same nav as Admin but all controls disabled/read‑only.
+
+---
+
+## 6) Data Model (summary)
+
+> Full SQL/Drizzle models & RLS are in **`schema.md`** (companion file).
+
+Core tables: `profiles`, `tasks`, `task_assignees`, `task_forms`, `signatures`, `images`, `notifications`, `clients`, `vehicles`, `feature_flags`, `task_audit_log`.
+
+**Audit**: Trigger on tasks writes to `task_audit_log` capturing before/after + actor.  
+**Overdue**: view `overdue_tasks` (status != completed && now() > estimated_end).
+
+---
+
+## 7) Realtime, Performance & Reliability
+
+- **Realtime**: Supabase Realtime on `tasks` and `notifications`.  
+- **Performance target**: *Standard real‑time responsiveness for Supabase + Vercel stack* (empirically ~<1s).  
+- **Availability**: Managed by Supabase/Vercel SLAs.  
+- **Backups**: Supabase daily snapshots + weekly manual exports of critical tables and Storage manifests.  
+- **No deletion policy** (retain indefinitely).
+
+---
+
+## 8) Security & Privacy
+
+- Supabase **RLS** on all tables; drivers limited to their tasks/notifications; admins/managers full access; viewer read‑only.
+- Signed URLs for Storage (images/signatures not public).  
+- Password min length = **4** (per product decision).  
+- Audit log is **readable** by admin/manager only.  
+- No special PII/legal overhead beyond signatures & client details (no external compliance required).
+
+---
+
+## 9) Notifications (spec)
+
+**Events & Recipients**
+
+| Event | Recipient | Channel | Payload |
+|---|---|---|---|
+| Task Assigned | Driver(s) | Web Push + In‑app | {task_id, title, priority, when} |
+| Task Updated | Driver(s) | Web Push + In‑app | {task_id, fields_changed} |
+| Task Started | Admin/Manager | Web Push + In‑app | {task_id, driver_id, ts} |
+| Task Blocked | Admin/Manager | Web Push + In‑app | {task_id, reason?, driver_id} |
+| Task Completed | Admin/Manager | Web Push + In‑app | {task_id, duration, driver_id} |
+
+**Badge Count**: `notifications.read = false` per user. Reading on any device updates DB and broadcasts to others.
+
+---
+
+## 10) Analytics (Mixpanel)
+
+**Identity**: `distinct_id = profile.id` (uuid).  
+**Super properties**: role, app_version, device_type.
+
+**Events & Properties**
+- `Task Created` — { task_id, type, priority, assigned_to, created_by }
+- `Task Assigned` — { task_id, driver_id }
+- `Task Started` — { task_id, driver_id, start_ts }
+- `Task Completed` — { task_id, driver_id, duration_ms, on_time: boolean }
+- `Task Blocked` — { task_id, driver_id, reason }
+- `Form Submitted` — { task_id, driver_id, form_type }
+- `Signature Captured` — { task_id, signed_by_role }
+- `Notification Received` — { type }
+- `Notification Opened` — { type }
+
+**Starter Board**
+- DAU/WAU (by role)
+- On‑time Completion Rate (Last 7/30)
+- Overdue by Driver (bar)
+- Task Lifecycle funnel: Assigned → Started → Completed
+
+---
+
+## 11) API (Edge Functions & routes — outline)
+
+> Most reads/writes via Supabase client & Row Level Security.  
+> Edge functions used for **push notifications** and **PDF generation** (optional).
+
+- `POST /functions/v1/notify` — internal: send push to target users for task events.
+- `POST /functions/v1/generate-pdf` — optional: compile PDF with signature & photos.
+
+Client flows:
+- Admin creates/updates task → DB write → trigger Realtime → call `notify` to driver(s)
+- Driver status change → DB write → call `notify` to admins
+
+---
+
+## 12) UI Components & Patterns (shadcn + Tailwind)
+
+**Shared**
+- `AppHeader` (brand logo, title, role, bell with badge)
+- `Card`, `Button`, `Badge`, `Tabs`, `Dialog`, `DropdownMenu`, `Input`, `Textarea`, `Select`, `Table`
+- `StatusPill` (`pending`, `in_progress`, `blocked`, `completed`, `overdue`, RTL‑aware)
+- `PriorityTag` (low/medium/high)
+- `WazeButton` (deeplink)
+- `SignaturePad` (canvas)
+- `ImageUpload` (multi, with thumbnails)
+
+**Driver Screens**
+- `DriverHome` (Today list)
+- `TaskCard`
+- `TaskDetails` (sections + actions)
+- `ChecklistModal`
+- `NotificationsList`
+
+**Admin Screens**
+- `DashboardKPIs`
+- `TasksBoard` (with DnD)
+- `TaskDialog` (Create/Edit)
+- `OverdueTable`
+- `DriversList`, `ClientsList`, `VehiclesList`
+- `ExportsView`
+- `(FeatureFlagsView)` hidden by default
+
+**Design**: Toyota red (`#d60b25`) as primary; neutral grays; large hit areas; RTL layout classes.
+
+---
+
+## 13) PWA & Push Setup
+
+- Register **Service Worker** with caching strategies (app shell + API fallback).  
+- Web Push keys (VAPID) stored in server config (Supabase Edge).  
+- Permission prompt UX (explain value, settings link).  
+- Handle push `click_action` to deep link to task.
+
+---
+
+## 14) Offline Strategy
+
+- Cache: assigned tasks, forms schemas, notifications list, images (until uploaded).  
+- Queue: status updates, form submissions, signature uploads, image uploads.  
+- Conflict: server **last‑write‑wins** (timestamp); show “updated by X at hh:mm”.  
+- Visual toasts: “Saved offline, will sync when connected.”
+
+---
+
+## 15) Testing & Quality
+
+### 15.1 Unit & Integration (Jest)
+- **Every** component/module has a colocated test file (`*.test.ts[x]`).  
+- Mock Supabase client for data flows; test RLS via service role only in integration.  
+- Example (Driver can’t update other driver task): see `schema.md` (optional seed + test idea).
+
+### 15.2 E2E (Optional later)
+- Playwright/Cypress not required in v1; can be added later.
+
+### 15.3 Lint & Formatting
+- ESLint: enforce **≤300 lines** per `.tsx`.  
+```jsonc
+// .eslintrc.cjs (excerpt)
+{
+  "rules": {
+    "max-lines": ["error", { "max": 300, "skipBlankLines": true, "skipComments": true }]
+  }
+}
+```
+- Prettier: defaults.
+
+### 15.4 CI Gates
+- On PR: `bun run lint && bun run test` must pass for merge.  
+- Preview deployments on Vercel for every PR.  
+- Branch protection: require green checks.
+
+---
+
+## 16) Environments & Release
+
+- **Vercel**:  
+  - `main` → Production  
+  - `staging` → Staging  
+- **Supabase**: staging & prod projects (separate keys, DBs, Storage)  
+- **Mixpanel**: separate tokens for staging/prod  
+- Transfer plan: export schema & migrate storage when moving to client orgs.
+
+---
+
+## 17) Acceptance Criteria (v1)
+
+### Driver
+- Sees **Today** tasks with priority, window, and status.  
+- Can open **Waze** for task address.  
+- Must complete **checklist** and **signature** (if required) before completing.  
+- Can upload **multiple images** to a task.  
+- Receives **push** on new/updated tasks and sees **badge count**.  
+- Works **offline**, syncing when online.  
+- Updates reflect to Admins in near‑real time.
+
+### Admin/Manager
+- Can **create/update** tasks with all fields and assign to drivers (multi‑driver).  
+- Can **drag & drop** tasks between drivers.  
+- Can monitor **Overdue** list and change priorities.  
+- Receives **push** on **started/completed/blocked** events.  
+- Can view dashboard **KPIs** with time ranges.  
+- Can export **CSV** and generate **PDF** documents.  
+- Sees **audit** trail per task.
+
+### System
+- RTL Hebrew UI, brand colors.  
+- Tests & lint pass; CI deploys staging & prod.  
+- Feature flags exist (all **ON** by default).  
+- Backups enabled; no deletion policy.  
+
+---
+
+## 18) Risks & Mitigations
+
+- **Web Push opt‑in** may be denied → In‑app notifications still show; educate users with contextual prompt.
+- **Offline conflicts** → Server timestamp wins; show “updated by X at …” ribbon.
+- **Large image uploads** → Enforce client resizing/compression before upload.
+- **RLS complexity** → Keep policies narrow; validate with integration tests.
+
+---
+
+## 19) Future Roadmap (post‑v1)
+
+- Multi‑branch support (tenant id)  
+- Native wrapper (Capacitor/Expo) for richer background features  
+- Calendar view with drag & drop timeline  
+- OCR for license/mileage; QR/Barcode VIN scan  
+- AI recommendations for assignment load balancing
+
+---
+
+## 20) References
+
+- Companion file: **`schema.md`** (DB, RLS, triggers, Drizzle, ERD)  
+- Brand asset: `toyota.jpg` (used in header), primary color `#d60b25`
+
+---
+
+## 21) Appendix A — Example Schemas
+
+### A1. Example Checklist (Pickup/Delivery)
+```json
+{
+  "type": "object",
+  "title": "בדיקת משימה לפני יציאה",
+  "required": ["car_license", "client_license"],
+  "properties": {
+    "car_license": { "type": "boolean", "title": "לקחת רישיון רכב" },
+    "client_license": { "type": "boolean", "title": "לקחת רישיון לקוח" },
+    "notes": { "type": "string", "title": "הערות" }
+  }
+}
+```
+
+### A2. Notification Payload (Task Assigned → Driver)
+```json
+{
+  "type": "task_assigned",
+  "task_id": "uuid",
+  "title": "מסירת רכב ללקוח",
+  "priority": "high",
+  "estimated_end": "2025-11-09T10:30:00Z"
+}
+```
+
+### A3. PDF Contents (Delivery Note)
+- Header (logo, dealership info)  
+- Task details (type, client, vehicle, address, time)  
+- Photos thumbnails grid  
+- Signature block (client/driver name, timestamp, GPS)  
+- Footer (disclaimer text)
+
+---
+
+## 22) Appendix B — Folder Structure (suggested)
+
+```
+src/
+  app/ (Next.js routes)
+  components/
+    common/
+    driver/
+    admin/
+  hooks/
+  lib/ (supabase, drizzle, dayjs, mixpanel)
+  styles/
+  tests/
+public/
+  icons/
+  images/
+```
+
+---
+
+**End of `prd.md`**
