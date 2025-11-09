@@ -1,24 +1,24 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
-html {
-  direction: rtl;
-  lang: he;
-}
+  html {
+    direction: rtl;
+    lang: he;
+  }
 
-body {
-  font-family: var(--font-geist-sans);
-  background-color: white;
-  color: #000000;
-}
+  body {
+    font-family: var(--font-geist-sans);
+    background-color: white;
+    color: #000000;
+  }
 
-a {
-  color: #d60b25;
+  a {
+    color: #d60b25;
+  }
 }

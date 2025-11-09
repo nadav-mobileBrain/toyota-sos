@@ -13,7 +13,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-toyota-primary rounded-lg" />
-            <span className="text-xl font-bold text-gray-900">Toyota S.O.S</span>
+            <span className="text-xl font-bold text-gray-900">
+              Toyota S.O.S
+            </span>
           </div>
           <Button
             variant="outline"
@@ -33,16 +35,18 @@ export default function Home() {
             <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 leading-tight">
               Field Service Excellence
             </h1>
-            <h2 className="text-4xl font-bold text-toyota-primary">Toyota S.O.S</h2>
-            <p className="text-2xl text-gray-600 mt-4">מערכת ניהול משימות שדה</p>
+            <h2 className="text-4xl font-bold text-toyota-primary">
+              Toyota S.O.S
+            </h2>
+            <p className="text-2xl text-center  mt-4">מערכת ניהול משימות שדה</p>
           </div>
 
           {/* Subtitle */}
           <div className="max-w-2xl mx-auto">
             <p className="text-lg sm:text-xl text-gray-600 leading-relaxed">
-              Streamline your field operations with real-time task management, 
-              driver coordination, and comprehensive reporting—all designed 
-              for Toyota's fast-paced environment.
+              Streamline your field operations with real-time task management,
+              driver coordination, and comprehensive reporting—all designed for
+              Toyota fast-paced environment.
             </p>
           </div>
 
@@ -61,7 +65,9 @@ export default function Home() {
               className="px-8 py-6 text-lg font-semibold"
               onClick={() => {
                 // Scroll to features
-                document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+                document
+                  .getElementById('features')
+                  ?.scrollIntoView({ behavior: 'smooth' });
               }}
             >
               Learn More
@@ -71,7 +77,10 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="bg-white py-20 border-t border-gray-200">
+      <section
+        id="features"
+        className="bg-white py-20 border-t border-gray-200"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 text-center mb-16">
             Key Features
@@ -83,9 +92,12 @@ export default function Home() {
               <div className="w-12 h-12 bg-toyota-primary rounded-lg flex items-center justify-center mb-4">
                 <span className="text-white text-xl">📋</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Task Management</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Task Management
+              </h3>
               <p className="text-gray-600">
-                Assign, track, and complete field tasks with real-time updates and status monitoring.
+                Assign, track, and complete field tasks with real-time updates
+                and status monitoring.
               </p>
             </div>
 
@@ -94,9 +106,12 @@ export default function Home() {
               <div className="w-12 h-12 bg-toyota-primary rounded-lg flex items-center justify-center mb-4">
                 <span className="text-white text-xl">🚗</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Driver Coordination</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Driver Coordination
+              </h3>
               <p className="text-gray-600">
-                Efficiently manage drivers, schedules, and route optimization for maximum productivity.
+                Efficiently manage drivers, schedules, and route optimization
+                for maximum productivity.
               </p>
             </div>
 
@@ -105,9 +120,12 @@ export default function Home() {
               <div className="w-12 h-12 bg-toyota-primary rounded-lg flex items-center justify-center mb-4">
                 <span className="text-white text-xl">📊</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Analytics & Reports</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Analytics & Reports
+              </h3>
               <p className="text-gray-600">
-                Get insights into performance metrics, completion rates, and team productivity.
+                Get insights into performance metrics, completion rates, and
+                team productivity.
               </p>
             </div>
           </div>

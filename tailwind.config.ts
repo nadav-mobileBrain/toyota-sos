@@ -9,11 +9,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        toyota: {
-          primary: '#d60b25',
-          black: '#000000',
-          white: '#ffffff',
-        },
+        'toyota-primary': '#d60b25',
+        'toyota-secondary-black': '#000000',
+        'toyota-secondary-white': '#ffffff',
       },
     },
   },
