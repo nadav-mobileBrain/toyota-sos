@@ -156,7 +156,7 @@
         "testStrategy": "Run Drizzle migrations successfully. Verify all tables created with correct columns and types. Test RLS policies: driver cannot access other driver's tasks, viewer cannot update data, admin can override. Test audit trigger captures changes. Validate overdue_tasks view returns correct records. Run seed script and verify initial data.",
         "priority": "high",
         "dependencies": ["2"],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -164,7 +164,7 @@
             "description": "Create SQL DDL for profiles, tasks, task_assignees, task_forms, signatures, images, notifications, clients, vehicles, feature_flags, and task_audit_log.",
             "dependencies": [],
             "details": "Model all columns and types (timestamptz, jsonb, text, enums), PK/FKs, unique indexes and defaults. Add relations: tasks\u2192clients/vehicles/profiles; task_assignees\u2192tasks/profiles; task_forms/signatures/images\u2192tasks/profiles; notifications\u2192profiles; task_audit_log\u2192tasks/profiles. Use enum types listed for role, status, priority, and task_type from the PRD (pickup_or_dropoff_car, replacement_car_delivery, drive_client_home, drive_client_to_dealership, licence_test, rescue_stuck_car, other). Ensure updated_at is maintained (trigger or app-level).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Apply SQL in Supabase; verify tables, FKs and indexes via Dashboard > Table editor; run EXPLAIN on indexed queries.",
             "parentId": "undefined"
           },
@@ -174,7 +174,7 @@
             "description": "Enable RLS and add table-specific policies that enforce access rules by role and assignment.",
             "dependencies": [1],
             "details": "Enable RLS per table. Define policies using JWT claims (e.g., auth.uid and role) or session variables. Drivers: can select tasks assigned to them (via task_assignees), read their own notifications, update only their own task status and their own task_forms/signatures/images. Admins/Managers: full read/write; can override task status; audit log readable. Viewers: read-only across all tables except audit log (denied). Add USING and WITH CHECK clauses and explicit policy names.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Act as each role (via session/JWT claims) and verify allowed selects/updates succeed and forbidden actions fail.",
             "parentId": "undefined"
           },
@@ -184,7 +184,7 @@
             "description": "Add a PL/pgSQL trigger function and triggers to write before/after snapshots to task_audit_log on INSERT/UPDATE of tasks.",
             "dependencies": [1],
             "details": "Implement log_task_changes() capturing TG_OP, actor_id from JWT/session, and before/after jsonb snapshots from OLD/NEW. Insert into task_audit_log with action, task_id, actor_id, changed_at=now(), and minimal payload. Attach AFTER INSERT OR UPDATE trigger on tasks. Ensure function is SECURITY DEFINER if needed and respects RLS on audit table appropriately.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Insert and update a task; verify corresponding audit rows contain correct before/after data and actor_id.",
             "parentId": "undefined"
           },
@@ -194,7 +194,7 @@
             "description": "Add a view that returns tasks where status is not 'completed' and now() is past estimated_end.",
             "dependencies": [1],
             "details": "Define CREATE VIEW overdue_tasks AS SELECT id, title, priority, estimated_end, client_id, vehicle_id, status FROM tasks WHERE status <> 'completed' AND now() > estimated_end. Optionally index underlying columns on tasks (status, estimated_end) to support fast queries. Expose view to roles via RLS-inherited rules or dedicated policies if necessary.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Insert sample tasks with past estimated_end and verify the view returns only overdue, non-completed tasks.",
             "parentId": "undefined"
           },
@@ -204,7 +204,7 @@
             "description": "Create SQL migration files in supabase/migrations for all objects and apply them in order.",
             "dependencies": [1, 2, 3, 4],
             "details": "Create ordered SQL files: 01_tables.sql \u2192 02_rls.sql \u2192 03_triggers.sql \u2192 04_views.sql \u2192 05_seed.sql. Apply using Supabase SQL editor/CLI. Ensure idempotency and document rollback notes.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Run migrations on a fresh project; confirm all objects exist and re-apply runs cleanly on empty DB.",
             "parentId": "undefined"
           },
@@ -214,7 +214,7 @@
             "description": "Seed initial data using SQL or a Supabase Edge Function to insert profiles, clients, vehicles, tasks, assignments, notifications, and feature flags.",
             "dependencies": [5],
             "details": "Create SQL seed (or Edge Function) that runs with service role to bypass RLS safely. Seed roles (driver, admin, manager, viewer) in profiles, several clients/vehicles, tasks with realistic timestamps and checklist_schema, task_assignees mapping drivers to tasks, basic notifications, and feature_flags. Ensure deterministic IDs and clean-up/reset behavior for repeatability.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Run seed, then query counts and perform role-scoped reads to validate RLS behavior with the seeded assignments and flags.",
             "parentId": "undefined"
           }
@@ -801,9 +801,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-09T14:10:57.202Z",
+      "lastModified": "2025-11-09T17:30:00.000Z",
       "taskCount": 10,
-      "completedCount": 1,
+      "completedCount": 3,
       "tags": ["master"]
     }
   }
