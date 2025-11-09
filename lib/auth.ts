@@ -3,28 +3,50 @@ import type { SupabaseClient, User, Session } from '@supabase/supabase-js';
 
 // Determine which environment to use (default to PROD)
 const ENV = process.env.NEXT_PUBLIC_ENVIRONMENT || 'PROD';
-const SUPABASE_URL =
-  process.env[`NEXT_PUBLIC_SUPABASE_URL_${ENV.toUpperCase()}`];
-const SUPABASE_ANON_KEY =
-  process.env[`NEXT_PUBLIC_SUPABASE_ANON_KEY_${ENV.toUpperCase()}`];
-const SUPABASE_SERVICE_ROLE_KEY =
-  process.env[`SUPABASE_SERVICE_ROLE_KEY_${ENV.toUpperCase()}`];
 
-// Validate environment variables
-if (!SUPABASE_URL) {
-  throw new Error(
-    `Missing Supabase URL. Please set NEXT_PUBLIC_SUPABASE_URL${
-      ENV !== 'prod' ? `_${ENV.toUpperCase()}` : ''
-    }`
-  );
-}
+// Get environment variables (these are optional at build time, required at runtime)
+const getSupabaseUrl = (): string => {
+  const url =
+    process.env[`NEXT_PUBLIC_SUPABASE_URL_${ENV.toUpperCase()}`] ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-if (!SUPABASE_ANON_KEY) {
-  throw new Error(
-    `Missing Supabase Anon Key. Please set NEXT_PUBLIC_SUPABASE_ANON_KEY${
-      ENV !== 'prod' ? `_${ENV.toUpperCase()}` : ''
-    }`
+  if (!url) {
+    throw new Error(
+      `Missing Supabase URL. Please set NEXT_PUBLIC_SUPABASE_URL_${ENV.toUpperCase()} in .env.local`
+    );
+  }
+  return url;
+};
+
+const getSupabaseAnonKey = (): string => {
+  const key =
+    process.env[`NEXT_PUBLIC_SUPABASE_ANON_KEY_${ENV.toUpperCase()}`] ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!key) {
+    throw new Error(
+      `Missing Supabase Anon Key. Please set NEXT_PUBLIC_SUPABASE_ANON_KEY_${ENV.toUpperCase()} in .env.local`
+    );
+  }
+  return key;
+};
+
+const getServiceRoleKey = (): string | undefined => {
+  return (
+    process.env[`SUPABASE_SERVICE_ROLE_KEY_${ENV.toUpperCase()}`] ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY
   );
+};
+
+let SUPABASE_URL: string;
+let SUPABASE_ANON_KEY: string;
+let SUPABASE_SERVICE_ROLE_KEY: string | undefined;
+
+// Only load if not during build
+if (typeof window !== 'undefined' || process.env.NODE_ENV === 'production') {
+  SUPABASE_URL = getSupabaseUrl();
+  SUPABASE_ANON_KEY = getSupabaseAnonKey();
+  SUPABASE_SERVICE_ROLE_KEY = getServiceRoleKey();
 }
 
 // Session storage key for driver sessions (localStorage)
@@ -50,7 +72,9 @@ export type AuthSession = DriverSession | AdminSession | null;
 
 // Browser client (client-side only)
 export const createBrowserClient = (): SupabaseClient => {
-  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const url = SUPABASE_URL || getSupabaseUrl();
+  const key = SUPABASE_ANON_KEY || getSupabaseAnonKey();
+  return createClient(url, key, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -61,7 +85,9 @@ export const createBrowserClient = (): SupabaseClient => {
 
 // Server client (server-side only)
 export const createServerClient = (): SupabaseClient => {
-  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const url = SUPABASE_URL || getSupabaseUrl();
+  const key = SUPABASE_ANON_KEY || getSupabaseAnonKey();
+  return createClient(url, key, {
     auth: {
       persistSession: false,
     },
@@ -70,11 +96,13 @@ export const createServerClient = (): SupabaseClient => {
 
 // Service role client (admin operations, server-only)
 export const createServiceRoleClient = (): SupabaseClient => {
-  if (!SUPABASE_SERVICE_ROLE_KEY) {
+  const serviceKey = SUPABASE_SERVICE_ROLE_KEY || getServiceRoleKey();
+  if (!serviceKey) {
     throw new Error('Service role key is required for admin operations');
   }
 
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  const url = SUPABASE_URL || getSupabaseUrl();
+  return createClient(url, serviceKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
