@@ -584,7 +584,7 @@
                 "description": "Ensure keyboard operability, aria-live for status, focus-visible rings, 44px tap targets, and RTL layout.",
                 "dependencies": [4, 6],
                 "details": "Add aria-live for upload progress/errors; ensure labels/roles; verify RTL-friendly layout for thumbnails and controls.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "A11y assertions (aria-live, aria-invalid), RTL snapshot, keyboard navigation for remove buttons."
               }
             ],
