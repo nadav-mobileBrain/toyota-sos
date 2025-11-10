@@ -398,7 +398,7 @@
                 "description": "Block submission until all required fields are filled; show inline errors.",
                 "dependencies": [2],
                 "details": "On submit, validate required fields; show per-field error text and auto-scroll to first error; disable Save until valid.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Leave a required field empty, click Save, expect error and no submission; fill it, expect submission callback."
               },
               {

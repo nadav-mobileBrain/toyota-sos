@@ -44,6 +44,8 @@ export function ChecklistModal(props: ChecklistModalProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const previouslyFocusedEl = useRef<HTMLElement | null>(null);
   const [values, setValues] = useState<Record<string, unknown>>({});
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const [attempted, setAttempted] = useState(false);
 
   const focusableSelectors = useMemo(
     () => [
@@ -74,6 +76,8 @@ export function ChecklistModal(props: ChecklistModalProps) {
         else initial[f.id] = initial[f.id] ?? '';
       }
       setValues(initial);
+      setErrors({});
+      setAttempted(false);
 
       previouslyFocusedEl.current = document.activeElement as HTMLElement;
       // Move focus to first focusable in the panel after paint
@@ -124,9 +128,46 @@ export function ChecklistModal(props: ChecklistModalProps) {
 
   const handleChange = (id: string, next: unknown) => {
     setValues((v) => ({ ...v, [id]: next }));
+    if (attempted) {
+      // Live-validate the edited field after attempt
+      setErrors((prev) => {
+        const nextErrors = { ...prev };
+        nextErrors[id] = computeFieldError(id, next);
+        return nextErrors;
+      });
+    }
+  };
+
+  const computeFieldError = (id: string, val: unknown): string | undefined => {
+    const field = schema.find((f) => f.id === id);
+    if (!field || !field.required) return undefined;
+    if (field.type === 'boolean') {
+      return val === true ? undefined : 'שדה חובה';
+    }
+    // string/textarea
+    const s = String(val ?? '').trim();
+    return s.length > 0 ? undefined : 'שדה חובה';
+  };
+
+  const validateAll = (): Record<string, string | undefined> => {
+    const e: Record<string, string | undefined> = {};
+    for (const f of schema) {
+      e[f.id] = computeFieldError(f.id, values[f.id]);
+    }
+    return e;
   };
 
   const handleSubmit = () => {
+    setAttempted(true);
+    const e = validateAll();
+    setErrors(e);
+    const firstInvalid = schema.find((f) => e[f.id]);
+    if (firstInvalid) {
+      // Focus first invalid field
+      const el = panelRef.current?.querySelector<HTMLElement>(`#field-${firstInvalid.id}`);
+      el?.focus();
+      return;
+    }
     onSubmit(values);
   };
 
@@ -178,13 +219,16 @@ export function ChecklistModal(props: ChecklistModalProps) {
                 const descId = field.description ? `${baseId}-desc` : undefined;
                 if (field.type === 'boolean') {
                   const val = Boolean(values[field.id]);
+                  const err = errors[field.id];
+                  const errId = err ? `${baseId}-error` : undefined;
                   return (
                     <div key={field.id} className="flex items-start gap-3">
                       <input
                         id={baseId}
                         type="checkbox"
                         className="mt-1 h-4 w-4"
-                        aria-describedby={descId}
+                        aria-describedby={[descId, errId].filter(Boolean).join(' ') || undefined}
+                        aria-invalid={err ? 'true' : undefined}
                         checked={val}
                         onChange={(e) => handleChange(field.id, e.target.checked)}
                       />
@@ -197,12 +241,19 @@ export function ChecklistModal(props: ChecklistModalProps) {
                             {field.description}
                           </p>
                         ) : null}
+                        {err ? (
+                          <p id={errId} className="text-sm text-red-600">
+                            {err}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   );
                 }
                 if (field.type === 'textarea') {
                   const val = String(values[field.id] ?? '');
+                  const err = errors[field.id];
+                  const errId = err ? `${baseId}-error` : undefined;
                   return (
                     <div key={field.id} className="space-y-1">
                       <label htmlFor={baseId} className="font-medium">
@@ -211,7 +262,8 @@ export function ChecklistModal(props: ChecklistModalProps) {
                       <textarea
                         id={baseId}
                         className="w-full rounded-md border border-gray-300 p-2 text-sm"
-                        aria-describedby={descId}
+                        aria-describedby={[descId, errId].filter(Boolean).join(' ') || undefined}
+                        aria-invalid={err ? 'true' : undefined}
                         value={val}
                         onChange={(e) => handleChange(field.id, e.target.value)}
                         rows={4}
@@ -221,11 +273,18 @@ export function ChecklistModal(props: ChecklistModalProps) {
                           {field.description}
                         </p>
                       ) : null}
+                      {err ? (
+                        <p id={errId} className="text-sm text-red-600">
+                          {err}
+                        </p>
+                      ) : null}
                     </div>
                   );
                 }
                 // string
                 const val = String(values[field.id] ?? '');
+                const err = errors[field.id];
+                const errId = err ? `${baseId}-error` : undefined;
                 return (
                   <div key={field.id} className="space-y-1">
                     <label htmlFor={baseId} className="font-medium">
@@ -235,13 +294,19 @@ export function ChecklistModal(props: ChecklistModalProps) {
                       id={baseId}
                       type="text"
                       className="w-full rounded-md border border-gray-300 p-2 text-sm"
-                      aria-describedby={descId}
+                      aria-describedby={[descId, errId].filter(Boolean).join(' ') || undefined}
+                      aria-invalid={err ? 'true' : undefined}
                       value={val}
                       onChange={(e) => handleChange(field.id, e.target.value)}
                     />
                     {field.description ? (
                       <p id={descId} className="text-sm text-gray-600">
                         {field.description}
+                      </p>
+                    ) : null}
+                    {err ? (
+                      <p id={errId} className="text-sm text-red-600">
+                        {err}
                       </p>
                     ) : null}
                   </div>
