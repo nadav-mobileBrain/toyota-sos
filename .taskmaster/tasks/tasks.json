@@ -359,7 +359,7 @@
                 "description": "Ensure headings order, aria attributes, `dir=rtl`, and focus states are correct.",
                 "dependencies": [2, 3],
                 "details": "Set `role=region` with `aria-labelledby` for collapsible content; ensure keyboard accessibility and visible focus.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "RTL render and axe-lite checks; verify keyboard toggling cycles correctly."
               }
             ],
