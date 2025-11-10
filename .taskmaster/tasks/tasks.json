@@ -278,8 +278,8 @@
             "title": "Add pull-to-refresh and Supabase real-time subscriptions for task updates",
             "description": "Enable manual refresh via pull gesture and live updates via Supabase channel subscriptions.",
             "dependencies": [3, 4],
-            "details": "Implement pull-to-refresh gesture on mobile (overscroll container + threshold) that triggers a re-fetch. Create Supabase client channel subscribing to `tasks` changes (insert/update/delete) for the signed-in driver, merging updates immutably into current lists while respecting active filter/tab. Handle reconnect/backoff and deduplicate events.",
-            "status": "pending",
+            "details": "Pull-to-refresh added via pointer handlers with a threshold and top indicator; triggers a reset+refetch. Supabase Realtime channel subscribes to public.tasks and task_assignees (* events) and debounces a refresh; cleanup on unmount. Pagination state resets on tab change and realtime refresh to prevent duplicates.",
+            "status": "done",
             "testStrategy": "Stub Supabase events and assert list updates (new, changed, removed). Simulate pull gesture to confirm refresh and no duplicate items.",
             "parentId": "undefined"
           },
