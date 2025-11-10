@@ -48,6 +48,14 @@ export function DriverHome({ tasks }: { tasks: DriverTask[] }) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
+  function mergeById(prev: DriverTask[], next: DriverTask[]): DriverTask[] {
+    if (!prev.length) return next;
+    const map = new Map<string, DriverTask>();
+    for (const t of prev) map.set(t.id, t);
+    for (const t of next) if (!map.has(t.id)) map.set(t.id, t);
+    return Array.from(map.values());
+  }
+
   async function fetchPage(reset: boolean) {
     const supa = createBrowserClient();
     const params: any = {
@@ -76,11 +84,7 @@ export function DriverHome({ tasks }: { tasks: DriverTask[] }) {
       clientName: null,
       vehicle: null,
     }));
-    if (reset) {
-      setRemoteTasks(mapped);
-    } else {
-      setRemoteTasks((prev) => [...prev, ...mapped]);
-    }
+    setRemoteTasks((prev) => (reset ? mapped : mergeById(prev, mapped)));
     setHasMore((mapped?.length ?? 0) === 10);
     const last = mapped?.[mapped.length - 1];
     if (last) {
