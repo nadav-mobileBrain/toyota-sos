@@ -4,6 +4,7 @@ import dayjs from '@/lib/dayjs';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { TaskCard, TaskCardProps } from '@/components/driver/TaskCard';
+import { createBrowserClient } from '@/lib/auth';
 
 export type DriverTask = TaskCardProps;
 
@@ -40,28 +41,62 @@ export function DriverHome({ tasks }: { tasks: DriverTask[] }) {
     setTabState(next);
   };
 
-  const filtered = useMemo(() => {
-    if (tabState === 'all') return tasks;
-    if (tabState === 'overdue') return tasks.filter((t) => isOverdue(t));
-    // today
-    return tasks.filter((t) => intersectsToday(t.estimatedStart, t.estimatedEnd));
-  }, [tabState, tasks]);
-
-  // Pagination (client-side slice for now; can be replaced with server paging)
-  const PAGE_SIZE = 10;
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  // Remote paginated tasks via RPC
+  const [remoteTasks, setRemoteTasks] = useState<DriverTask[]>([]);
+  const [cursor, setCursor] = useState<{ updated_at: string; id: string } | null>(null);
+  const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const hasMore = filtered.length > visibleCount;
-  const visibleTasks = filtered.slice(0, visibleCount);
+  async function fetchPage(reset: boolean) {
+    const supa = createBrowserClient();
+    const params: any = {
+      p_tab: tabState,
+      p_limit: 10,
+    };
+    if (!reset && cursor) {
+      params.p_cursor_updated = cursor.updated_at;
+      params.p_cursor_id = cursor.id;
+    }
+    const { data, error } = await supa.rpc('get_driver_tasks', params);
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.error('get_driver_tasks error', error);
+      return;
+    }
+    const mapped: DriverTask[] = (data ?? []).map((t: any) => ({
+      id: t.id,
+      title: t.title,
+      type: t.type,
+      priority: t.priority,
+      status: t.status,
+      estimatedStart: t.estimated_start,
+      estimatedEnd: t.estimated_end,
+      address: t.address,
+      clientName: null,
+      vehicle: null,
+    }));
+    if (reset) {
+      setRemoteTasks(mapped);
+    } else {
+      setRemoteTasks((prev) => [...prev, ...mapped]);
+    }
+    setHasMore((mapped?.length ?? 0) === 10);
+    const last = mapped?.[mapped.length - 1];
+    if (last) {
+      setCursor({ updated_at: (data[data.length - 1] as any).updated_at, id: last.id });
+    }
+  }
 
-  // Reset pagination on tab or tasks change
+  // Initial and tab changes
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [tabState, tasks]);
+    setCursor(null);
+    setHasMore(true);
+    fetchPage(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabState]);
 
-  // IntersectionObserver to auto-load next page
+  // IntersectionObserver to auto-load next page (server pagination)
   useEffect(() => {
     if (!hasMore) return;
     const el = sentinelRef.current;
@@ -71,11 +106,7 @@ export function DriverHome({ tasks }: { tasks: DriverTask[] }) {
         for (const entry of entries) {
           if (entry.isIntersecting && !isLoadingMore) {
             setIsLoadingMore(true);
-            // Simulate async load
-            setTimeout(() => {
-              setVisibleCount((c) => c + PAGE_SIZE);
-              setIsLoadingMore(false);
-            }, 0);
+            fetchPage(false).finally(() => setIsLoadingMore(false));
           }
         }
       },
@@ -114,10 +145,10 @@ export function DriverHome({ tasks }: { tasks: DriverTask[] }) {
 
       {/* List */}
       <div className="space-y-3">
-        {visibleTasks.map((task) => (
+        {remoteTasks.map((task) => (
           <TaskCard key={task.id} {...task} />
         ))}
-        {visibleTasks.length === 0 ? (
+        {remoteTasks.length === 0 ? (
           <div className="text-center text-sm text-gray-500 py-10">אין משימות להצגה</div>
         ) : null}
 
@@ -128,7 +159,7 @@ export function DriverHome({ tasks }: { tasks: DriverTask[] }) {
               type="button"
               className="rounded-md bg-gray-100 px-4 py-2 text-sm hover:bg-gray-200"
               disabled={isLoadingMore}
-              onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+              onClick={() => fetchPage(false)}
             >
               {isLoadingMore ? 'טוען…' : 'טען עוד'}
             </button>
