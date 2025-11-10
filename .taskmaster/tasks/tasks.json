@@ -575,7 +575,7 @@
                 "description": "Validate size/type; show inline errors; retry failed uploads with limited backoff.",
                 "dependencies": [5],
                 "details": "Accept only image/*; show per-file errors; implement 3 retry attempts with small delay; allow user to retry manually.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Test oversized/unsupported files; simulate transient upload failure and verify retries."
               },
               {

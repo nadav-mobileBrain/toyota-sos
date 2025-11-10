@@ -7,6 +7,9 @@ export type ImageUploadFile = {
   file: File;
   id: string; // stable id for rendering (e.g., `${name}-${size}-${lastModified}`)
   previewUrl?: string;
+  status?: 'ready' | 'uploading' | 'uploaded' | 'error';
+  error?: string | null;
+  retryCount?: number;
 };
 
 export type ImageUploadProps = {
@@ -79,13 +82,16 @@ export function ImageUpload(props: ImageUploadProps) {
     if (files.length === 0) return;
     const processed = await Promise.all(
       files.map(async (f) => {
-        if (!fileAccepted(f)) return null;
+        if (!fileAccepted(f)) {
+          const id = `${f.name}-${f.size}-${f.lastModified}`;
+          return { file: f, id, status: 'error', error: 'סוג קובץ לא נתמך', retryCount: 0 } as ImageUploadFile;
+        }
         let out = f;
         if (maxSizeBytes && f.size > maxSizeBytes) {
           out = await compressIfNeeded(f, maxSizeBytes);
           if (out.size > maxSizeBytes) {
-            // if still too big, drop for now (later subtasks will surface error)
-            return null;
+            const id = `${f.name}-${f.size}-${f.lastModified}`;
+            return { file: f, id, status: 'error', error: 'קובץ גדול מדי', retryCount: 0 } as ImageUploadFile;
           }
         }
         const id = `${out.name}-${out.size}-${out.lastModified}`;
@@ -94,7 +100,7 @@ export function ImageUpload(props: ImageUploadProps) {
           previewUrl = URL.createObjectURL(out);
           if (previewUrl) createdUrlsRef.current.add(previewUrl);
         }
-        return { file: out, id, previewUrl } as ImageUploadFile;
+        return { file: out, id, previewUrl, status: 'ready', error: null, retryCount: 0 } as ImageUploadFile;
       })
     );
     const next = processed.filter(Boolean) as ImageUploadFile[];
@@ -132,16 +138,22 @@ export function ImageUpload(props: ImageUploadProps) {
       const folder = `${props.taskId}/${yyyymmdd(new Date())}`;
       const metas: UploadedImageMeta[] = [];
       for (const it of items) {
+        if (it.status === 'uploaded') continue;
+        // attempt retries for each item
+        setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, status: 'uploading', error: null } : p)));
         const uuid = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
         const fileName = `${uuid}-${sanitizeName(it.file.name)}`;
         const path = `${folder}/${fileName}`;
-        const { error: upErr } = await supa.storage.from(props.bucket).upload(path, it.file, {
-          contentType: it.file.type || 'application/octet-stream',
-          upsert: true,
-        });
-        if (upErr) {
+        const uploaded = await uploadWithRetries(supa, props.bucket, path, it.file, 3);
+        if (!uploaded) {
+          setItems((prev) =>
+            prev.map((p) =>
+              p.id === it.id ? { ...p, status: 'error', error: 'שגיאת העלאה, נסה שוב', retryCount: (p.retryCount ?? 0) + 1 } : p
+            )
+          );
           continue;
         }
+        setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, status: 'uploaded', error: null } : p)));
         let signedUrl: string | null | undefined = undefined;
         const expiresIn = props.signedUrlExpiresInSeconds ?? 3600;
         const { data: signed, error: signErr } = await supa.storage
@@ -165,6 +177,44 @@ export function ImageUpload(props: ImageUploadProps) {
       setUploading(false);
     }
   };
+  const retrySingle = async (it: ImageUploadFile) => {
+    if (!props.bucket || !props.taskId) return;
+    const supa = createBrowserClient();
+    const folder = `${props.taskId}/${yyyymmdd(new Date())}`;
+    setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, status: 'uploading', error: null } : p)));
+    const uuid = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
+    const fileName = `${uuid}-${sanitizeName(it.file.name)}`;
+    const path = `${folder}/${fileName}`;
+    const uploaded = await uploadWithRetries(supa, props.bucket, path, it.file, 3);
+    if (!uploaded) {
+      setItems((prev) =>
+        prev.map((p) =>
+          p.id === it.id ? { ...p, status: 'error', error: 'שגיאת העלאה, נסה שוב', retryCount: (p.retryCount ?? 0) + 1 } : p
+        )
+      );
+      return;
+    }
+    setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, status: 'uploaded', error: null } : p)));
+  };
+
+  async function uploadWithRetries(
+    supa: any,
+    bucket: string,
+    path: string,
+    file: File,
+    maxAttempts: number
+  ): Promise<boolean> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const { error: upErr } = await supa.storage.from(bucket).upload(path, file, {
+        contentType: file.type || 'application/octet-stream',
+        upsert: true,
+      });
+      if (!upErr) return true;
+      // backoff: 200ms * attempt
+      await new Promise((r) => setTimeout(r, 200 * attempt));
+    }
+    return false;
+  }
 
   const onDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -241,6 +291,15 @@ export function ImageUpload(props: ImageUploadProps) {
                 <div className="h-24 w-full rounded bg-gray-100" aria-label={it.file.name} />
               )}
               <figcaption className="mt-2 text-xs text-gray-700 truncate">{it.file.name}</figcaption>
+              <div className="mt-1 text-[11px]">
+                {it.status === 'uploading' ? <span aria-live="polite">מעלה...</span> : null}
+                {it.status === 'uploaded' ? <span className="text-green-600">הועלה</span> : null}
+                {it.status === 'error' ? (
+                  <span className="text-red-600" role="alert">
+                    {it.error}
+                  </span>
+                ) : null}
+              </div>
               <button
                 type="button"
                 className="mt-2 w-full rounded-md border px-2 py-2 text-xs hover:bg-gray-50 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
@@ -261,6 +320,16 @@ export function ImageUpload(props: ImageUploadProps) {
               >
                 הסר
               </button>
+              {it.status === 'error' ? (
+                <button
+                  type="button"
+                  className="mt-1 w-full rounded-md border px-2 py-2 text-xs hover:bg-gray-50 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
+                  aria-label={`נסה שוב ${it.file.name}`}
+                  onClick={() => void retrySingle(it)}
+                >
+                  נסה שוב
+                </button>
+              ) : null}
             </figure>
           ))}
         </div>
