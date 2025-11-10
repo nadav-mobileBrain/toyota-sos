@@ -623,7 +623,7 @@
                 "description": "Add clear() to wipe canvas; maintain stroke stack for undo() with last stroke removal.",
                 "dependencies": [2],
                 "details": "Expose imperative methods via ref; update UI state when canvas becomes empty.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Draw then clear; ensure canvas is empty; draw multiple strokes then undo and assert changes."
               },
               {

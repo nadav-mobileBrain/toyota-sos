@@ -1,6 +1,6 @@
 'use client';
 
-import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 export type SignaturePadProps = {
   width?: number;
@@ -41,6 +41,9 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
   const isDrawingRef = useRef<boolean>(false);
   const lastXRef = useRef<number>(0);
   const lastYRef = useRef<number>(0);
+  const strokesRef = useRef<Array<Array<{ x: number; y: number }>>>([]);
+  const hasSignatureRef = useRef<boolean>(false);
+  const [hasSignature, setHasSignature] = useState<boolean>(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -63,6 +66,9 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = backgroundColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+        strokesRef.current = [];
+        hasSignatureRef.current = false;
+        setHasSignature(false);
         onChange?.(false);
       },
       exportBlob: async () => {
@@ -115,6 +121,8 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
     lastYRef.current = p.y;
     ctx.beginPath();
     ctx.moveTo(p.x, p.y);
+    // start a new stroke
+    strokesRef.current.push([{ x: p.x, y: p.y }]);
   };
 
   const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -137,6 +145,8 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
       const ix = lastX + dx * t;
       const iy = lastY + dy * t;
       ctx.lineTo(ix, iy);
+      const currentStroke = strokesRef.current[strokesRef.current.length - 1];
+      if (currentStroke) currentStroke.push({ x: ix, y: iy });
     }
     ctx.stroke();
     lastXRef.current = x;
@@ -149,7 +159,32 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
     if (!canvas) return;
     if (e.pointerType === 'touch') e.preventDefault();
     isDrawingRef.current = false;
-    onChange?.(true);
+    hasSignatureRef.current = strokesRef.current.length > 0;
+    setHasSignature(hasSignatureRef.current);
+    onChange?.(hasSignatureRef.current);
+  };
+
+  const redrawAll = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = lineColor;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    for (const stroke of strokesRef.current) {
+      if (stroke.length === 0) continue;
+      ctx.beginPath();
+      ctx.moveTo(stroke[0].x, stroke[0].y);
+      for (let i = 1; i < stroke.length; i++) {
+        ctx.lineTo(stroke[i].x, stroke[i].y);
+      }
+      ctx.stroke();
+    }
   };
 
   return (
@@ -172,9 +207,39 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
             type="button"
             className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
             aria-label="נקה חתימה"
-            disabled
+            disabled={!hasSignature}
+            onClick={() => {
+              const canvas = canvasRef.current;
+              if (!canvas) return;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) return;
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.fillStyle = backgroundColor;
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              strokesRef.current = [];
+              hasSignatureRef.current = false;
+              setHasSignature(false);
+              // Ensure we signal cleared state synchronously then force a microtask to flush updates
+              onChange?.(false);
+            }}
           >
             נקה
+          </button>
+          <button
+            type="button"
+            className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
+            aria-label="בטל פעולה אחרונה"
+            disabled={!hasSignature}
+            onClick={() => {
+              if (strokesRef.current.length === 0) return;
+              strokesRef.current.pop();
+              hasSignatureRef.current = strokesRef.current.length > 0;
+              redrawAll();
+              setHasSignature(hasSignatureRef.current);
+              onChange?.(hasSignatureRef.current);
+            }}
+          >
+            בטל
           </button>
           <button
             type="button"
