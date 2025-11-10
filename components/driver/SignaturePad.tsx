@@ -38,6 +38,9 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
   } = props;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawingRef = useRef<boolean>(false);
+  const lastXRef = useRef<number>(0);
+  const lastYRef = useRef<number>(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -85,6 +88,70 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
     [backgroundColor, onChange]
   );
 
+  const getCanvasPoint = (e: PointerEvent, canvas: HTMLCanvasElement) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    return { x, y };
+  };
+
+  const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.setPointerCapture?.(e.pointerId);
+    if (e.pointerType === 'touch') {
+      // prevent scrolling while drawing
+      e.preventDefault();
+    }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = lineColor;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    const p = getCanvasPoint(e.nativeEvent, canvas);
+    isDrawingRef.current = true;
+    lastXRef.current = p.x;
+    lastYRef.current = p.y;
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  };
+
+  const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    if (e.pointerType === 'touch') e.preventDefault();
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const { x, y } = getCanvasPoint(e.nativeEvent, canvas);
+    // simple smoothing by interpolating points
+    const lastX = lastXRef.current;
+    const lastY = lastYRef.current;
+    const dx = x - lastX;
+    const dy = y - lastY;
+    const dist = Math.hypot(dx, dy);
+    const steps = Math.max(1, Math.floor(dist / 2));
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      const ix = lastX + dx * t;
+      const iy = lastY + dy * t;
+      ctx.lineTo(ix, iy);
+    }
+    ctx.stroke();
+    lastXRef.current = x;
+    lastYRef.current = y;
+  };
+
+  const endDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    if (e.pointerType === 'touch') e.preventDefault();
+    isDrawingRef.current = false;
+    onChange?.(true);
+  };
+
   return (
     <div className={className ?? ''} dir="rtl" data-testid="signature-pad">
       <div className="rounded-md border p-2 bg-white">
@@ -95,6 +162,10 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
           // Ensure visible size matches intrinsic size for crispness at 1x; DPI scaling added later
           style={{ width: `${width}px`, height: `${height}px`, backgroundColor }}
           aria-label="לוח חתימה"
+          onPointerDown={startDrawing}
+          onPointerMove={draw}
+          onPointerUp={endDrawing}
+          onPointerCancel={endDrawing}
         />
         <div className="mt-2 flex gap-2">
           <button

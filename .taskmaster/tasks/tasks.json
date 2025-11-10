@@ -614,7 +614,7 @@
                 "description": "Implement pointerdown/move/up handlers; add simple smoothing (e.g., line interpolation).",
                 "dependencies": [1],
                 "details": "Track strokes; prevent scrolling while drawing on touch; throttle events for performance.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Simulate pointer events on canvas and assert pixels/stroke state updates."
               },
               {
