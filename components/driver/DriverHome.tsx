@@ -4,6 +4,7 @@ import dayjs from '@/lib/dayjs';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useRef } from 'react';
 import { TaskCard, TaskCardProps } from '@/components/driver/TaskCard';
+import { TaskSkeleton } from '@/components/driver/TaskSkeleton';
 import { createBrowserClient } from '@/lib/auth';
 
 export type DriverTask = TaskCardProps;
@@ -69,6 +70,8 @@ export function DriverHome() {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   function mergeById(prev: DriverTask[], next: DriverTask[]): DriverTask[] {
     if (!prev.length) return next;
@@ -95,6 +98,10 @@ export function DriverHome() {
   );
   useEffect(() => {
     fetchPageRef.current = async (reset: boolean) => {
+      if (reset) {
+        setIsInitialLoading(true);
+        setError(null);
+      }
       const supa = createBrowserClient();
       const params: Record<string, unknown> = {
         p_tab: tabState,
@@ -109,6 +116,8 @@ export function DriverHome() {
         error: unknown | null;
       };
       if (error) {
+        setError('טעינת משימות נכשלה. נסה שוב.');
+        setIsInitialLoading(false);
         return;
       }
       const mapped: DriverTask[] = (data ?? []).map((t) => ({
@@ -132,6 +141,7 @@ export function DriverHome() {
           id: last.id,
         });
       }
+      setIsInitialLoading(false);
     };
   }, [tabState, cursor]);
 
@@ -218,6 +228,7 @@ export function DriverHome() {
           transition: isRefreshing ? 'height 150ms ease' : undefined,
         }}
         aria-live="polite"
+        role="status"
       >
         {isRefreshing ? (
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-transparent" />
@@ -258,15 +269,42 @@ export function DriverHome() {
       </div>
 
       {/* List */}
-      <div className="space-y-3">
-        {remoteTasks.map((task) => (
-          <TaskCard key={task.id} {...task} />
-        ))}
-        {remoteTasks.length === 0 ? (
-          <div className="text-center text-sm text-gray-500 py-10">
-            אין משימות להצגה
-          </div>
-        ) : null}
+      {isInitialLoading ? (
+        <div className="space-y-3" role="status" aria-live="polite">
+          <TaskSkeleton />
+          <TaskSkeleton />
+          <TaskSkeleton />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {error ? (
+            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-800">
+              <div className="flex items-center justify-between">
+                <span>אירעה שגיאה בטעינת המשימות</span>
+                <button
+                  type="button"
+                  className="rounded-md bg-red-600 px-3 py-1 text-white text-sm"
+                  onClick={() => fetchPageRef.current(true)}
+                >
+                  נסה שוב
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          <ul className="space-y-3" role="list" aria-busy={isRefreshing}>
+            {remoteTasks.map((task) => (
+              <li key={task.id} role="listitem">
+                <TaskCard {...task} />
+              </li>
+            ))}
+          </ul>
+
+          {!error && remoteTasks.length === 0 ? (
+            <div className="text-center text-sm text-gray-500 py-10" aria-live="polite">
+              אין משימות להצגה
+            </div>
+          ) : null}
 
         {/* Load more button (fallback) */}
         {hasMore ? (
@@ -284,7 +322,8 @@ export function DriverHome() {
 
         {/* Sentinel for infinite scroll */}
         <div ref={sentinelRef} />
-      </div>
+        </div>
+      )}
     </div>
   );
 }
