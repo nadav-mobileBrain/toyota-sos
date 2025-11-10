@@ -22,3 +22,16 @@
     color: #d60b25;
   }
 }
+
+/* Project utilities */
+@layer utilities {
+  .bg-toyota-primary {
+    background-color: #d60b25;
+  }
+  .text-toyota-primary {
+    color: #d60b25;
+  }
+  .ring-toyota-primary {
+    --tw-ring-color: #d60b25;
+  }
+}
