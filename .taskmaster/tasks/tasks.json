@@ -530,7 +530,7 @@
                 "description": "Create components/driver/ImageUpload.tsx with props for max size, accepted types, multiple, and onChange.",
                 "dependencies": [],
                 "details": "Render drop zone + file picker button; maintain internal list state; emit changes to parent.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Render without files; expect empty list and accessible labels."
               },
               {
