@@ -588,7 +588,7 @@
                 "testStrategy": "A11y assertions (aria-live, aria-invalid), RTL snapshot, keyboard navigation for remove buttons."
               }
             ],
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Mock files and verify compression occurs, thumbnails render, delete works, and storage upload is called with correct metadata; test large and unsupported files.",
             "parentId": "undefined"
           },
@@ -598,6 +598,71 @@
             "description": "Create a canvas signature component that supports drawing by finger/stylus, clearing, and saving to storage.",
             "dependencies": [1],
             "details": "Implement `SignaturePad` using HTML canvas with pressure-agnostic drawing, clear/reset, undo optional, export to PNG, upload to Supabase Storage, and return record reference for association to the task. Support high-DPI scaling and resizing.",
+            "subtasks": [
+              {
+                "id": 1,
+                "title": "Scaffold SignaturePad component and props",
+                "description": "Create components/driver/SignaturePad.tsx with width/height, lineWidth, lineColor, background, onChange/onExport.",
+                "dependencies": [],
+                "details": "Render a canvas with RTL container and buttons area; wire ref access to imperative methods.",
+                "status": "pending",
+                "testStrategy": "Render canvas; verify presence of controls and props defaulting."
+              },
+              {
+                "id": 2,
+                "title": "Pointer drawing support (mouse/touch) with smoothing",
+                "description": "Implement pointerdown/move/up handlers; add simple smoothing (e.g., line interpolation).",
+                "dependencies": [1],
+                "details": "Track strokes; prevent scrolling while drawing on touch; throttle events for performance.",
+                "status": "pending",
+                "testStrategy": "Simulate pointer events on canvas and assert pixels/stroke state updates."
+              },
+              {
+                "id": 3,
+                "title": "Clear/Reset and optional Undo",
+                "description": "Add clear() to wipe canvas; maintain stroke stack for undo() with last stroke removal.",
+                "dependencies": [2],
+                "details": "Expose imperative methods via ref; update UI state when canvas becomes empty.",
+                "status": "pending",
+                "testStrategy": "Draw then clear; ensure canvas is empty; draw multiple strokes then undo and assert changes."
+              },
+              {
+                "id": 4,
+                "title": "Export PNG/dataURL and size metadata",
+                "description": "Provide export() to return Blob/dataURL; include dimensions and byte size.",
+                "dependencies": [2],
+                "details": "Use canvas.toBlob with quality; fallback to toDataURL when needed.",
+                "status": "pending",
+                "testStrategy": "Export after drawing; assert Blob type and non-zero size; verify dimensions."
+              },
+              {
+                "id": 5,
+                "title": "Upload exported image to Supabase Storage",
+                "description": "Reuse ImageUpload path convention taskId/YYYYMMDD/uuid-signature.png; return signed URL.",
+                "dependencies": [4],
+                "details": "Integrate with Supabase client; content-type image/png; emit uploaded metadata.",
+                "status": "pending",
+                "testStrategy": "Mock storage; verify correct bucket/path and signed URL."
+              },
+              {
+                "id": 6,
+                "title": "High-DPI scaling and resize handling",
+                "description": "Scale canvas by devicePixelRatio; handle window resize to maintain crisp strokes.",
+                "dependencies": [2],
+                "details": "Redraw strokes on resize; use offscreen buffer to preserve signature.",
+                "status": "pending",
+                "testStrategy": "Mock devicePixelRatio; assert canvas dimensions; simulate resize and verify rendering preserved."
+              },
+              {
+                "id": 7,
+                "title": "A11y/RTL/mobile polish and tests",
+                "description": "Ensure 44px targets, focus-visible rings, aria-controls for buttons, proper RTL layout.",
+                "dependencies": [3, 4],
+                "details": "Keyboard shortcuts for clear/undo; screen reader labels; prevent overscroll while drawing.",
+                "status": "pending",
+                "testStrategy": "A11y assertions (roles/labels), keyboard interactions, and RTL snapshot."
+              }
+            ],
             "status": "pending",
             "testStrategy": "Simulate draw events on canvas; verify image export, clear behavior, and successful upload callbacks; test resizing maintains fidelity.",
             "parentId": "undefined"
