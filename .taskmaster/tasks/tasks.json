@@ -448,6 +448,71 @@
             "description": "Build a reusable component to render forms based on task type and supplied JSON schema configurations.",
             "dependencies": [1],
             "details": "Implement `FormRenderer` that accepts task type + schema, generates fields, handles controlled state, per-field validation, and emits a normalized submission payload compatible with backend `task_forms`. Support string, boolean, textarea, and future extension.",
+            "subtasks": [
+              {
+                "id": 1,
+                "title": "Scaffold FormRenderer component and schema/types",
+                "description": "Create components/driver/FormRenderer.tsx and supporting TypeScript types.",
+                "dependencies": [],
+                "details": "Define a typed schema: id, type, title, description, required, options (for select/radio), constraints (min/max/pattern), dependencies/visibility rules. Export normalized submit payload type.",
+                "status": "pending",
+                "testStrategy": "Compile-time type checks for schema; render empty schema without errors."
+              },
+              {
+                "id": 2,
+                "title": "Render core field types",
+                "description": "Support text, textarea, select, checkbox, radio, number, date, time.",
+                "dependencies": [1],
+                "details": "Map schema types to inputs with controlled state. Render options for select/radio. Add basic formatting for date/time and number.",
+                "status": "pending",
+                "testStrategy": "Snapshot and interaction tests for each field type; verify value updates."
+              },
+              {
+                "id": 3,
+                "title": "Conditional visibility and enablement",
+                "description": "Add dependency rules to show/enable fields based on other field values.",
+                "dependencies": [2],
+                "details": "Implement simple expression/predicate evaluation against current form state. Recompute on changes; hide fields from submit payload when not visible.",
+                "status": "pending",
+                "testStrategy": "Unit-test visibility toggling for multiple dependency scenarios."
+              },
+              {
+                "id": 4,
+                "title": "Validation engine and inline error messaging",
+                "description": "Required, min/max length/value, pattern regex; custom validator hook.",
+                "dependencies": [2],
+                "details": "Validate on submit and on edited fields after first attempt. Set aria-invalid, role=alert for error text, and scroll to first invalid field.",
+                "status": "pending",
+                "testStrategy": "Leave fields invalid, assert errors block submit; fix and assert success."
+              },
+              {
+                "id": 5,
+                "title": "Form state and normalized submit payload",
+                "description": "Centralize state; produce normalized data keyed by field id.",
+                "dependencies": [2, 3, 4],
+                "details": "Implement submit handler that returns only visible fields; coerce types (number/date/time) to consistent formats; support default values.",
+                "status": "pending",
+                "testStrategy": "Assert payload shape and type coercion for numeric/date/time fields."
+              },
+              {
+                "id": 6,
+                "title": "A11y/RTL/mobile polish",
+                "description": "Focus rings, 44px targets, labels/aria-describedby, keyboard order.",
+                "dependencies": [2, 4],
+                "details": "Ensure all controls have labels, helper text is linked, controls are reachable via keyboard, and layout renders correctly in RTL on small screens.",
+                "status": "pending",
+                "testStrategy": "A11y assertions for aria-invalid, role=alert, label association; manual RTL check."
+              },
+              {
+                "id": 7,
+                "title": "Unit tests across multiple schemas",
+                "description": "Add comprehensive tests for types, visibility, validation, and payload.",
+                "dependencies": [2, 3, 4, 5],
+                "details": "Create fixtures for simple, conditional, and mixed-type schemas. Cover edge cases and regression scenarios.",
+                "status": "pending",
+                "testStrategy": "React Testing Library with schema fixtures; snapshot UI; assert behavior."
+              }
+            ],
             "status": "pending",
             "testStrategy": "Snapshot and RTL tests for multiple schemas; validate required rules; ensure change events propagate; confirm payload normalization per schema.",
             "parentId": "undefined"
