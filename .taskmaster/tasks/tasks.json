@@ -491,7 +491,7 @@
                 "description": "Centralize state; produce normalized data keyed by field id.",
                 "dependencies": [2, 3, 4],
                 "details": "Implement submit handler that returns only visible fields; coerce types (number/date/time) to consistent formats; support default values.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Assert payload shape and type coercion for numeric/date/time fields."
               },
               {

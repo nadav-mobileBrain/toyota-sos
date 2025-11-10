@@ -107,8 +107,10 @@ export function FormRenderer(props: FormRendererProps) {
 
   // Lift state changes
   useEffect(() => {
-    onChange?.(values);
-  }, [values, onChange]);
+    // Provide normalized visible payload on change
+    const visible = schema.filter((f) => evaluateDependencies(f.dependsOn, values));
+    onChange?.(buildNormalizedPayload(visible, values));
+  }, [values, onChange, schema]);
 
   const visibleSchema = useMemo(() => {
     return schema.filter((f) => evaluateDependencies(f.dependsOn, values));
@@ -129,11 +131,8 @@ export function FormRenderer(props: FormRendererProps) {
       el?.focus?.();
       return;
     }
-    // Filter out values for fields that are not visible
-    const submit: NormalizedFormData = {};
-    for (const f of visibleSchema) {
-      submit[f.id] = values[f.id];
-    }
+    // Build normalized payload for visible fields only
+    const submit = buildNormalizedPayload(visibleSchema, values);
     onSubmit?.(submit);
   };
 
@@ -410,6 +409,44 @@ function evaluateDependencies(dep: DependencyConfig | undefined, data: Normalize
   };
   const results = dep.rules.map(evalRule);
   return dep.when === 'any' ? results.some(Boolean) : results.every(Boolean);
+}
+
+function buildNormalizedPayload(visible: ReadonlyArray<FormField>, raw: NormalizedFormData): NormalizedFormData {
+  const out: NormalizedFormData = {};
+  for (const f of visible) {
+    const value = raw[f.id];
+    switch (f.type) {
+      case 'checkbox': {
+        out[f.id] = Boolean(value);
+        break;
+      }
+      case 'number': {
+        const s = String(value ?? '');
+        out[f.id] = s === '' ? null : Number(s);
+        break;
+      }
+      case 'date':
+      case 'time': {
+        const s = String(value ?? '');
+        out[f.id] = s === '' ? null : s;
+        break;
+      }
+      case 'select':
+      case 'radio': {
+        // Return the option's original typed value (string or number) if possible
+        const s = String(value ?? '');
+        const opts = (f as any).options as ReadonlyArray<FormOption>;
+        const match = opts?.find((o) => String(o.value) === s);
+        out[f.id] = s === '' ? null : (match ? match.value : s);
+        break;
+      }
+      default: {
+        const s = String(value ?? '');
+        out[f.id] = s;
+      }
+    }
+  }
+  return out;
 }
 
 function validateField(field: FormField, rawValue: unknown): string | null {
