@@ -509,7 +509,7 @@
                 "description": "Add comprehensive tests for types, visibility, validation, and payload.",
                 "dependencies": [2, 3, 4, 5],
                 "details": "Create fixtures for simple, conditional, and mixed-type schemas. Cover edge cases and regression scenarios.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "React Testing Library with schema fixtures; snapshot UI; assert behavior."
               }
             ],
