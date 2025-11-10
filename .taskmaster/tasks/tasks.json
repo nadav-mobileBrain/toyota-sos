@@ -523,6 +523,71 @@
             "description": "Implement multi-file image uploader with client-side compression, previews, and storage upload with signed URLs.",
             "dependencies": [1],
             "details": "Create `ImageUpload` supporting drag-and-drop and file picker, compress images client-side to max 2MB, show thumbnails with remove action, upload to Supabase Storage, and return signed URL metadata for persistence. Handle retries and size/type errors.",
+            "subtasks": [
+              {
+                "id": 1,
+                "title": "Scaffold ImageUpload component and props",
+                "description": "Create components/driver/ImageUpload.tsx with props for max size, accepted types, multiple, and onChange.",
+                "dependencies": [],
+                "details": "Render drop zone + file picker button; maintain internal list state; emit changes to parent.",
+                "status": "pending",
+                "testStrategy": "Render without files; expect empty list and accessible labels."
+              },
+              {
+                "id": 2,
+                "title": "Implement drag-and-drop and file picker",
+                "description": "Support dragenter/dragover/dragleave/drop and input[type=file] selection.",
+                "dependencies": [1],
+                "details": "Prevent default on drag events; highlight drop zone; merge dropped and picked files; de-duplicate by name+size.",
+                "status": "pending",
+                "testStrategy": "Simulate DnD and picker; assert merged list and highlight toggling."
+              },
+              {
+                "id": 3,
+                "title": "Client-side compression to target size",
+                "description": "Compress images in browser before upload, targeting ≤2MB while preserving reasonable quality.",
+                "dependencies": [2],
+                "details": "Use Canvas or a lightweight library; recompute dimensions; fallback if compression fails; preserve EXIF orientation if feasible.",
+                "status": "pending",
+                "testStrategy": "Mock image blobs; assert compressed size reduction and type preservation."
+              },
+              {
+                "id": 4,
+                "title": "Generate thumbnails and list UI with remove",
+                "description": "Show preview thumbnails with file name/size and remove action.",
+                "dependencies": [2],
+                "details": "Use Object URLs for previews; grid layout; remove updates internal state and parent callback.",
+                "status": "pending",
+                "testStrategy": "Assert thumbnails render; clicking remove updates list and revokes URLs."
+              },
+              {
+                "id": 5,
+                "title": "Upload to Supabase Storage with folder convention",
+                "description": "Upload compressed files to Storage, using path convention taskId/YYYYMMDD/uuid-filename; return signed URLs.",
+                "dependencies": [3],
+                "details": "Handle auth; use content-type; await uploads; call getPublicUrl or createSignedUrl; return array of metadata.",
+                "status": "pending",
+                "testStrategy": "Mock supabase client; assert called with correct bucket/path and signed URL retrieval."
+              },
+              {
+                "id": 6,
+                "title": "Validation, retries and error handling",
+                "description": "Validate size/type; show inline errors; retry failed uploads with limited backoff.",
+                "dependencies": [5],
+                "details": "Accept only image/*; show per-file errors; implement 3 retry attempts with small delay; allow user to retry manually.",
+                "status": "pending",
+                "testStrategy": "Test oversized/unsupported files; simulate transient upload failure and verify retries."
+              },
+              {
+                "id": 7,
+                "title": "A11y/RTL/mobile polish and tests",
+                "description": "Ensure keyboard operability, aria-live for status, focus-visible rings, 44px tap targets, and RTL layout.",
+                "dependencies": [4, 6],
+                "details": "Add aria-live for upload progress/errors; ensure labels/roles; verify RTL-friendly layout for thumbnails and controls.",
+                "status": "pending",
+                "testStrategy": "A11y assertions (aria-live, aria-invalid), RTL snapshot, keyboard navigation for remove buttons."
+              }
+            ],
             "status": "pending",
             "testStrategy": "Mock files and verify compression occurs, thumbnails render, delete works, and storage upload is called with correct metadata; test large and unsupported files.",
             "parentId": "undefined"
