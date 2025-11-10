@@ -557,7 +557,7 @@
                 "description": "Show preview thumbnails with file name/size and remove action.",
                 "dependencies": [2],
                 "details": "Use Object URLs for previews; grid layout; remove updates internal state and parent callback.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Assert thumbnails render; clicking remove updates list and revokes URLs."
               },
               {
