@@ -539,7 +539,7 @@
                 "description": "Support dragenter/dragover/dragleave/drop and input[type=file] selection.",
                 "dependencies": [1],
                 "details": "Prevent default on drag events; highlight drop zone; merge dropped and picked files; de-duplicate by name+size.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Simulate DnD and picker; assert merged list and highlight toggling."
               },
               {
