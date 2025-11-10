@@ -513,7 +513,7 @@
                 "testStrategy": "React Testing Library with schema fixtures; snapshot UI; assert behavior."
               }
             ],
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Snapshot and RTL tests for multiple schemas; validate required rules; ensure change events propagate; confirm payload normalization per schema.",
             "parentId": "undefined"
           },
