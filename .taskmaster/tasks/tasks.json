@@ -380,7 +380,7 @@
                 "description": "Create base modal with header, content area, and footer actions (Cancel/Save).",
                 "dependencies": [],
                 "details": "Client component `components/driver/ChecklistModal.tsx` with props: `open`, `onOpenChange`, `schema`, `onSubmit`. Provide keyboard focus trap, escape to close, and mobile-friendly full-screen behavior.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Render modal opened, verify focus is trapped and ESC closes; snapshot base layout."
               },
               {
