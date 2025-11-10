@@ -605,7 +605,7 @@
                 "description": "Create components/driver/SignaturePad.tsx with width/height, lineWidth, lineColor, background, onChange/onExport.",
                 "dependencies": [],
                 "details": "Render a canvas with RTL container and buttons area; wire ref access to imperative methods.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Render canvas; verify presence of controls and props defaulting."
               },
               {
