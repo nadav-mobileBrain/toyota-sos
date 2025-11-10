@@ -159,6 +159,8 @@ export function FormRenderer(props: FormRendererProps) {
           {visibleSchema.map((f) => {
             const id = `fr-${f.id}`;
             const descId = f.description ? `${id}-desc` : undefined;
+            const errorId = `${id}-error`;
+            const describedBy = [descId, errors[f.id] ? errorId : undefined].filter(Boolean).join(' ') || undefined;
             const value = values[f.id];
             const errorMsg = errors[f.id] ?? null;
             // checkbox
@@ -169,18 +171,18 @@ export function FormRenderer(props: FormRendererProps) {
                   <input
                     id={id}
                     type="checkbox"
-                    className="mt-1 h-5 w-5"
+                    className="mt-1 h-5 w-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
                     checked={checked}
                     onChange={(e) => setFieldValue(f, e.target.checked)}
                     onBlur={() => {
                       markTouched(f.id);
                       setErrors((prev) => ({ ...prev, [f.id]: validateField(f, checked) }));
                     }}
-                    aria-describedby={descId}
+                    aria-describedby={describedBy}
                     aria-invalid={errorMsg ? 'true' : undefined}
                   />
                   <div className="flex-1">
-                    <label htmlFor={id} className="font-medium">
+                    <label htmlFor={id} className="font-medium inline-flex items-center min-h-[44px]">
                       {f.title} {f.required ? <span className="text-red-600">*</span> : null}
                     </label>
                     {f.description ? (
@@ -189,7 +191,7 @@ export function FormRenderer(props: FormRendererProps) {
                       </p>
                     ) : null}
                     {errorMsg ? (
-                      <p role="alert" className="text-sm text-red-600">
+                      <p id={errorId} role="alert" className="text-sm text-red-600">
                         {errorMsg}
                       </p>
                     ) : null}
@@ -214,12 +216,12 @@ export function FormRenderer(props: FormRendererProps) {
                     {opts?.map((opt) => {
                       const rid = `${id}-${String(opt.value)}`;
                       return (
-                        <label key={rid} htmlFor={rid} className="flex items-center gap-2">
+                        <label key={rid} htmlFor={rid} className="flex items-center gap-2 min-h-[44px]">
                           <input
                             id={rid}
                             name={id}
                             type="radio"
-                            className="h-4 w-4"
+                            className="h-4 w-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
                             checked={String(value ?? '') === String(opt.value)}
                             onChange={() => setFieldValue(f, opt.value)}
                             onBlur={() => {
@@ -230,6 +232,7 @@ export function FormRenderer(props: FormRendererProps) {
                               }));
                             }}
                             aria-invalid={errorMsg ? 'true' : undefined}
+                            aria-describedby={describedBy}
                           />
                           <span className="text-sm">{opt.label}</span>
                         </label>
@@ -237,7 +240,7 @@ export function FormRenderer(props: FormRendererProps) {
                     })}
                   </div>
                   {errorMsg ? (
-                    <p role="alert" className="text-sm text-red-600">
+                    <p id={errorId} role="alert" className="text-sm text-red-600">
                       {errorMsg}
                     </p>
                   ) : null}
@@ -254,8 +257,8 @@ export function FormRenderer(props: FormRendererProps) {
                   </label>
                   <select
                     id={id}
-                    className="w-full rounded-md border border-gray-300 p-2 text-sm"
-                    aria-describedby={descId}
+                    className="w-full rounded-md border border-gray-300 p-2 text-sm min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
+                    aria-describedby={describedBy}
                     value={String(value ?? '')}
                     onChange={(e) => setFieldValue(f, e.target.value)}
                     onBlur={() => {
@@ -280,7 +283,7 @@ export function FormRenderer(props: FormRendererProps) {
                     </p>
                   ) : null}
                   {errorMsg ? (
-                    <p role="alert" className="text-sm text-red-600">
+                    <p id={errorId} role="alert" className="text-sm text-red-600">
                       {errorMsg}
                     </p>
                   ) : null}
@@ -296,8 +299,8 @@ export function FormRenderer(props: FormRendererProps) {
                   </label>
                   <textarea
                     id={id}
-                    className="w-full rounded-md border border-gray-300 p-2 text-sm"
-                    aria-describedby={descId}
+                    className="w-full rounded-md border border-gray-300 p-2 text-sm min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
+                    aria-describedby={describedBy}
                     value={String(value ?? '')}
                     onChange={(e) => setFieldValue(f, e.target.value)}
                     onBlur={() => {
@@ -316,7 +319,7 @@ export function FormRenderer(props: FormRendererProps) {
                     </p>
                   ) : null}
                   {errorMsg ? (
-                    <p role="alert" className="text-sm text-red-600">
+                    <p id={errorId} role="alert" className="text-sm text-red-600">
                       {errorMsg}
                     </p>
                   ) : null}
@@ -333,8 +336,8 @@ export function FormRenderer(props: FormRendererProps) {
                 <input
                   id={id}
                   type={inputType}
-                  className="w-full rounded-md border border-gray-300 p-2 text-sm"
-                  aria-describedby={descId}
+                  className="w-full rounded-md border border-gray-300 p-2 text-sm min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
+                  aria-describedby={describedBy}
                   value={formatValueForInput(f.type, value)}
                   onChange={(e) => setFieldValue(f, e.target.value)}
                   onBlur={() => {
@@ -352,7 +355,7 @@ export function FormRenderer(props: FormRendererProps) {
                   </p>
                 ) : null}
                 {errorMsg ? (
-                  <p role="alert" className="text-sm text-red-600">
+                  <p id={errorId} role="alert" className="text-sm text-red-600">
                     {errorMsg}
                   </p>
                 ) : null}
@@ -363,7 +366,7 @@ export function FormRenderer(props: FormRendererProps) {
             <div>
               <button
                 type="submit"
-                className="rounded-md bg-toyota-primary px-3 py-2 text-sm text-white hover:bg-red-700"
+                className="rounded-md bg-toyota-primary px-3 py-2 text-sm text-white hover:bg-red-700 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
               >
                 שמור
               </button>

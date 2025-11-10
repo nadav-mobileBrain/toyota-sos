@@ -500,7 +500,7 @@
                 "description": "Focus rings, 44px targets, labels/aria-describedby, keyboard order.",
                 "dependencies": [2, 4],
                 "details": "Ensure all controls have labels, helper text is linked, controls are reachable via keyboard, and layout renders correctly in RTL on small screens.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "A11y assertions for aria-invalid, role=alert, label association; manual RTL check."
               },
               {
