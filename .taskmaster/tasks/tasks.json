@@ -269,7 +269,7 @@
             "description": "Optimize task loading with infinite scroll or keyset pagination and stable sort.",
             "dependencies": [3],
             "details": "Implement IntersectionObserver with a sentinel to fetch next page (size ~20). Use keyset pagination by `updated_at, id` for stability; reset cursor when filters change. Provide fallback \"Load more\" button. Maintain `isLoadingMore`, `hasMore`, and `error` states. Preserve scroll position and ensure items don’t reorder unexpectedly.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Mock paged API and simulate scrolling to sentinel; verify subsequent pages append and cursor resets on tab change. Check stable order across loads.",
             "parentId": "undefined"
           },
