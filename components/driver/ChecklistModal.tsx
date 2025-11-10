@@ -157,7 +157,29 @@ export function ChecklistModal(props: ChecklistModalProps) {
     return e;
   };
 
-  const handleSubmit = () => {
+  const getGeoPosition = async (): Promise<{ lat: number; lng: number; accuracy?: number } | null> => {
+    try {
+      if (typeof window === 'undefined' || !('geolocation' in navigator)) return null;
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        const onSuccess = (p: GeolocationPosition) => resolve(p);
+        const onError = (err: GeolocationPositionError) => reject(err);
+        navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+          enableHighAccuracy: true,
+          timeout: 4000,
+          maximumAge: 0,
+        });
+      });
+      return {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const handleSubmit = async () => {
     setAttempted(true);
     const e = validateAll();
     setErrors(e);
@@ -168,7 +190,9 @@ export function ChecklistModal(props: ChecklistModalProps) {
       el?.focus();
       return;
     }
-    onSubmit(values);
+    const gps = await getGeoPosition();
+    const payload = gps ? { ...values, gps_location: gps } : values;
+    onSubmit(payload);
   };
 
   return (

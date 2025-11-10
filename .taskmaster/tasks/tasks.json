@@ -407,7 +407,7 @@
                 "description": "Use `navigator.geolocation.getCurrentPosition` to include lat/lng in payload.",
                 "dependencies": [3],
                 "details": "Attempt geolocation with timeout (e.g., 4s). If granted, append `{ lat, lng, accuracy }`; otherwise omit gracefully and continue.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Mock geolocation success and error; assert payload includes/excludes coordinates accordingly."
               },
               {
