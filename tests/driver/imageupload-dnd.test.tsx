@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ImageUpload } from '@/components/driver/ImageUpload';
 
 function createFile(name: string, type: string, size = 1234) {
@@ -9,7 +9,7 @@ function createFile(name: string, type: string, size = 1234) {
 }
 
 describe('ImageUpload drag-and-drop (5.4.2)', () => {
-  test('highlights on dragover and merges dropped files, dedupes by id', () => {
+  test('highlights on dragover and merges dropped files, dedupes by id', async () => {
     const onChange = jest.fn();
     render(<ImageUpload onChange={onChange} />);
 
@@ -25,8 +25,7 @@ describe('ImageUpload drag-and-drop (5.4.2)', () => {
     const f2 = createFile('b.jpg', 'image/jpeg', 20);
     const data = { files: [f1, f2] } as unknown as DataTransfer;
     fireEvent.drop(dropzone, { dataTransfer: data });
-
-    expect(onChange).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
     const first = onChange.mock.calls[0][0];
     expect(first).toHaveLength(2);
 
@@ -36,6 +35,7 @@ describe('ImageUpload drag-and-drop (5.4.2)', () => {
 
     // Drop duplicate file; should dedupe by id
     fireEvent.drop(dropzone, { dataTransfer: { files: [f1] } });
+    await waitFor(() => expect(onChange).toHaveBeenCalledTimes(2));
     const second = onChange.mock.calls[1][0];
     expect(second).toHaveLength(2);
   });

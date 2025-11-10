@@ -57,20 +57,26 @@ export function ImageUpload(props: ImageUploadProps) {
     return multiple ? merged : merged.slice(0, 1);
   };
 
-  const handleFiles = (filesList: FileList | File[] | null) => {
+  const handleFiles = async (filesList: FileList | File[] | null) => {
     if (!filesList) return;
     const files = Array.from(filesList as any) as File[];
     if (files.length === 0) return;
-    const next: ImageUploadFile[] = [];
-    for (const f of files) {
-      if (!fileAccepted(f)) continue;
-      if (maxSizeBytes && f.size > maxSizeBytes) {
-        // For scaffold, silently ignore oversize; later subtasks add visible error handling
-        continue;
-      }
-      const id = `${f.name}-${f.size}-${f.lastModified}`;
-      next.push({ file: f, id });
-    }
+    const processed = await Promise.all(
+      files.map(async (f) => {
+        if (!fileAccepted(f)) return null;
+        let out = f;
+        if (maxSizeBytes && f.size > maxSizeBytes) {
+          out = await compressIfNeeded(f, maxSizeBytes);
+          if (out.size > maxSizeBytes) {
+            // if still too big, drop for now (later subtasks will surface error)
+            return null;
+          }
+        }
+        const id = `${out.name}-${out.size}-${out.lastModified}`;
+        return { file: out, id } as ImageUploadFile;
+      })
+    );
+    const next = processed.filter(Boolean) as ImageUploadFile[];
     setItems((prev) => {
       const merged = mergeAndDeduplicate(prev, next);
       onChange?.(merged);
@@ -99,7 +105,7 @@ export function ImageUpload(props: ImageUploadProps) {
     setIsDragging(false);
     const dt = e.dataTransfer;
     if (!dt) return;
-    handleFiles(dt.files);
+    void handleFiles(dt.files);
   };
 
   return (
@@ -132,13 +138,72 @@ export function ImageUpload(props: ImageUploadProps) {
           accept={accept}
           multiple={multiple}
           className="sr-only"
-          onChange={(e) => handleFiles(e.currentTarget.files)}
+          onChange={(e) => void handleFiles(e.currentTarget.files)}
           aria-hidden="true"
           tabIndex={-1}
         />
       </div>
     </div>
   );
+}
+
+async function compressIfNeeded(file: File, maxSizeBytes: number): Promise<File> {
+  try {
+    if (typeof window === 'undefined') return file;
+    // Load image
+    const img = await loadImage(URL.createObjectURL(file));
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+
+    // Keep dimensions initially; future: downscale if necessary
+    canvas.width = img.naturalWidth || (img as any).width || 0;
+    canvas.height = img.naturalHeight || (img as any).height || 0;
+    if (canvas.width === 0 || canvas.height === 0) return file;
+
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const attempt = (quality: number) =>
+      new Promise<Blob | null>((resolve) => {
+        (canvas as HTMLCanvasElement).toBlob(
+          (blob) => resolve(blob),
+          'image/jpeg',
+          Math.min(Math.max(quality, 0.3), 0.92)
+        );
+      });
+
+    // Heuristic quality based on ratio
+    const ratio = maxSizeBytes / Math.max(1, file.size);
+    const baseQ = Math.min(Math.max(ratio * 0.92, 0.3), 0.92);
+
+    let blob = await attempt(baseQ);
+    if (!blob) return file;
+    if (blob.size > maxSizeBytes) {
+      blob = await attempt(baseQ * 0.7);
+      if (!blob) return file;
+    }
+    if (blob.size > maxSizeBytes) {
+      blob = await attempt(baseQ * 0.5);
+      if (!blob) return file;
+    }
+    if (blob.size >= file.size) {
+      // no improvement
+      return file;
+    }
+    const out = new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() });
+    return out;
+  } catch {
+    return file;
+  }
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
 }
 
 

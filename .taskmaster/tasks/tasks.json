@@ -548,7 +548,7 @@
                 "description": "Compress images in browser before upload, targeting ≤2MB while preserving reasonable quality.",
                 "dependencies": [2],
                 "details": "Use Canvas or a lightweight library; recompute dimensions; fallback if compression fails; preserve EXIF orientation if feasible.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Mock image blobs; assert compressed size reduction and type preservation."
               },
               {
