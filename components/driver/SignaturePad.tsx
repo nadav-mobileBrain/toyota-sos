@@ -1,6 +1,7 @@
 'use client';
 
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { createBrowserClient } from '@/lib/auth';
 
 export type SignaturePadProps = {
   width?: number;
@@ -17,6 +18,10 @@ export type SignaturePadProps = {
     height: number;
     bytes: number;
   }) => void;
+  uploadBucket?: string; // Supabase Storage bucket for signatures
+  taskId?: string; // used for path convention
+  signedUrlExpiresInSeconds?: number; // default 3600
+  onUploaded?: (meta: { path: string; signedUrl?: string | null; bytes: number }) => void;
 };
 
 export type SignaturePadRef = {
@@ -50,6 +55,10 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
     className,
     onChange,
     onExport,
+    uploadBucket,
+    taskId,
+    signedUrlExpiresInSeconds,
+    onUploaded,
   } = props;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -59,15 +68,46 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
   const strokesRef = useRef<Array<Array<{ x: number; y: number }>>>([]);
   const hasSignatureRef = useRef<boolean>(false);
   const [hasSignature, setHasSignature] = useState<boolean>(false);
+  const dprRef = useRef<number>(1);
 
-  useEffect(() => {
+  const setupCanvasForDPR = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    // Fill background for visual clarity
+    const dpr = typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1;
+    dprRef.current = dpr;
+    // Set intrinsic size in device pixels
+    canvas.width = Math.max(1, Math.floor(width * dpr));
+    canvas.height = Math.max(1, Math.floor(height * dpr));
+    // Maintain visual (CSS) size
+    (canvas.style as any).width = `${width}px`;
+    (canvas.style as any).height = `${height}px`;
+    // Reset transform then scale so 1 unit == 1 CSS pixel
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    // Fill background using CSS pixel space
     ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, width, height);
+  };
+
+  useEffect(() => {
+    setupCanvasForDPR();
+    // Redraw any existing strokes after re-scaling
+    redrawAll();
+    // Listen for window resize (viewport or DPR changes)
+    const onResize = () => {
+      setupCanvasForDPR();
+      redrawAll();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', onResize);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', onResize);
+      }
+    };
   }, [backgroundColor, width, height]);
 
   useImperativeHandle(
@@ -78,9 +118,10 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Clear in CSS coordinates; transform maps to device pixels
+        ctx.clearRect(0, 0, width, height);
         ctx.fillStyle = backgroundColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, width, height);
         strokesRef.current = [];
         hasSignatureRef.current = false;
         setHasSignature(false);
@@ -214,9 +255,10 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Clear and repaint background in CSS pixels
+    ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, width, height);
     ctx.lineWidth = lineWidth;
     ctx.strokeStyle = lineColor;
     ctx.lineJoin = 'round';
@@ -230,6 +272,13 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
       }
       ctx.stroke();
     }
+  };
+
+  const yyyymmdd = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}${m}${day}`;
   };
 
   return (
@@ -292,46 +341,88 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
             aria-label="ייצא חתימה"
             disabled={!hasSignature}
             onClick={async () => {
-              const result = await (await Promise.resolve()).then(() => {
-                // call through ref-like method inside to avoid exposing actual ref in UI handler
-                return (async () => {
-                  // reuse the imperative handle logic
-                  // we can't access methods from here directly, so call local implementation
-                  const canvas = canvasRef.current;
-                  if (!canvas) return null;
-                  const width = canvas.width;
-                  const height = canvas.height;
-                  const blob = await new Promise<Blob | null>((resolve) => {
-                    if (canvas.toBlob) {
-                      canvas.toBlob((b) => resolve(b), 'image/png', 0.92);
-                    } else {
-                      try {
-                        const dataUrl = canvas.toDataURL('image/png');
-                        const bin = atob(dataUrl.split(',')[1] || '');
-                        const bytes = new Uint8Array(bin.length);
-                        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-                        resolve(new Blob([bytes], { type: 'image/png' }));
-                      } catch {
-                        resolve(null);
-                      }
-                    }
-                  });
-                  if (!blob) return null;
-                  let dataURL = '';
+              const canvas = canvasRef.current;
+              if (!canvas) return;
+              const width = canvas.width;
+              const height = canvas.height;
+              const blob = await new Promise<Blob | null>((resolve) => {
+                if (canvas.toBlob) {
+                  canvas.toBlob((b) => resolve(b), 'image/png', 0.92);
+                } else {
                   try {
-                    dataURL = canvas.toDataURL('image/png');
+                    const dataUrl = canvas.toDataURL('image/png');
+                    const bin = atob(dataUrl.split(',')[1] || '');
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    resolve(new Blob([bytes], { type: 'image/png' }));
                   } catch {
-                    dataURL = '';
+                    resolve(null);
                   }
-                  const bytes = typeof blob.size === 'number' ? blob.size : 0;
-                  return { blob, dataURL, width, height, bytes };
-                })();
+                }
               });
+              if (!blob) return;
+              let dataURL = '';
+              try {
+                dataURL = canvas.toDataURL('image/png');
+              } catch {
+                dataURL = '';
+              }
+              const bytes = typeof blob.size === 'number' ? blob.size : 0;
+              const result = { blob, dataURL, width, height, bytes };
               if (result && onExport) onExport(result);
             }}
           >
             ייצא
           </button>
+          {uploadBucket && taskId ? (
+            <button
+              type="button"
+              className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
+              aria-label="שמור חתימה"
+              disabled={!hasSignature}
+              onClick={async () => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                // export
+                const blob = await new Promise<Blob | null>((resolve) => {
+                  if (canvas.toBlob) {
+                    canvas.toBlob((b) => resolve(b), 'image/png', 0.92);
+                  } else {
+                    try {
+                      const dataUrl = canvas.toDataURL('image/png');
+                      const bin = atob(dataUrl.split(',')[1] || '');
+                      const bytes = new Uint8Array(bin.length);
+                      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                      resolve(new Blob([bytes], { type: 'image/png' }));
+                    } catch {
+                      resolve(null);
+                    }
+                  }
+                });
+                if (!blob) return;
+                // upload
+                const supa = createBrowserClient();
+                const folder = `${taskId}/${yyyymmdd(new Date())}`;
+                const uuid = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
+                const path = `${folder}/${uuid}-signature.png`;
+                const { error: upErr } = await supa.storage.from(uploadBucket).upload(path, blob, {
+                  contentType: 'image/png',
+                  upsert: true,
+                });
+                if (upErr) return;
+                // sign
+                const expiresIn = signedUrlExpiresInSeconds ?? 3600;
+                const { data: signed, error: signErr } = await supa.storage.from(uploadBucket).createSignedUrl(path, expiresIn);
+                if (!signErr) {
+                  onUploaded?.({ path, signedUrl: signed?.signedUrl ?? null, bytes: blob.size });
+                } else {
+                  onUploaded?.({ path, signedUrl: null, bytes: blob.size });
+                }
+              }}
+            >
+              שמור
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
