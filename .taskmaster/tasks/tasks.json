@@ -528,7 +528,7 @@
             "description": "Create UI to display unread/read notifications, open the related task on tap, and support single/bulk read and deletion.",
             "dependencies": [4],
             "details": "Add components/notifications/NotificationsList.tsx to query notifications table (paginated). Render unread/read groups with timestamps. Implement onClick to deep link to task route. Add mark-as-read (single and bulk) updating read_at, and delete action (soft or hard). Provide empty/skeleton states and accessibility. Ensure RLS-safe queries and optimistic UI updates.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Seed sample rows and verify list rendering, pagination, and grouping. Test single and bulk mark-as-read and delete flows update both UI and database correctly. Confirm deep links navigate to the task screen.",
             "parentId": "undefined"
           },

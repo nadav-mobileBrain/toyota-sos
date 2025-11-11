@@ -7,7 +7,10 @@ export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as NotifyBody;
     if (!body || !Array.isArray(body.recipients) || !body.type) {
-      return NextResponse.json({ ok: false, error: 'invalid-request' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: 'invalid-request' },
+        { status: 400 }
+      );
     }
     const result = await notify(body);
     if (!result.ok) {
@@ -15,9 +18,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(result, { status });
     }
     return NextResponse.json(result);
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || 'server-error' }, { status: 500 });
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e : new Error('Unknown error');
+    return NextResponse.json(
+      { ok: false, error: error.message },
+      { status: 500 }
+    );
   }
 }
-
-
