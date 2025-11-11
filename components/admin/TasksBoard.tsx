@@ -12,6 +12,8 @@ import {
   useSensor,
   useSensors,
   DragOverlay,
+  useDraggable,
+  useDroppable,
 } from '@dnd-kit/core';
 
 /**
@@ -484,8 +486,14 @@ function KanbanColumn({
   vehicleMap,
   onDragStart,
 }: KanbanColumnProps) {
+  // Setup droppable
+  const { setNodeRef } = useDroppable({
+    id: column.id,
+  });
+
   return (
     <div
+      ref={setNodeRef}
       className={`flex min-w-[320px] flex-shrink-0 flex-col rounded-lg border-2 transition-all ${
         isOver
           ? 'border-toyota-primary/50 bg-toyota-50/30 shadow-md'
@@ -568,16 +576,25 @@ function TaskCard({
   const leadAssignee = assignees.find((a) => a.is_lead);
   const leadDriver = leadAssignee ? driverMap.get(leadAssignee.driver_id) : null;
 
+  // Setup draggable
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: task.id,
+    data: { type: 'task', taskId: task.id, sourceColumn: columnId },
+  });
+
   return (
     <div
+      ref={setNodeRef}
       id={task.id}
       className={`cursor-grab active:cursor-grabbing rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-all hover:shadow-md hover:border-gray-300 ${
         isActive ? 'opacity-50 ring-2 ring-toyota-primary' : ''
-      }`}
+      } ${isDragging ? 'opacity-50' : ''}`}
       role="button"
       tabIndex={0}
       aria-label={`משימה: ${task.title}`}
       data-draggable-id={task.id}
+      {...attributes}
+      {...listeners}
     >
       {/* Header: Title + Priority Badge */}
       <div className="mb-2 flex items-start justify-between gap-2">
