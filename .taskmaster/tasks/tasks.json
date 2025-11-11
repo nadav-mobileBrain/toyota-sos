@@ -707,7 +707,7 @@
             "description": "Add quick filters, search and sort controls, Supabase Realtime updates, and success/error toasts.",
             "dependencies": [1, 2, 3, 4],
             "details": "Create quick filters (type, priority, overdue-only, manager-only), a debounced search across title/client/vehicle, and sorting by priority/time/driver. Compose client/server queries efficiently. Subscribe to Supabase Realtime for tasks/assignees; throttle updates and preserve user interactions. Use toast notifications for create/update/delete and DnD outcomes.",
-          "status": "done",
+            "status": "done",
             "testStrategy": "Apply filters and sorting to confirm correct results. Search by title and client. Trigger realtime updates and verify board refreshes smoothly. Confirm toasts show on success/error.",
             "parentId": "undefined"
           }
@@ -732,7 +732,7 @@
             "description": "Create SQL views/materialized views or RPC endpoints to compute each KPI and chart dataset over a given period with timezone support and robust error handling.",
             "dependencies": [],
             "details": "Add server-side utilities (e.g., lib/dashboard/queries.ts) that call Supabase SQL views/materialized views or RPC to compute: tasks created, tasks completed, on-time rate, avg assignment→start, avg start→complete, overdue count, driver utilization, cancellations/reassignments, SLA breaches. Provide chart datasets (time series, overdue by driver, on-time vs late, funnel). Parameterize by date range and timezone. Implement 5-minute caching via in-memory map or Next.js caching with cache keys per metric+range. Return stable, documented types.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Use seed/mocked data to validate each metric formula and edge cases (empty periods, timezone boundaries). Verify cache hit/miss behavior and that invalidation updates values after TTL.",
             "parentId": "undefined"
           },
