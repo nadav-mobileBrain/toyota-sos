@@ -1,6 +1,18 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, Suspense } from 'react';
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+  PointerSensor,
+  KeyboardSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+} from '@dnd-kit/core';
 
 /**
  * Type definitions for TasksBoard state and data structures
@@ -89,6 +101,18 @@ export function TasksBoard({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+
+  // Configure drag-and-drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      distance: 8,
+    }),
+    useSensor(KeyboardSensor),
+    useSensor(TouchSensor, {
+      distance: 8,
+    })
+  );
 
   // Create lookup maps
   const driverMap = useMemo(() => {
@@ -159,44 +183,63 @@ export function TasksBoard({
     [tasks, groupBy, taskAssignees]
   );
 
-  // Drag handlers (placeholder implementations for now)
-  const handleDragStart = useCallback((taskId: string, columnId: string) => {
+  // DnD event handlers
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const { active } = event;
+    const taskId = active.id as string;
+    
+    // Find the task to display in DragOverlay
+    const task = tasks.find((t) => t.id === taskId);
+    setDraggedTask(task || null);
     setActiveId(taskId);
+  }, [tasks]);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const { over } = event;
+    setOverId(over?.id as string | null);
   }, []);
 
-  const handleDragOver = useCallback((columnId: string) => {
-    setOverId(columnId);
-  }, []);
-
-  const handleDragEnd = useCallback(() => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    // Placeholder: no persistence yet
+    // TODO: 7.1.4 - Handle actual reassignment/status update
+    
     setActiveId(null);
     setOverId(null);
+    setDraggedTask(null);
   }, []);
 
   return (
-    <div className="space-y-4">
-      {/* Group toggle */}
-      <div className="flex items-center gap-3">
-        <label htmlFor="group-toggle" className="text-sm font-medium text-gray-700">
-          קבץ לפי:
-        </label>
-        <select
-          id="group-toggle"
-          value={groupBy}
-          onChange={(e) => setGroupBy(e.target.value as GroupBy)}
-          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-toyota-primary"
-        >
-          <option value="status">סטטוס</option>
-          <option value="driver">נהג</option>
-        </select>
-      </div>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="space-y-4">
+        {/* Group toggle */}
+        <div className="flex items-center gap-3">
+          <label htmlFor="group-toggle" className="text-sm font-medium text-gray-700">
+            קבץ לפי:
+          </label>
+          <select
+            id="group-toggle"
+            value={groupBy}
+            onChange={(e) => setGroupBy(e.target.value as GroupBy)}
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-toyota-primary"
+          >
+            <option value="status">סטטוס</option>
+            <option value="driver">נהג</option>
+          </select>
+        </div>
 
-      {/* Kanban board container */}
-      <div
-        className="h-[calc(100vh-200px)] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"
-        role="main"
-        aria-label="לוח משימות"
-      >
+        {/* Kanban board container */}
+        <div
+          className="h-[calc(100vh-200px)] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"
+          role="main"
+          aria-label="לוח משימות"
+        >
         {isLoading ? (
           // Loading skeletons
           <div className="flex h-full items-center justify-center">
@@ -234,17 +277,34 @@ export function TasksBoard({
                   driverMap={driverMap}
                   clientMap={clientMap}
                   vehicleMap={vehicleMap}
-                  onDragOver={handleDragOver}
-                  onDragLeave={() => handleDragOver(null)}
-                  onDrop={handleDragEnd}
                   onDragStart={handleDragStart}
                 />
               );
             })}
           </div>
         )}
+        </div>
       </div>
-    </div>
+
+      {/* Drag overlay - renders the dragged task during drag */}
+      <DragOverlay>
+        {draggedTask && (
+          <div className="rounded-lg border-2 border-toyota-primary bg-white p-3 shadow-xl opacity-95 w-80">
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <h4 className="flex-1 line-clamp-2 font-semibold text-gray-900 text-sm">
+                {draggedTask.title}
+              </h4>
+              <span className={`shrink-0 inline-block rounded-full px-1.5 py-0.5 text-xs font-bold text-white ${priorityColor(draggedTask.priority)}`}>
+                {priorityLabel(draggedTask.priority)}
+              </span>
+            </div>
+            <p className="mb-2 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+              {typeLabel(draggedTask.type)}
+            </p>
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 }
 
@@ -261,10 +321,7 @@ interface KanbanColumnProps {
   driverMap: Map<string, Driver>;
   clientMap: Map<string, Client>;
   vehicleMap: Map<string, Vehicle>;
-  onDragOver: (columnId: string) => void;
-  onDragLeave: () => void;
-  onDrop: () => void;
-  onDragStart: (taskId: string, columnId: string) => void;
+  onDragStart: (event: DragStartEvent) => void;
 }
 
 function KanbanColumn({
@@ -276,9 +333,6 @@ function KanbanColumn({
   driverMap,
   clientMap,
   vehicleMap,
-  onDragOver,
-  onDragLeave,
-  onDrop,
   onDragStart,
 }: KanbanColumnProps) {
   return (
@@ -288,17 +342,9 @@ function KanbanColumn({
           ? 'border-toyota-primary/50 bg-toyota-50/30 shadow-md'
           : 'border-gray-200 bg-gray-50'
       }`}
-      onDragOver={(e) => {
-        e.preventDefault();
-        onDragOver(column.id);
-      }}
-      onDragLeave={onDragLeave}
-      onDrop={(e) => {
-        e.preventDefault();
-        onDrop();
-      }}
       role="region"
       aria-label={`עמודה: ${column.label}`}
+      data-drop-target={column.id}
     >
       {/* Column Header */}
       <div className="sticky top-0 border-b border-gray-200 bg-white px-4 py-3 shadow-sm">
@@ -355,7 +401,7 @@ interface TaskCardProps {
   driverMap: Map<string, Driver>;
   clientMap: Map<string, Client>;
   vehicleMap: Map<string, Vehicle>;
-  onDragStart: (taskId: string, columnId: string) => void;
+  onDragStart: (event: DragStartEvent) => void;
 }
 
 function TaskCard({
@@ -375,14 +421,14 @@ function TaskCard({
 
   return (
     <div
-      draggable
-      onDragStart={() => onDragStart(task.id, columnId)}
+      id={task.id}
       className={`cursor-grab active:cursor-grabbing rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-all hover:shadow-md hover:border-gray-300 ${
         isActive ? 'opacity-50 ring-2 ring-toyota-primary' : ''
       }`}
       role="button"
       tabIndex={0}
       aria-label={`משימה: ${task.title}`}
+      data-draggable-id={task.id}
     >
       {/* Header: Title + Priority Badge */}
       <div className="mb-2 flex items-start justify-between gap-2">
