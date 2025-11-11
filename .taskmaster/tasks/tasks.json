@@ -722,7 +722,7 @@
                   1
                 ],
                 "details": "Wrap TasksBoard in DndContext with PointerSensor, KeyboardSensor, TouchSensor configured. Add DragOverlay component to render the dragged card during drag. Pass onDragStart, onDragOver, onDragEnd handlers (no-op for now). Ensure DragOverlay uses the correct rendering style.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Verify DndContext initializes without errors; confirm sensors activate on pointer/keyboard/touch; check DragOverlay renders during drag."
               },
               {
@@ -733,7 +733,7 @@
                   3
                 ],
                 "details": "Implement handlers: onDragStart sets activeId; onDragOver updates overId for drop zone highlighting; onDragEnd clears active/over but doesn't persist yet. Add visual cues: dimmed inactive columns, highlighted drop zone. Ensure smooth preview rendering in DragOverlay.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Drag a card and verify activeId updates; drag over columns and confirm drop zone highlights; release and verify local state resets; no API calls yet."
               },
               {
@@ -745,7 +745,7 @@
                   2
                 ],
                 "details": "Add a SegmentedControl or Tabs to toggle groupBy state between 'driver' and 'status'. Compute columns based on mode: drivers=[list of assigned drivers], statuses=[pending, in_progress, blocked, completed]. Memoize column computation to avoid re-renders. Update column headers to show driver names or status labels.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Toggle between 'driver' and 'status' modes and verify columns re-render correctly; confirm headers update; check stable card counts."
               },
               {
@@ -757,7 +757,7 @@
                   2
                 ],
                 "details": "Create ColumnSkeleton component with shimmer animation. Show skeletons during initial load and while refetching. Add EmptyColumn component for columns with no tasks. Wrap board in error boundary with retry button.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Check skeletons display during load; verify empty columns render correctly; test error boundary catches and allows retry."
               },
               {
@@ -773,8 +773,19 @@
                   6
                 ],
                 "details": "Create hooks/utils to fetch tasks and drivers from Supabase. Mock data in tests or Storybook. Test full render with 10-20 tasks across 2-3 drivers or statuses. Verify no console errors or accessibility violations. Ensure TypeScript types are correct throughout.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Render with mock data set; verify all columns/cards display; run axe a11y audit; check TypeScript strict mode passes; snapshot test layout."
+              },
+              {
+                "id": 8,
+                "title": "Wire drag-and-drop persistence to update database when tasks are dragged between columns",
+                "description": "Implement onDragEnd to persist task status or driver assignment changes to Supabase with optimistic UI updates.",
+                "dependencies": [
+                  4
+                ],
+                "details": "Extend onDragEnd handler to call API routes (/api/admin/tasks/[taskId] or /api/admin/tasks/[taskId]/assign) based on groupBy mode. Apply optimistic UI updates before API call; rollback on error. Show toast notifications for success/error. Handle both status updates (when grouped by status) and driver reassignments (when grouped by driver).",
+                "status": "done",
+                "testStrategy": "Drag a task between status columns and verify API call updates database; drag between driver columns and verify driver assignment updates. Simulate network failure and confirm rollback."
               }
             ]
           },
