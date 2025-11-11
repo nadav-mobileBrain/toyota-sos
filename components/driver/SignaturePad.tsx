@@ -69,6 +69,7 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
   const hasSignatureRef = useRef<boolean>(false);
   const [hasSignature, setHasSignature] = useState<boolean>(false);
   const dprRef = useRef<number>(1);
+  const resizeDebounceRef = useRef<any>(null);
 
   const setupCanvasForDPR = () => {
     const canvas = canvasRef.current;
@@ -104,8 +105,12 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
     redrawAll();
     // Listen for window resize (viewport or DPR changes)
     const onResize = () => {
-      setupCanvasForDPR();
-      redrawAll();
+      if (resizeDebounceRef.current != null) return;
+      resizeDebounceRef.current = setTimeout(() => {
+        resizeDebounceRef.current = null;
+        setupCanvasForDPR();
+        redrawAll();
+      }, 16);
     };
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', onResize);
@@ -113,6 +118,10 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
     return () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('resize', onResize);
+      }
+      if (resizeDebounceRef.current != null) {
+        clearTimeout(resizeDebounceRef.current);
+        resizeDebounceRef.current = null;
       }
     };
   }, [backgroundColor, width, height]);
