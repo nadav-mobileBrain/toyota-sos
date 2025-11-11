@@ -14,6 +14,7 @@ import {
   DragOverlay,
   useDraggable,
   useDroppable,
+  closestCorners,
 } from '@dnd-kit/core';
 
 /**
@@ -99,6 +100,7 @@ export function TasksBoard({
 }: TasksBoardProps) {
   // State management
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [assignees, setAssignees] = useState<TaskAssignee[]>(taskAssignees);
   // Persisted groupBy via URL query (?groupBy=driver|status) and localStorage
   const initialGroupBy = 'status' as GroupBy;
   const [groupBy, setGroupBy] = useState<GroupBy>(initialGroupBy);
@@ -158,14 +160,14 @@ export function TasksBoard({
 
   const taskAssigneeMap = useMemo(() => {
     const map = new Map<string, TaskAssignee[]>();
-    taskAssignees.forEach((ta) => {
+    assignees.forEach((ta) => {
       if (!map.has(ta.task_id)) {
         map.set(ta.task_id, []);
       }
       map.get(ta.task_id)!.push(ta);
     });
     return map;
-  }, [taskAssignees]);
+  }, [assignees]);
 
   const clientMap = useMemo(() => {
     const map = new Map<string, Client>();
@@ -184,7 +186,7 @@ export function TasksBoard({
     if (groupBy === 'driver') {
       // Group by driver: create columns for each assigned driver
       const driverIds = new Set<string>();
-      taskAssignees.forEach((ta) => driverIds.add(ta.driver_id));
+      assignees.forEach((ta) => driverIds.add(ta.driver_id));
       return Array.from(driverIds).map((driverId) => ({
         id: driverId,
         label: driverMap.get(driverId)?.name || 'Unknown Driver',
@@ -206,7 +208,7 @@ export function TasksBoard({
     (columnId: string): Task[] => {
       if (groupBy === 'driver') {
         // Filter tasks assigned to this driver
-        const assignedTaskIds = taskAssignees
+        const assignedTaskIds = assignees
           .filter((ta) => ta.driver_id === columnId)
           .map((ta) => ta.task_id);
         return tasks.filter((t) => assignedTaskIds.includes(t.id));
@@ -215,7 +217,7 @@ export function TasksBoard({
         return tasks.filter((t) => t.status === columnId);
       }
     },
-    [tasks, groupBy, taskAssignees]
+    [tasks, groupBy, assignees]
   );
 
   // DnD event handlers
@@ -264,19 +266,29 @@ export function TasksBoard({
     } else if (groupBy === 'driver') {
       // Target column is a driver - update task assignee
       const targetDriverId = targetColumnId;
-      const currentAssignee = taskAssignees.find((ta) => ta.task_id === taskId && ta.is_lead);
-
-      if (currentAssignee?.driver_id !== targetDriverId) {
-        // Update the lead driver assignment
-        // This will be handled via API call below
-        updatePayload.id = taskId;
-        updatePayload.updated_by = 'admin'; // Will be set by server
-        updatePayload.updated_at = new Date().toISOString();
+      const currentAssignee = assignees.find((ta) => ta.task_id === taskId && ta.is_lead);
+      if (currentAssignee?.driver_id === targetDriverId) {
+        return;
       }
+      // Optimistic assignees update and persistence with rollback
+      const prevSnapshot = assignees;
+      setAssignees((prevAssignees) => {
+        const withoutLead = prevAssignees.filter((ta) => !(ta.task_id === taskId && ta.is_lead));
+        const newLead: TaskAssignee = {
+          id: `local-${taskId}`,
+          task_id: taskId,
+          driver_id: targetDriverId,
+          is_lead: true,
+          assigned_at: new Date().toISOString(),
+        };
+        return [...withoutLead, newLead];
+      });
+      persistDriverAssignment(taskId, targetDriverId, prevSnapshot);
+      return;
     }
 
     // If no changes, return
-    if (Object.keys(updatePayload).length === 0 || !updatePayload.status) {
+    if (groupBy === 'status' && (Object.keys(updatePayload).length === 0 || !updatePayload.status)) {
       return;
     }
 
@@ -338,7 +350,7 @@ export function TasksBoard({
 
   // Persist driver assignment update to database
   const persistDriverAssignment = useCallback(
-    async (taskId: string, newDriverId: string) => {
+    async (taskId: string, newDriverId: string, prevSnapshot?: TaskAssignee[]) => {
       try {
         const response = await fetch(`/api/admin/tasks/${taskId}/assign`, {
           method: 'PATCH',
@@ -348,9 +360,15 @@ export function TasksBoard({
 
         if (!response.ok) {
           console.error('Failed to update driver assignment:', response.statusText);
+          if (prevSnapshot) {
+            setAssignees(prevSnapshot);
+          }
         }
       } catch (error) {
         console.error('Error persisting driver assignment:', error);
+        if (prevSnapshot) {
+          setAssignees(prevSnapshot);
+        }
       }
     },
     []
@@ -359,6 +377,7 @@ export function TasksBoard({
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -522,6 +541,7 @@ function KanbanColumn({
   // Setup droppable
   const { setNodeRef } = useDroppable({
     id: column.id,
+    data: { type: column.type },
   });
 
   return (

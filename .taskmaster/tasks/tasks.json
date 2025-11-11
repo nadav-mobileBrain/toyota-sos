@@ -667,7 +667,7 @@
             "description": "Handle onDragEnd to reassign by driver or update status with optimistic UI and rollback on error.",
             "dependencies": [1, 2],
             "details": "Implement `onDragEnd` to detect source/target column. When grouped by driver, update `task_assignees` (lead/co-assignee rules); when grouped by status, update task status. Apply optimistic updates, show toast, then persist via Supabase RPC/updates; rollback on failure. Keep ordering stable and support keyboard DnD where possible.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Drag a task across columns and verify assignment/status updates in UI and DB; simulate API failure to confirm rollback and error toast.",
             "parentId": "undefined"
           },
