@@ -115,9 +115,9 @@ describe('TasksBoard Scaffold (7.1.1)', () => {
     // Start with status grouping - verify the main board is there
     expect(screen.getByRole('main', { name: /לוח משימות/i })).toBeInTheDocument();
 
-    // Toggle to driver grouping
-    const select = screen.getByRole('combobox') as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: 'driver' } });
+    // Toggle to driver grouping using button
+    const driverButton = screen.getByRole('button', { name: 'נהג' });
+    fireEvent.click(driverButton);
 
     // Should show region for driver column
     const regions = screen.getAllByRole('region', { name: /עמודה:/ });
@@ -203,13 +203,16 @@ describe('TasksBoard Scaffold (7.1.1)', () => {
       />
     );
 
-    const select = screen.getByRole('combobox');
-    expect(select).toBeInTheDocument();
-
-    const options = select.querySelectorAll('option');
-    expect(options.length).toBe(2);
-    expect(options[0]).toHaveTextContent('סטטוס');
-    expect(options[1]).toHaveTextContent('נהג');
+    // Check for grouping toggle buttons (status and driver)
+    const statusButton = screen.getByRole('button', { name: 'סטטוס' });
+    const driverButton = screen.getByRole('button', { name: 'נהג' });
+    
+    expect(statusButton).toBeInTheDocument();
+    expect(driverButton).toBeInTheDocument();
+    
+    // Status should be selected by default
+    expect(statusButton).toHaveAttribute('aria-pressed', 'true');
+    expect(driverButton).toHaveAttribute('aria-pressed', 'false');
   });
 });
 
