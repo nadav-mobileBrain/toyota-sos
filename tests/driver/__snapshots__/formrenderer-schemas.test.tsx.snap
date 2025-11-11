@@ -1,0 +1,54 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`FormRenderer multi-schema coverage simple schema renders and matches snapshot 1`] = `
+<div>
+  <form
+    class=""
+    data-testid="form-renderer"
+    dir="rtl"
+  >
+    <div
+      class="space-y-4"
+    >
+      <div
+        class="space-y-1"
+      >
+        <label
+          class="font-medium"
+          for="fr-name"
+        >
+          שם
+           
+          <span
+            class="text-red-600"
+          >
+            *
+          </span>
+        </label>
+        <input
+          class="w-full rounded-md border border-gray-300 p-2 text-sm min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
+          id="fr-name"
+          type="text"
+          value=""
+        />
+      </div>
+      <div
+        class="space-y-1"
+      >
+        <label
+          class="font-medium"
+          for="fr-notes"
+        >
+          הערות
+           
+        </label>
+        <textarea
+          class="w-full rounded-md border border-gray-300 p-2 text-sm min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
+          id="fr-notes"
+          rows="4"
+        />
+      </div>
+    </div>
+  </form>
+</div>
+`;

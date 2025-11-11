@@ -10,11 +10,25 @@ export type SignaturePadProps = {
   backgroundColor?: string;
   className?: string;
   onChange?: (hasSignature: boolean) => void;
+  onExport?: (result: {
+    blob: Blob;
+    dataURL: string;
+    width: number;
+    height: number;
+    bytes: number;
+  }) => void;
 };
 
 export type SignaturePadRef = {
   clear: () => void;
   exportBlob: () => Promise<Blob | null>;
+  exportSignature: () => Promise<{
+    blob: Blob;
+    dataURL: string;
+    width: number;
+    height: number;
+    bytes: number;
+  } | null>;
 };
 
 /**
@@ -35,6 +49,7 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
     backgroundColor = '#ffffff',
     className,
     onChange,
+    onExport,
   } = props;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -89,6 +104,36 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
             }
           }
         });
+      },
+      exportSignature: async () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return null;
+        const width = canvas.width;
+        const height = canvas.height;
+        const blob = await new Promise<Blob | null>((resolve) => {
+          if (canvas.toBlob) {
+            canvas.toBlob((b) => resolve(b), 'image/png', 0.92);
+          } else {
+            try {
+              const dataUrl = canvas.toDataURL('image/png');
+              const bin = atob(dataUrl.split(',')[1] || '');
+              const bytes = new Uint8Array(bin.length);
+              for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+              resolve(new Blob([bytes], { type: 'image/png' }));
+            } catch {
+              resolve(null);
+            }
+          }
+        });
+        if (!blob) return null;
+        let dataURL = '';
+        try {
+          dataURL = canvas.toDataURL('image/png');
+        } catch {
+          dataURL = '';
+        }
+        const bytes = typeof blob.size === 'number' ? blob.size : 0;
+        return { blob, dataURL, width, height, bytes };
       },
     }),
     [backgroundColor, onChange]
@@ -245,7 +290,45 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
             type="button"
             className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-toyota-primary focus-visible:ring-offset-2"
             aria-label="ייצא חתימה"
-            disabled
+            disabled={!hasSignature}
+            onClick={async () => {
+              const result = await (await Promise.resolve()).then(() => {
+                // call through ref-like method inside to avoid exposing actual ref in UI handler
+                return (async () => {
+                  // reuse the imperative handle logic
+                  // we can't access methods from here directly, so call local implementation
+                  const canvas = canvasRef.current;
+                  if (!canvas) return null;
+                  const width = canvas.width;
+                  const height = canvas.height;
+                  const blob = await new Promise<Blob | null>((resolve) => {
+                    if (canvas.toBlob) {
+                      canvas.toBlob((b) => resolve(b), 'image/png', 0.92);
+                    } else {
+                      try {
+                        const dataUrl = canvas.toDataURL('image/png');
+                        const bin = atob(dataUrl.split(',')[1] || '');
+                        const bytes = new Uint8Array(bin.length);
+                        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                        resolve(new Blob([bytes], { type: 'image/png' }));
+                      } catch {
+                        resolve(null);
+                      }
+                    }
+                  });
+                  if (!blob) return null;
+                  let dataURL = '';
+                  try {
+                    dataURL = canvas.toDataURL('image/png');
+                  } catch {
+                    dataURL = '';
+                  }
+                  const bytes = typeof blob.size === 'number' ? blob.size : 0;
+                  return { blob, dataURL, width, height, bytes };
+                })();
+              });
+              if (result && onExport) onExport(result);
+            }}
           >
             ייצא
           </button>
