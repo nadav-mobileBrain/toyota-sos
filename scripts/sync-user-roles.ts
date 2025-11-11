@@ -4,6 +4,8 @@
  * Script to sync user roles from profiles table to Supabase auth.users metadata
  * This fixes login redirects where role wasn't properly set in user_metadata
  * 
+ * Requires: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env
+ * 
  * Usage:
  *   npx ts-node scripts/sync-user-roles.ts                    # Sync all users
  *   npx ts-node scripts/sync-user-roles.ts --email=user@example.com # Sync specific user
@@ -13,8 +15,8 @@
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config({ path: '.env.local' });
+// Load environment variables from .env
+dotenv.config({ path: '.env' });
 
 interface SyncOptions {
   email?: string;
@@ -44,7 +46,7 @@ async function syncUserRoles() {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('❌ Missing Supabase credentials in .env.local');
+    console.error('❌ Missing Supabase credentials in .env');
     console.error('   NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✓' : '✗');
     console.error('   SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '✓' : '✗');
     process.exit(1);
