@@ -592,7 +592,7 @@
                 "description": "Build the visual Kanban grid with columns, cards, and proper responsive sizing.",
                 "dependencies": [1],
                 "details": "Create a CSS Grid or Tailwind flex layout for columns (each column ~300px with scroll). Render column headers and TaskCard components inside. Build TaskCard component showing title, priority badge, driver(s), time window, status pill. Use shadcn/ui components for badges/pills. Ensure RTL layout with dir='rtl'. Add gap/padding for spacing.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Render with mock tasks and verify layout displays correctly; check responsive grid scales; verify RTL mirroring; inspect card rendering."
               },
               {
