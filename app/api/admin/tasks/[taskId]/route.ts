@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
-import { getServerSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 /**
  * PATCH /api/admin/tasks/[taskId]
@@ -9,19 +9,21 @@ import { getServerSession } from '@/lib/auth';
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { taskId: string } }
+  { params }: { params: Promise<{ taskId: string }> }
 ) {
   try {
-    // Check authentication
-    const session = await getServerSession();
-    if (!session || (session.role !== 'admin' && session.role !== 'manager')) {
+    // Check authentication via cookie
+    const cookieStore = cookies();
+    const roleCookie = cookieStore.get('toyota_role')?.value;
+    
+    if (!roleCookie || (roleCookie !== 'admin' && roleCookie !== 'manager')) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const { taskId } = params;
+    const { taskId } = await params;
     const body = await request.json();
 
     // Only allow updating specific fields
@@ -35,8 +37,8 @@ export async function PATCH(
     });
 
     // Add metadata
-    updatePayload.updated_by = session.id;
     updatePayload.updated_at = new Date().toISOString();
+    // Note: updated_by would require extracting user ID from auth context
 
     // Update in Supabase
     const admin = getSupabaseAdmin();
@@ -58,8 +60,9 @@ export async function PATCH(
     return NextResponse.json({ success: true, data }, { status: 200 });
   } catch (error) {
     console.error('Error in PATCH /api/admin/tasks/[taskId]:', error);
+    console.error('Error details:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

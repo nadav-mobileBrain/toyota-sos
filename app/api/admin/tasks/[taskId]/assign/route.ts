@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
-import { getServerSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 /**
  * PATCH /api/admin/tasks/[taskId]/assign
@@ -9,19 +9,21 @@ import { getServerSession } from '@/lib/auth';
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { taskId: string } }
+  { params }: { params: Promise<{ taskId: string }> }
 ) {
   try {
-    // Check authentication
-    const session = await getServerSession();
-    if (!session || (session.role !== 'admin' && session.role !== 'manager')) {
+    // Check authentication via cookie
+    const cookieStore = cookies();
+    const roleCookie = cookieStore.get('toyota_role')?.value;
+    
+    if (!roleCookie || (roleCookie !== 'admin' && roleCookie !== 'manager')) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const { taskId } = params;
+    const { taskId } = await params;
     const { driver_id } = await request.json();
 
     if (!driver_id) {
