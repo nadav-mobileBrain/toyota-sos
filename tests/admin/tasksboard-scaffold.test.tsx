@@ -151,13 +151,13 @@ describe('TasksBoard Scaffold (7.1.1)', () => {
       />
     );
 
-    // Find a task card and check it has drag attributes
-    const taskCards = container.querySelectorAll('[draggable="true"]');
+    // Find a task card and check it has @dnd-kit draggable attributes
+    const taskCards = container.querySelectorAll('[data-draggable-id]');
     expect(taskCards.length).toBeGreaterThan(0);
 
-    // Verify drag events are attached
+    // Verify task cards have grab cursor class
     const firstCard = taskCards[0] as HTMLElement;
-    expect(firstCard).toHaveAttribute('draggable', 'true');
+    expect(firstCard).toHaveClass('cursor-grab');
   });
 
   test('renders with RTL layout (dir=rtl)', () => {

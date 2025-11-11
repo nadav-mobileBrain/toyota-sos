@@ -272,8 +272,8 @@ describe('TasksBoard Grid Layout (7.1.2)', () => {
       />
     );
 
-    // Check for draggable task cards
-    const draggableCards = container.querySelectorAll('[draggable="true"]');
+    // Check for @dnd-kit draggable task cards
+    const draggableCards = container.querySelectorAll('[data-draggable-id]');
     expect(draggableCards.length).toBe(mockTasks.length);
 
     // Check for cursor-grab class
