@@ -538,7 +538,7 @@
             "description": "Display unread notifications count and keep it synchronized via Supabase Realtime and cross-tab messaging.",
             "dependencies": [4, 5],
             "details": "Create a badge component (e.g., components/notifications/Badge.tsx) that queries unread count and subscribes to Supabase Realtime on notifications and read events. Update count on inserts/updates/deletes. Sync across tabs using BroadcastChannel or storage events. Optionally use the Badging API where supported and fall back to UI badge. Clear count when notifications are marked read.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Open multiple tabs, trigger insert/read events, and ensure the badge updates in all tabs in real time. Refresh and confirm initial count hydration matches server state. Validate fallback when Realtime is unavailable.",
             "parentId": "undefined"
           },

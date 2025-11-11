@@ -36,7 +36,8 @@ drop policy if exists profiles_select_self_or_read_all on public.profiles;
 create policy profiles_select_self_or_read_all
 on public.profiles for select
 using (
-  (app_user_role() = 'admin'::role OR app_user_role() = 'manager'::role OR app_user_role() = 'viewer'::role)
+  auth.uid() is null  -- allow unauthenticated reads (driver login flow)
+  or (app_user_role() = 'admin'::role OR app_user_role() = 'manager'::role OR app_user_role() = 'viewer'::role)
   or id = auth.uid()
 );
 
