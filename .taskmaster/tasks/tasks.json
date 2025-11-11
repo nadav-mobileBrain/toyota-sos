@@ -480,7 +480,7 @@
         "testStrategy": "Test VAPID key generation and configuration. Verify Service Worker registers and handles push events. Test permission prompt displays and handles user response. Verify push notification sends to correct users. Test in-app notification appears in center. Verify badge count updates in real-time. Test mark-as-read updates DB and broadcasts to other sessions. Test notification click deep links to task.",
         "priority": "high",
         "dependencies": ["2", "3"],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -548,7 +548,7 @@
             "description": "Provide per-type enable/disable toggles and implement optional sound/vibration for mobile notifications.",
             "dependencies": [3, 5],
             "details": "Create app/settings/notifications/page.tsx with toggles for event types (assigned, updated, started, completed, blocked). Persist preferences in a notification_preferences table and respect them in the Edge Function routing. In SW, honor silent flag and play a short sound (user gesture–gated) and navigator.vibrate where supported. Add clear copy explaining effects and battery impact.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Toggle preferences and send test events to verify filtering. On mobile or emulation, confirm vibration triggers and optional sound plays only when allowed. Ensure settings persist across sessions and apply to both push and in-app notifications.",
             "parentId": "undefined"
           }
@@ -575,7 +575,72 @@
             "details": "Create `app/admin/tasks/page.tsx` rendering a `TasksBoard` component. Build initial columns and cards layout with responsive grid, set up `@dnd-kit/core` (sensors, DndContext, DragOverlay), placeholder handlers, and typed state for tasks, drivers, and statuses. Fetch initial data (tasks, drivers) via data hooks and show skeletons on load.",
             "status": "pending",
             "testStrategy": "Render with mock data; verify columns and cards appear; confirm DnD sensors initialize and DragOverlay mounts without errors.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "subtasks": [
+              {
+                "id": 1,
+                "title": "Create app/admin/tasks/page.tsx and TasksBoard component scaffold",
+                "description": "Set up the admin tasks page routing and main TasksBoard component with state management for tasks, drivers, and grouping mode.",
+                "dependencies": [],
+                "details": "Create app/admin/tasks/page.tsx as a Server Component that loads initial tasks/drivers data. Build components/admin/TasksBoard.tsx with useState for tasks, drivers, groupBy mode, and selected filters. Implement typed state interfaces (Task, Driver, DragItem). Fetch data via Supabase queries or RPC. Show loading skeletons while fetching.",
+                "status": "pending",
+                "testStrategy": "Render page and confirm skeleton appears while loading; verify data loads and component mounts without errors; inspect initial state."
+              },
+              {
+                "id": 2,
+                "title": "Implement responsive Kanban grid layout with column and card structure",
+                "description": "Build the visual Kanban grid with columns, cards, and proper responsive sizing.",
+                "dependencies": [1],
+                "details": "Create a CSS Grid or Tailwind flex layout for columns (each column ~300px with scroll). Render column headers and TaskCard components inside. Build TaskCard component showing title, priority badge, driver(s), time window, status pill. Use shadcn/ui components for badges/pills. Ensure RTL layout with dir='rtl'. Add gap/padding for spacing.",
+                "status": "pending",
+                "testStrategy": "Render with mock tasks and verify layout displays correctly; check responsive grid scales; verify RTL mirroring; inspect card rendering."
+              },
+              {
+                "id": 3,
+                "title": "Set up @dnd-kit/core context, sensors, and DragOverlay",
+                "description": "Initialize DnD context and configure sensors for pointer, keyboard, and touch interactions.",
+                "dependencies": [1],
+                "details": "Wrap TasksBoard in DndContext with PointerSensor, KeyboardSensor, TouchSensor configured. Add DragOverlay component to render the dragged card during drag. Pass onDragStart, onDragOver, onDragEnd handlers (no-op for now). Ensure DragOverlay uses the correct rendering style.",
+                "status": "pending",
+                "testStrategy": "Verify DndContext initializes without errors; confirm sensors activate on pointer/keyboard/touch; check DragOverlay renders during drag."
+              },
+              {
+                "id": 4,
+                "title": "Add placeholder drag handlers and optimistic drag preview",
+                "description": "Implement onDragStart, onDragOver, onDragEnd handlers that update local state for visual feedback.",
+                "dependencies": [3],
+                "details": "Implement handlers: onDragStart sets activeId; onDragOver updates overId for drop zone highlighting; onDragEnd clears active/over but doesn't persist yet. Add visual cues: dimmed inactive columns, highlighted drop zone. Ensure smooth preview rendering in DragOverlay.",
+                "status": "pending",
+                "testStrategy": "Drag a card and verify activeId updates; drag over columns and confirm drop zone highlights; release and verify local state resets; no API calls yet."
+              },
+              {
+                "id": 5,
+                "title": "Implement column grouping selector (by driver vs by status)",
+                "description": "Add toggle/segmented control to switch between grouping modes and compute columns dynamically.",
+                "dependencies": [1, 2],
+                "details": "Add a SegmentedControl or Tabs to toggle groupBy state between 'driver' and 'status'. Compute columns based on mode: drivers=[list of assigned drivers], statuses=[pending, in_progress, blocked, completed]. Memoize column computation to avoid re-renders. Update column headers to show driver names or status labels.",
+                "status": "pending",
+                "testStrategy": "Toggle between 'driver' and 'status' modes and verify columns re-render correctly; confirm headers update; check stable card counts."
+              },
+              {
+                "id": 6,
+                "title": "Add loading skeletons and empty state handling",
+                "description": "Render skeleton loaders during data fetch and empty states when no tasks exist.",
+                "dependencies": [1, 2],
+                "details": "Create ColumnSkeleton component with shimmer animation. Show skeletons during initial load and while refetching. Add EmptyColumn component for columns with no tasks. Wrap board in error boundary with retry button.",
+                "status": "pending",
+                "testStrategy": "Check skeletons display during load; verify empty columns render correctly; test error boundary catches and allows retry."
+              },
+              {
+                "id": 7,
+                "title": "Wire initial data fetching and test with mock data",
+                "description": "Implement data hooks/queries and test the scaffold with realistic mock task data.",
+                "dependencies": [1, 2, 3, 4, 5, 6],
+                "details": "Create hooks/utils to fetch tasks and drivers from Supabase. Mock data in tests or Storybook. Test full render with 10-20 tasks across 2-3 drivers or statuses. Verify no console errors or accessibility violations. Ensure TypeScript types are correct throughout.",
+                "status": "pending",
+                "testStrategy": "Render with mock data set; verify all columns/cards display; run axe a11y audit; check TypeScript strict mode passes; snapshot test layout."
+              }
+            ]
           },
           {
             "id": 2,
