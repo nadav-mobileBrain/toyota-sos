@@ -191,75 +191,152 @@ export function TasksBoard({
         </select>
       </div>
 
-      {/* Kanban board */}
+      {/* Kanban board container */}
       <div
-        className="flex gap-4 overflow-x-auto rounded-lg bg-white p-4"
+        className="h-[calc(100vh-200px)] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"
         role="main"
         aria-label="לוח משימות"
       >
         {isLoading ? (
           // Loading skeletons
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-64 w-80 animate-pulse rounded-lg bg-gray-200"
-              />
-            ))}
+          <div className="flex h-full items-center justify-center">
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-64 w-80 animate-pulse rounded-lg bg-gray-200"
+                />
+              ))}
+            </div>
           </div>
         ) : columns.length === 0 ? (
           // Empty state
-          <div className="flex h-96 w-full items-center justify-center">
-            <p className="text-gray-500">אין עמודות להצגה</p>
+          <div className="flex h-full w-full items-center justify-center">
+            <div className="text-center">
+              <p className="text-lg font-medium text-gray-500">אין עמודות להצגה</p>
+              <p className="text-sm text-gray-400">בדוק את הגדרות הקיבוץ</p>
+            </div>
           </div>
         ) : (
-          // Columns
-          columns.map((column) => {
-            const columnTasks = getColumnTasks(column.id);
-            const isOver = overId === column.id;
-            return (
-              <div
-                key={column.id}
-                className={`flex min-w-[300px] flex-shrink-0 flex-col rounded-lg border-2 transition-colors ${
-                  isOver ? 'border-toyota-primary bg-toyota-50' : 'border-gray-200 bg-gray-50'
-                }`}
-                onDragOver={() => handleDragOver(column.id)}
-                onDragLeave={() => handleDragOver(null)}
-                onDrop={handleDragEnd}
-                role="region"
-                aria-label={`עמודה: ${column.label}`}
-              >
-                {/* Column header */}
-                <div className="border-b border-gray-200 bg-white p-3">
-                  <h3 className="font-semibold text-gray-900">{column.label}</h3>
-                  <p className="text-xs text-gray-500">{columnTasks.length} משימות</p>
-                </div>
+          // Kanban grid with horizontal scroll
+          <div className="flex gap-6 overflow-x-auto p-4">
+            {columns.map((column) => {
+              const columnTasks = getColumnTasks(column.id);
+              const isOver = overId === column.id;
+              return (
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  tasks={columnTasks}
+                  isOver={isOver}
+                  activeTaskId={activeId}
+                  taskAssigneeMap={taskAssigneeMap}
+                  driverMap={driverMap}
+                  clientMap={clientMap}
+                  vehicleMap={vehicleMap}
+                  onDragOver={handleDragOver}
+                  onDragLeave={() => handleDragOver(null)}
+                  onDrop={handleDragEnd}
+                  onDragStart={handleDragStart}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
-                {/* Column body */}
-                <div className="flex-1 space-y-2 overflow-y-auto p-3">
-                  {columnTasks.length === 0 ? (
-                    <div className="flex h-40 items-center justify-center">
-                      <p className="text-sm text-gray-400">אין משימות</p>
-                    </div>
-                  ) : (
-                    columnTasks.map((task) => (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        columnId={column.id}
-                        isActive={activeId === task.id}
-                        assignees={taskAssigneeMap.get(task.id) || []}
-                        driverMap={driverMap}
-                        clientMap={clientMap}
-                        vehicleMap={vehicleMap}
-                        onDragStart={handleDragStart}
-                      />
-                    ))
-                  )}
-                </div>
-              </div>
-            );
-          })
+/**
+ * KanbanColumn Component
+ * Renders a single column in the Kanban board with header and task cards.
+ */
+interface KanbanColumnProps {
+  column: { id: string; label: string; type: 'driver' | 'status' };
+  tasks: Task[];
+  isOver: boolean;
+  activeTaskId: string | null;
+  taskAssigneeMap: Map<string, TaskAssignee[]>;
+  driverMap: Map<string, Driver>;
+  clientMap: Map<string, Client>;
+  vehicleMap: Map<string, Vehicle>;
+  onDragOver: (columnId: string) => void;
+  onDragLeave: () => void;
+  onDrop: () => void;
+  onDragStart: (taskId: string, columnId: string) => void;
+}
+
+function KanbanColumn({
+  column,
+  tasks,
+  isOver,
+  activeTaskId,
+  taskAssigneeMap,
+  driverMap,
+  clientMap,
+  vehicleMap,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragStart,
+}: KanbanColumnProps) {
+  return (
+    <div
+      className={`flex min-w-[320px] flex-shrink-0 flex-col rounded-lg border-2 transition-all ${
+        isOver
+          ? 'border-toyota-primary/50 bg-toyota-50/30 shadow-md'
+          : 'border-gray-200 bg-gray-50'
+      }`}
+      onDragOver={(e) => {
+        e.preventDefault();
+        onDragOver(column.id);
+      }}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop();
+      }}
+      role="region"
+      aria-label={`עמודה: ${column.label}`}
+    >
+      {/* Column Header */}
+      <div className="sticky top-0 border-b border-gray-200 bg-white px-4 py-3 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-gray-900">{column.label}</h3>
+            <p className="text-xs font-medium text-gray-500">
+              {tasks.length} {tasks.length === 1 ? 'משימה' : 'משימות'}
+            </p>
+          </div>
+          <div className="rounded-full bg-gray-100 px-2.5 py-1 text-sm font-semibold text-gray-700">
+            {tasks.length}
+          </div>
+        </div>
+      </div>
+
+      {/* Column Body - Scrollable task list */}
+      <div className="flex-1 space-y-3 overflow-y-auto p-3">
+        {tasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="mb-2 text-2xl">📭</div>
+            <p className="text-sm font-medium text-gray-400">אין משימות</p>
+            <p className="text-xs text-gray-300">גרור משימה לכאן</p>
+          </div>
+        ) : (
+          tasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              columnId={column.id}
+              isActive={activeTaskId === task.id}
+              assignees={taskAssigneeMap.get(task.id) || []}
+              driverMap={driverMap}
+              clientMap={clientMap}
+              vehicleMap={vehicleMap}
+              onDragStart={onDragStart}
+            />
+          ))
         )}
       </div>
     </div>
@@ -268,7 +345,7 @@ export function TasksBoard({
 
 /**
  * TaskCard Component
- * Renders a single task card within the Kanban board.
+ * Renders a single task card within the Kanban board with drag support.
  */
 interface TaskCardProps {
   task: Task;
@@ -300,8 +377,8 @@ function TaskCard({
     <div
       draggable
       onDragStart={() => onDragStart(task.id, columnId)}
-      className={`cursor-move rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-all hover:shadow-md ${
-        isActive ? 'opacity-50' : ''
+      className={`cursor-grab active:cursor-grabbing rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-all hover:shadow-md hover:border-gray-300 ${
+        isActive ? 'opacity-50 ring-2 ring-toyota-primary' : ''
       }`}
       role="button"
       tabIndex={0}
@@ -309,45 +386,52 @@ function TaskCard({
     >
       {/* Header: Title + Priority Badge */}
       <div className="mb-2 flex items-start justify-between gap-2">
-        <h4 className="flex-1 font-semibold text-gray-900">{task.title}</h4>
-        <span className={`inline-block rounded-full px-2 py-1 text-xs font-semibold text-white ${priorityColor(task.priority)}`}>
+        <h4 className="flex-1 line-clamp-2 font-semibold text-gray-900 text-sm">{task.title}</h4>
+        <span className={`shrink-0 inline-block rounded-full px-1.5 py-0.5 text-xs font-bold text-white ${priorityColor(task.priority)}`}>
           {priorityLabel(task.priority)}
         </span>
       </div>
 
-      {/* Type */}
-      <p className="mb-1 text-xs text-gray-600">{typeLabel(task.type)}</p>
+      {/* Type badge */}
+      <p className="mb-2 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+        {typeLabel(task.type)}
+      </p>
 
-      {/* Driver */}
+      {/* Driver info */}
       {leadDriver && (
-        <p className="mb-1 text-xs text-gray-700">
-          <span className="font-medium">נהג:</span> {leadDriver.name || 'Unknown'}
-        </p>
+        <div className="mb-2 flex items-center gap-1 text-xs text-gray-600">
+          <span className="font-medium">👤</span>
+          <span className="truncate">{leadDriver.name || 'Unknown'}</span>
+        </div>
       )}
 
-      {/* Client */}
+      {/* Client info */}
       {client && (
-        <p className="mb-1 text-xs text-gray-700">
-          <span className="font-medium">לקוח:</span> {client.name}
-        </p>
+        <div className="mb-2 flex items-center gap-1 text-xs text-gray-600">
+          <span className="font-medium">🏢</span>
+          <span className="truncate">{client.name}</span>
+        </div>
       )}
 
-      {/* Vehicle */}
+      {/* Vehicle info */}
       {vehicle && (
-        <p className="mb-2 text-xs text-gray-700">
-          <span className="font-medium">רכב:</span> {vehicle.license_plate}
-        </p>
+        <div className="mb-2 flex items-center gap-1 text-xs text-gray-600">
+          <span className="font-medium">🚗</span>
+          <span className="font-mono font-bold">{vehicle.license_plate}</span>
+        </div>
       )}
 
       {/* Time window */}
-      <p className="mb-2 text-xs text-gray-600">
+      <div className="mb-2 text-xs text-gray-500">
         {formatDate(task.estimated_start)} - {formatDate(task.estimated_end)}
-      </p>
+      </div>
 
       {/* Status badge */}
-      <span className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${statusColor(task.status)}`}>
-        {statusLabel(task.status)}
-      </span>
+      <div className="inline-block">
+        <span className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${statusColor(task.status)}`}>
+          {statusLabel(task.status)}
+        </span>
+      </div>
     </div>
   );
 }

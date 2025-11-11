@@ -583,7 +583,7 @@
                 "description": "Set up the admin tasks page routing and main TasksBoard component with state management for tasks, drivers, and grouping mode.",
                 "dependencies": [],
                 "details": "Create app/admin/tasks/page.tsx as a Server Component that loads initial tasks/drivers data. Build components/admin/TasksBoard.tsx with useState for tasks, drivers, groupBy mode, and selected filters. Implement typed state interfaces (Task, Driver, DragItem). Fetch data via Supabase queries or RPC. Show loading skeletons while fetching.",
-                "status": "pending",
+                "status": "done",
                 "testStrategy": "Render page and confirm skeleton appears while loading; verify data loads and component mounts without errors; inspect initial state."
               },
               {
