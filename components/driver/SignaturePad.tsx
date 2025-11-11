@@ -105,10 +105,20 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
     redrawAll();
     // Listen for window resize (viewport or DPR changes)
     const onResize = () => {
+      const nextDpr =
+        typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1;
+      const prevDpr = dprRef.current;
+      if (nextDpr !== prevDpr) {
+        // DPI changed: reconfigure and redraw immediately (crispness matters)
+        setupCanvasForDPR();
+        redrawAll();
+        return;
+      }
+      // No DPI change: update sizing/transform immediately, but coalesce redraws
+      setupCanvasForDPR();
       if (resizeDebounceRef.current != null) return;
       resizeDebounceRef.current = setTimeout(() => {
         resizeDebounceRef.current = null;
-        setupCanvasForDPR();
         redrawAll();
       }, 16);
     };
