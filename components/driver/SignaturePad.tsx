@@ -84,8 +84,15 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
     (canvas.style as any).width = `${width}px`;
     (canvas.style as any).height = `${height}px`;
     // Reset transform then scale so 1 unit == 1 CSS pixel
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(dpr, dpr);
+    const anyCtx = ctx as any;
+    if (typeof anyCtx.setTransform === 'function') {
+      anyCtx.setTransform(1, 0, 0, 1, 0, 0);
+    } else if (typeof anyCtx.resetTransform === 'function') {
+      anyCtx.resetTransform();
+    }
+    if (typeof ctx.scale === 'function') {
+      ctx.scale(dpr, dpr);
+    }
     // Fill background using CSS pixel space
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, width, height);
@@ -282,19 +289,69 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
   };
 
   return (
-    <div className={className ?? ''} dir="rtl" data-testid="signature-pad">
+    <div
+      className={className ?? ''}
+      dir="rtl"
+      data-testid="signature-pad"
+      onKeyDown={(e) => {
+        // Keyboard shortcuts:
+        // - Meta/Ctrl + Z: undo last stroke
+        // - Escape/Delete/Backspace: clear canvas
+        const isUndo = (e.key === 'z' || e.key === 'Z') && (e.metaKey || e.ctrlKey);
+        const isClear = e.key === 'Escape' || e.key === 'Delete' || e.key === 'Backspace';
+        if (isUndo) {
+          e.preventDefault();
+          if (strokesRef.current.length === 0) return;
+          strokesRef.current.pop();
+          hasSignatureRef.current = strokesRef.current.length > 0;
+          redrawAll();
+          setHasSignature(hasSignatureRef.current);
+          onChange?.(hasSignatureRef.current);
+          return;
+        }
+        if (isClear) {
+          e.preventDefault();
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          ctx.clearRect(0, 0, width, height);
+          ctx.fillStyle = backgroundColor;
+          ctx.fillRect(0, 0, width, height);
+          strokesRef.current = [];
+          hasSignatureRef.current = false;
+          setHasSignature(false);
+          onChange?.(false);
+        }
+      }}
+      tabIndex={-1}
+    >
       <div className="rounded-md border p-2 bg-white">
         <canvas
           ref={canvasRef}
           width={width}
           height={height}
           // Ensure visible size matches intrinsic size for crispness at 1x; DPI scaling added later
-          style={{ width: `${width}px`, height: `${height}px`, backgroundColor }}
+          style={{ width: `${width}px`, height: `${height}px`, backgroundColor, touchAction: 'none' }}
           aria-label="לוח חתימה"
+          tabIndex={0}
           onPointerDown={startDrawing}
           onPointerMove={draw}
           onPointerUp={endDrawing}
           onPointerCancel={endDrawing}
+          onKeyDown={(e) => {
+            // Delegate to parent handler for shortcuts
+            (e.currentTarget.parentElement as HTMLElement | null)?.dispatchEvent(
+              new KeyboardEvent('keydown', {
+                key: e.key,
+                code: (e as any).code,
+                ctrlKey: e.ctrlKey,
+                metaKey: e.metaKey,
+                bubbles: true,
+                cancelable: true,
+              })
+            );
+          }}
         />
         <div className="mt-2 flex gap-2">
           <button
