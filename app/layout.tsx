@@ -5,6 +5,7 @@ import { SupabaseConfigProvider } from "@/components/SupabaseConfigProvider";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { ConnectivityProvider } from "@/components/ConnectivityProvider";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { InstallAppButton } from "@/components/InstallAppButton";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -47,6 +48,10 @@ export default function RootLayout({
       >
         <ServiceWorkerRegister />
         <ConnectivityProvider>
+          {/* Install prompt button (conditionally rendered) */}
+          <div className="fixed top-2 left-2 z-40">
+            <InstallAppButton />
+          </div>
           <OfflineBanner />
           <AuthProvider>{children}</AuthProvider>
         </ConnectivityProvider>
