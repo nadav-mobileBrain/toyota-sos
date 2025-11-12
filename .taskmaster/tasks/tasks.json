@@ -942,7 +942,7 @@
             "description": "Provide a flags service with TTL cache, an admin management UI, and a hook for reads across the app.",
             "dependencies": [],
             "details": "Create lib/flags.ts with getFlags(), isEnabled(key), setFlag(), and in-memory Map cache with 5‑minute TTL and invalidation. Build components/admin/FeatureFlags.tsx to list and toggle flags (persist to backend) with admin-only access. Add useFeatureFlag(key) hook that subscribes to cache updates. Log flag changes to audit if required.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit-test TTL caching and invalidation behavior. Mock backend to verify toggles persist and optimistic UI updates. Validate hook returns updated values after toggles and permissions are enforced.",
             "parentId": "undefined"
           },
