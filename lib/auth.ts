@@ -372,12 +372,13 @@ export const getCurrentRole = async (client: SupabaseClient): Promise<'driver' |
  * Unified logout for either driver or admin
  */
 export const logout = async (client: SupabaseClient): Promise<void> => {
-  const driverSession = getDriverSession();
-
-  if (driverSession) {
-    logoutDriver();
-  } else {
+  // Always clear local driver session (noop if none)
+  logoutDriver();
+  // Always sign out Supabase (noop if no admin session)
+  try {
     await logoutAdmin(client);
+  } catch {
+    // ignore; best-effort
   }
 };
 

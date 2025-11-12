@@ -10,7 +10,7 @@ import { NavBar } from '@/components/ui/tubelight-navbar';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const { logout, client } = useAuth();
+  const { logout } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
   const navItems = [
     { name: 'Home', url: '#', icon: Home },
@@ -20,19 +20,8 @@ export default function AdminDashboardPage() {
   ];
   const handleSignOut = async () => {
     try {
-      console.log('Signing out...');
       setSigningOut(true);
       await logout();
-      try {
-        // Ensure Supabase auth session (admin) is also cleared even if a driver session existed
-        await client.auth.signOut();
-      } catch {}
-      try {
-        // Best-effort client cleanup
-        localStorage.clear();
-        sessionStorage.clear();
-        document.cookie = 'toyota_role=; path=/; max-age=0';
-      } catch {}
     } finally {
       setSigningOut(false);
       router.replace('/auth/login');
