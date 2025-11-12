@@ -932,7 +932,7 @@
             "description": "Create an admin-only component showing who changed what and when, with field-level diffs and localized time formatting.",
             "dependencies": [3],
             "details": "Create components/admin/AuditFeed.tsx to fetch task_audit_log entries by task_id with pagination. Render actor name, action, and changed_at formatted in he-IL. Display added/removed/modified diffs, include filters and search, handle empty/error states, and provide copy-to-clipboard for raw JSON.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Render with fixtures and snapshot-test diff rendering. Verify he-IL formatting and RTL layout. Test pagination, filters, and unauthorized access is blocked.",
             "parentId": "undefined"
           },
