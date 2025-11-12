@@ -1,3 +1,82 @@
+/* eslint-disable no-restricted-globals */
+// Basic app shell + API caching with versioning
+const VERSION = 'v1';
+const APP_SHELL_CACHE = `app-shell-${VERSION}`;
+const RUNTIME_CACHE = `runtime-${VERSION}`;
+
+const APP_SHELL_URLS = [
+  '/', // root
+  '/favicon.ico',
+];
+
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(APP_SHELL_CACHE).then((cache) => cache.addAll(APP_SHELL_URLS)).catch(() => {})
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((k) => ![APP_SHELL_CACHE, RUNTIME_CACHE].includes(k))
+          .map((k) => caches.delete(k))
+      );
+      await self.clients.claim();
+    })()
+  );
+});
+
+// Cache-first for app shell/static; network-first for JSON/API
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  const url = new URL(req.url);
+  if (req.method !== 'GET') return; // only GET
+
+  // Same-origin navigation or static
+  if (url.origin === self.location.origin) {
+    if (req.mode === 'navigate' || APP_SHELL_URLS.includes(url.pathname)) {
+      event.respondWith(
+        caches.match(req).then((cached) => {
+          return (
+            cached ||
+            fetch(req)
+              .then((resp) => {
+                const copy = resp.clone();
+                caches.open(APP_SHELL_CACHE).then((cache) => cache.put(req, copy));
+                return resp;
+              })
+              .catch(() => cached || caches.match('/'))
+          );
+        })
+      );
+      return;
+    }
+  }
+
+  // Network-first for JSON/API responses
+  const isApi = url.pathname.startsWith('/api/') || url.hostname.endsWith('supabase.co');
+  if (isApi) {
+    event.respondWith(
+      (async () => {
+        try {
+          const resp = await fetch(req);
+          const copy = resp.clone();
+          caches.open(RUNTIME_CACHE).then((cache) => cache.put(req, copy));
+          return resp;
+        } catch {
+          const cached = await caches.match(req);
+          if (cached) return cached;
+          throw new Error('Network error and no cache');
+        }
+      })()
+    );
+  }
+});
+
 /* global self, clients */
 // Basic Service Worker for Web Push handling, actions, and deep links
 // Install/activate lifecycle: take control ASAP
