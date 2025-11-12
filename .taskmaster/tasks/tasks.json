@@ -922,7 +922,7 @@
             "description": "Capture INSERT/UPDATE changes to tasks, recording actor, action, timestamps, and JSON before/after data.",
             "dependencies": [],
             "details": "Add DB trigger/function or app middleware to write to task_audit_log on INSERT/UPDATE. Persist task_id, actor_id, action (created/updated), changed_at, before JSON, after JSON. Compute field-level diffs for display. Add indexes on task_id and changed_at. Ensure sensitive fields are excluded or masked.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Simulate task creation and updates and verify audit rows contain correct before/after snapshots. Check null-before on INSERT, diffs on UPDATE, and index use for paginated queries.",
             "parentId": "undefined"
           },

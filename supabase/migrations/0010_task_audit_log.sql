@@ -30,10 +30,13 @@ returns jsonb language sql immutable as $$
     ) u
   )
   select coalesce(
-    jsonb_object_agg(k.key, jsonb_build_object(
-      'from', before -> k.key,
-      'to',   after  -> k.key
-    ) filter (where (before -> k.key) is distinct from (after -> k.key))),
+    jsonb_object_agg(
+      k.key,
+      jsonb_build_object(
+        'from', before -> k.key,
+        'to',   after  -> k.key
+      )
+    ) filter (where (before -> k.key) is distinct from (after -> k.key)),
     '{}'::jsonb
   )
   from keys k;
