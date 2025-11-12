@@ -877,7 +877,7 @@
             "description": "Create lib/sync.ts to coordinate queue processing order, backoff policies, and message passing between SW and UI; run comprehensive E2E scenarios with DevTools offline/online toggling.",
             "dependencies": [1, 2, 3, 4, 5, 6, 7],
             "details": "Build lib/sync.ts to expose start/stopSync, registerQueue(type), and observers for progress. Use BroadcastChannel or postMessage to communicate with SW, and a central scheduler to sequence forms→images→signatures, respecting concurrency limits and backoff. Add logging hooks for debugging and metrics.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Run E2E: load app, go offline, create form/photo/signature; ensure cached display, queueing, and UI states. Go online; verify orchestrated sync order, retries, conflict resolution, and final consistency. Inspect caches/IDB in DevTools.",
             "parentId": "undefined"
           }
