@@ -124,6 +124,8 @@ export function TasksBoard({
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   // Toasts
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  // Conflict ribbons (server-wins notifications)
+  const [conflictByTaskId, setConflictByTaskId] = useState<Record<string, { by?: string | null; at?: string | null }>>({});
 
   // Configure drag-and-drop sensors
   const sensors = useSensors(
@@ -153,6 +155,35 @@ export function TasksBoard({
         // no-op
       }
     }
+  }, []);
+
+  // Listen for conflict ribbons via BroadcastChannel from SW
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('BroadcastChannel' in window)) return;
+    const bc = new BroadcastChannel('sync-status');
+    const timers = new Map<string, any>();
+    bc.onmessage = (ev: MessageEvent) => {
+      const msg = ev.data;
+      if (msg && msg.type === 'conflict:server-wins' && msg.id) {
+        setConflictByTaskId((prev) => ({ ...prev, [msg.id]: { by: msg.updatedBy || null, at: msg.updatedAt || null } }));
+        // auto-clear after 10s
+        if (timers.has(msg.id)) {
+          clearTimeout(timers.get(msg.id));
+        }
+        const t = setTimeout(() => {
+          setConflictByTaskId((prev) => {
+            const next = { ...prev };
+            delete next[msg.id];
+            return next;
+          });
+        }, 10000);
+        timers.set(msg.id, t);
+      }
+    };
+    return () => {
+      try { bc.close(); } catch {}
+      timers.forEach((t) => clearTimeout(t));
+    };
   }, []);
 
   // On mount, if URL lacks groupBy but localStorage has it, sync URL (and state) to stored
@@ -827,6 +858,7 @@ export function TasksBoard({
                     driverMap={driverMap}
                     clientMap={clientMap}
                     vehicleMap={vehicleMap}
+                    conflict={conflictByTaskId}
                     onDragStart={handleDragStart}
                     toggleSelected={toggleSelected}
                     selectAllInColumn={selectAllInColumn}
@@ -933,6 +965,7 @@ interface KanbanColumnProps {
   driverMap: Map<string, Driver>;
   clientMap: Map<string, Client>;
   vehicleMap: Map<string, Vehicle>;
+  conflict: Record<string, { by?: string | null; at?: string | null }>;
   onDragStart: (event: DragStartEvent) => void;
   toggleSelected: (taskId: string) => void;
   selectAllInColumn: (columnId: string, checked: boolean) => void;
@@ -948,6 +981,7 @@ function KanbanColumn({
   driverMap,
   clientMap,
   vehicleMap,
+  conflict,
   onDragStart,
   toggleSelected,
   selectAllInColumn,
@@ -1013,6 +1047,7 @@ function KanbanColumn({
               driverMap={driverMap}
               clientMap={clientMap}
               vehicleMap={vehicleMap}
+              conflictInfo={conflict[task.id]}
               onDragStart={onDragStart}
               onEdit={() => {}}
               selected={selectedIds.has(task.id)}
@@ -1037,6 +1072,7 @@ interface TaskCardProps {
   driverMap: Map<string, Driver>;
   clientMap: Map<string, Client>;
   vehicleMap: Map<string, Vehicle>;
+  conflictInfo?: { by?: string | null; at?: string | null };
   onDragStart: (event: DragStartEvent) => void;
   onEdit: (task: Task) => void;
   selected: boolean;
@@ -1051,6 +1087,7 @@ function TaskCard({
   driverMap,
   clientMap,
   vehicleMap,
+  conflictInfo,
   onDragStart,
   onEdit,
   selected,
@@ -1071,7 +1108,7 @@ function TaskCard({
     <div
       ref={setNodeRef}
       id={task.id}
-      className={`cursor-grab active:cursor-grabbing rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-all hover:shadow-md hover:border-gray-300 ${
+      className={`relative cursor-grab active:cursor-grabbing rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-all hover:shadow-md hover:border-gray-300 ${
         isActive ? 'opacity-50 ring-2 ring-toyota-primary' : ''
       } ${isDragging ? 'opacity-50' : ''}`}
       aria-label={`משימה: ${task.title}`}
@@ -1079,6 +1116,11 @@ function TaskCard({
       {...attributes}
       {...listeners}
     >
+      {conflictInfo && (
+        <div className="absolute -top-2 -left-2 rounded bg-orange-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow">
+          עודכן ע"י {conflictInfo.by || 'שרת'} {conflictInfo.at ? `(${new Date(conflictInfo.at).toLocaleTimeString()})` : ''}
+        </div>
+      )}
       {/* Header: Select + Title + Priority Badge */}
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">

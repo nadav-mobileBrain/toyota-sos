@@ -77,6 +77,157 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
+// ---- Background Sync & Manual Sync ----
+async function idbOpen() {
+  return await new Promise((resolve, reject) => {
+    const req = indexedDB.open('toyota-sos', 1);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbAll(db, store) {
+  return await new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly');
+    const s = tx.objectStore(store);
+    const getReq = s.getAll();
+    getReq.onsuccess = () => resolve(getReq.result || []);
+    getReq.onerror = () => reject(getReq.error);
+  });
+}
+async function idbUpdate(db, store, obj) {
+  return await new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    const s = tx.objectStore(store);
+    const req = s.put(obj);
+    req.onsuccess = () => resolve(true);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbDelete(db, store, id) {
+  return await new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    const s = tx.objectStore(store);
+    const req = s.delete(id);
+    req.onsuccess = () => resolve(true);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function computeBackoffMs(retryCount, base = 1000, jitter = 500) {
+  const pow = Math.pow(2, retryCount);
+  return base * pow + Math.floor(Math.random() * jitter);
+}
+
+async function processStore(db, store, sender, now, maxRetries = 5) {
+  const items = await idbAll(db, store);
+  for (const it of items) {
+    const nextAt = it.nextAttemptAt || 0;
+    if (nextAt > now) continue;
+    try {
+      it.status = 'sending';
+      await idbUpdate(db, store, it);
+      await sender(it);
+      await idbDelete(db, store, it.id);
+      broadcast({ type: 'sync:success', store, id: it.id });
+    } catch (e) {
+      const retry = (it.retryCount || 0) + 1;
+      if (retry > maxRetries) {
+        it.status = 'failed';
+        it.retryCount = retry;
+        await idbUpdate(db, store, it);
+        broadcast({ type: 'sync:failed', store, id: it.id, error: String(e) });
+      } else {
+        it.status = 'queued';
+        it.retryCount = retry;
+        it.nextAttemptAt = now + computeBackoffMs(retry);
+        await idbUpdate(db, store, it);
+        broadcast({ type: 'sync:rescheduled', store, id: it.id, retryCount: retry });
+      }
+    }
+  }
+}
+
+function broadcast(msg) {
+  try {
+    const bc = new BroadcastChannel('sync-status');
+    bc.postMessage(msg);
+    bc.close();
+  } catch {
+    // ignore
+  }
+}
+
+async function runSyncAll() {
+  const db = await idbOpen();
+  const now = Date.now();
+  // Sender stubs – replace with real endpoints in production
+  const sendForm = async (it) => {
+    const resp = await fetch('/api/offline/forms', { method: 'POST', body: JSON.stringify(it.payload || {}), headers: { 'Content-Type': 'application/json' } });
+    try {
+      const json = await resp.json();
+      if (json && json.type === 'task' && json.data && json.data.id) {
+        // Conflict resolution (server wins on newer updatedAt)
+        const db = await idbOpen();
+        const tx = db.transaction('tasks', 'readwrite');
+        const store = tx.objectStore('tasks');
+        const getReq = store.get(json.data.id);
+        await new Promise((res, rej) => {
+          getReq.onsuccess = res;
+          getReq.onerror = rej;
+        });
+        const local = getReq.result || null;
+        const server = json.data;
+        const localTs = local && local.modifiedAt ? new Date(local.modifiedAt).getTime() : 0;
+        const serverTs = server && server.updatedAt ? new Date(server.updatedAt).getTime() : 0;
+        let merged = server;
+        if (localTs > serverTs) {
+          merged = local;
+        } else if (serverTs > localTs) {
+          // notify ribbon
+          broadcast({ type: 'conflict:server-wins', id: server.id, updatedBy: server.updatedBy || null, updatedAt: server.updatedAt || null });
+        }
+        const putReq = store.put(merged);
+        await new Promise((res, rej) => {
+          putReq.onsuccess = res;
+          putReq.onerror = rej;
+        });
+        db.close();
+      }
+    } catch {
+      // ignore JSON parse or IDB issues
+    }
+  };
+  const sendBlob = async (it) => {
+    // Example upload placeholder; adjust per real endpoint
+    const formData = new FormData();
+    formData.append('file', it.blob || new Blob([]), (it.metadata && it.metadata.name) || 'upload.bin');
+    await fetch('/api/offline/upload', { method: 'POST', body: formData });
+  };
+  await processStore(db, 'forms', sendForm, now);
+  await processStore(db, 'images', sendBlob, now);
+  await processStore(db, 'signatures', sendBlob, now);
+  db.close();
+}
+
+self.addEventListener('sync', (event) => {
+  if (!event.tag) return;
+  if (event.tag.startsWith('sync-')) {
+    event.waitUntil(runSyncAll());
+  }
+});
+
+self.addEventListener('message', (event) => {
+  const data = event.data;
+  if (!data) return;
+  if (data.type === 'manual-sync') {
+    event.waitUntil(runSyncAll());
+  }
+});
+
+self.addEventListener('online', () => {
+  runSyncAll(); // best-effort fallback
+});
+
 /* global self, clients */
 // Basic Service Worker for Web Push handling, actions, and deep links
 // Install/activate lifecycle: take control ASAP
