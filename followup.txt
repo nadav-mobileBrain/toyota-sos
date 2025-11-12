@@ -1,0 +1,52 @@
+Follow-up items (PRD vs current implementation)
+
+- Viewer role UI
+  - Read-only dashboard and tasks board pages
+  - Tighten middleware/permissions for viewer (no write actions)
+
+- Admin Overdue view
+  - Dedicated /admin/overdue table (sortable by driver/type/age), beyond board filters
+
+- Driver Profile page
+  - Bottom-nav “Profile” screen (basic info, push permission state, settings)
+
+- PDF generation (server-side)
+  - Edge Function: generate-pdf (delivery note with task details, photos grid, signature block)
+  - Wire admin “Export PDF” button to function; store generated PDFs and optional manifest
+
+- Notifications delivery completeness
+  - Ensure driver status changes call notify for Task Started/Completed/Blocked to Admin/Manager
+  - Prune expired web-push subscriptions on 410/404
+  - Merge sound/vibrate behavior into active public/sw.js honoring user preferences
+
+- Analytics and consent
+  - Consent banner gating Mixpanel collection
+  - Explicit Task Started event; Task Completed includes duration_ms and computed on_time
+
+- KPI coverage (remaining cards)
+  - Avg assignment→start time
+  - Avg start→complete time
+  - Driver utilization
+  - Cancellations/reassignments
+  - SLA breaches
+  - CSV and drill-down for these if missing
+
+- Exports view
+  - Admin “Exports” page to export tasks, forms, signatures list, images manifest (not only dashboard CSVs)
+
+- Checklist schema admin
+  - Admin editor to manage per-type JSON schemas stored in DB and used by driver forms
+
+- Drizzle ORM layer
+  - PRD references Drizzle; either add models or explicitly de-scope in docs
+
+- GPS metadata persistence
+  - Persist GPS + timestamp into task_forms and signatures rows on submit/sign
+
+- Blocked reason
+  - UI/DB field to capture reason when marking a task as blocked
+
+- Waze fallback
+  - If waze:// deeplink fails, fallback to Google Maps deeplink
+
+

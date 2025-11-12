@@ -952,7 +952,7 @@
             "description": "Gate features behind flags and create Mixpanel boards for KPIs and funnels required by stakeholders.",
             "dependencies": [1, 2, 5],
             "details": "Insert useFeatureFlag checks for signature required (per task type), multi-driver assignment, bulk operations, and PDF generation. Add cohort/variant properties to events for A/B tests. In Mixpanel, configure boards: DAU/WAU by role, On-time Completion Rate (7/30), Overdue by Driver (bar), and Task Lifecycle funnel. Document board URLs and event definitions.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Manual and automated checks to verify features toggle on/off immediately. Assert events include cohort/flag properties. Validate Mixpanel boards populate using test data and reflect expected metrics/funnels.",
             "parentId": "undefined"
           }
