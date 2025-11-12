@@ -6,6 +6,14 @@ create table if not exists public.feature_flags (
   updated_by uuid null
 );
 
+-- If the table already existed without the new columns, add them safely
+alter table public.feature_flags
+  add column if not exists enabled boolean not null default false;
+alter table public.feature_flags
+  add column if not exists updated_at timestamptz not null default now();
+alter table public.feature_flags
+  add column if not exists updated_by uuid null;
+
 create index if not exists idx_feature_flags_updated_at on public.feature_flags (updated_at desc);
 
 -- Optional: RLS can be set according to your needs; for now, leave off and access via API with server-role
