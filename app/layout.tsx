@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { Heebo } from 'next/font/google';
 import { AuthProvider } from '@/components/AuthProvider';
 import { SupabaseConfigProvider } from '@/components/SupabaseConfigProvider';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
@@ -17,6 +18,13 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+});
+
+const heebo = Heebo({
+  variable: '--font-hebrew',
+  subsets: ['hebrew', 'latin'],
+  weight: ['400', '500', '700'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -45,7 +53,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#d60b25" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${heebo.variable} antialiased`}
       >
         <ServiceWorkerRegister />
         <ConnectivityProvider>

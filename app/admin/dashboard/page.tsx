@@ -63,7 +63,7 @@ export default function AdminDashboardPage() {
             </Button>
           </div>
         </div> */}
-        <h1 className="text-xl font-bold text-gray-900">לוח מחוונים</h1>
+        <h1 className="text-xl font-bold text-red-500">לוח מחוונים</h1>
         <DashboardKPIs />
       </div>
     </div>
