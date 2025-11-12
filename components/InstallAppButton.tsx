@@ -10,7 +10,9 @@ export function InstallAppButton({ className }: { className?: string }) {
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
-    setIsIOS(/iphone|ipad|ipod/i.test(navigator.userAgent) && !!(window as any).webkit);
+    setIsIOS(
+      /iphone|ipad|ipod/i.test(navigator.userAgent) && !!(window as any).webkit
+    );
     const onPrompt = (e: any) => {
       e.preventDefault();
       setDeferred(e);
@@ -62,5 +64,3 @@ export function InstallAppButton({ className }: { className?: string }) {
     </button>
   );
 }
-
-
