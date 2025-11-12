@@ -772,7 +772,7 @@
             "description": "Provide CSV generation with headers, proper quoting, and timestamped filenames for every metric and dataset.",
             "dependencies": [1, 2, 3],
             "details": "Implement utils/csv.ts to transform arrays/records into CSV with UTF-8 BOM, escaped quotes, and consistent headers. Add per-metric mappers that use the current period selection. Trigger downloads via Blob + object URL with filenames like dashboard_<metric>_<YYYYMMDD_HHmmss>.csv including timezone. Connect export buttons in KPI cards and charts to their respective data sources.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Export CSV for each KPI and chart; open in a spreadsheet to verify headers, delimiters, and values. Confirm filename pattern and timezone. Test empty datasets generate valid CSV with headers only.",
             "parentId": "undefined"
           },
