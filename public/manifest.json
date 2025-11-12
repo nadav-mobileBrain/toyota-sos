@@ -1,0 +1,23 @@
+{
+  "name": "Toyota SOS - Task Management",
+  "short_name": "ToyotaSOS",
+  "description": "Toyota field service management system",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "he",
+  "background_color": "#ffffff",
+  "theme_color": "#d60b25",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "type": "image/x-icon",
+      "sizes": "16x16 32x32 48x48 64x64"
+    }
+  ],
+  "categories": ["productivity", "business"]
+}
+
+

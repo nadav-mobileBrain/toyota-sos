@@ -38,6 +38,9 @@ export default function RootLayout({
     <html lang="he" dir="rtl">
       <head>
         <SupabaseConfigProvider />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" />
+        <meta name="theme-color" content="#d60b25" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
