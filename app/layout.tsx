@@ -8,6 +8,7 @@ import { ConnectivityProvider } from '@/components/ConnectivityProvider';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { InstallAppButton } from '@/components/InstallAppButton';
 import { MixpanelInit } from '@/components/MixpanelInit';
+import { Toaster } from '@/lib/toast';
 import './globals.css';
 
 const geistSans = Geist({
@@ -64,6 +65,47 @@ export default function RootLayout({
           </div>
           <OfflineBanner />
           <AuthProvider>{children}</AuthProvider>
+          <Toaster
+            position="top-center"
+            reverseOrder={false}
+            gutter={8}
+            containerClassName=""
+            containerStyle={{}}
+            toastOptions={{
+              // Default options for all toasts
+              className: '',
+              duration: 4000,
+              style: {
+                background: '#fff',
+                color: '#363636',
+                fontFamily: 'var(--font-hebrew)',
+                direction: 'rtl',
+              },
+              // Success toast
+              success: {
+                duration: 4000,
+                iconTheme: {
+                  primary: '#10b981',
+                  secondary: '#fff',
+                },
+              },
+              // Error toast
+              error: {
+                duration: 5000,
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
+                },
+              },
+              // Loading toast
+              loading: {
+                iconTheme: {
+                  primary: '#3b82f6',
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
         </ConnectivityProvider>
       </body>
     </html>

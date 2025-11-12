@@ -3,6 +3,7 @@
 create extension if not exists pgcrypto;
 
 -- Table to store audit logs of task mutations
+-- Handle migration from old structure (before_data/after_data) to new (before/after/diff)
 create table if not exists public.task_audit_log (
   id uuid primary key default gen_random_uuid(),
   task_id uuid not null,
@@ -13,6 +14,50 @@ create table if not exists public.task_audit_log (
   after jsonb,
   diff jsonb
 );
+
+-- Migrate columns if old structure exists
+do $$
+begin
+  -- Rename old columns if they exist
+  if exists (
+    select 1 from information_schema.columns 
+    where table_schema = 'public' 
+    and table_name = 'task_audit_log' 
+    and column_name = 'before_data'
+  ) then
+    alter table public.task_audit_log rename column before_data to before;
+  end if;
+  
+  if exists (
+    select 1 from information_schema.columns 
+    where table_schema = 'public' 
+    and table_name = 'task_audit_log' 
+    and column_name = 'after_data'
+  ) then
+    alter table public.task_audit_log rename column after_data to after;
+  end if;
+  
+  -- Add diff column if it doesn't exist
+  if not exists (
+    select 1 from information_schema.columns 
+    where table_schema = 'public' 
+    and table_name = 'task_audit_log' 
+    and column_name = 'diff'
+  ) then
+    alter table public.task_audit_log add column diff jsonb;
+  end if;
+  
+  -- Update action constraint if needed
+  if exists (
+    select 1 from information_schema.check_constraints 
+    where constraint_schema = 'public' 
+    and constraint_name like '%task_audit_log_action%'
+  ) then
+    alter table public.task_audit_log drop constraint if exists task_audit_log_action_check;
+    alter table public.task_audit_log add constraint task_audit_log_action_check 
+      check (action in ('created','updated'));
+  end if;
+end $$;
 
 -- Indexes for efficient querying
 create index if not exists idx_task_audit_log_task_id on public.task_audit_log (task_id);
@@ -85,10 +130,17 @@ begin
 end;
 $$;
 
--- Attach triggers to tasks table
+-- Drop old triggers and function from migration 0003
+drop trigger if exists tasks_audit_insert on public.tasks;
+drop trigger if exists tasks_audit_update on public.tasks;
+drop trigger if exists tasks_audit_delete on public.tasks;
+drop function if exists public.log_task_audit();
+
+-- Drop any other old triggers that might exist
 drop trigger if exists trg_task_audit_insert on public.tasks;
 drop trigger if exists trg_task_audit_update on public.tasks;
 
+-- Attach new triggers to tasks table
 create trigger trg_task_audit_insert
 after insert on public.tasks
 for each row execute function public.task_audit_trigger();

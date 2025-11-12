@@ -20,6 +20,7 @@ import { trackTaskAssigned, trackTaskCreated, trackTaskStatusChange } from '@/li
 const LazyTaskDialog = React.lazy(() => import('./TaskDialog').then((m) => ({ default: m.TaskDialog })));
 import { useFeatureFlag } from '@/lib/useFeatureFlag';
 import { FLAG_BULK_OPS } from '@/lib/flagKeys';
+import { toastSuccess, toastError } from '@/lib/toast';
 
 /**
  * Type definitions for TasksBoard state and data structures
@@ -125,8 +126,6 @@ export function TasksBoard({
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>('time');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
-  // Toasts
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   // Conflict ribbons (server-wins notifications)
   const [conflictByTaskId, setConflictByTaskId] = useState<Record<string, { by?: string | null; at?: string | null }>>({});
 
@@ -339,6 +338,7 @@ export function TasksBoard({
       inserts.push({ id: `local-${created.id}-${id}`, task_id: created.id, driver_id: id, is_lead: false, assigned_at: new Date().toISOString() });
     });
     if (inserts.length > 0) setAssignees((prev) => [...prev, ...inserts]);
+    // Toast is shown in TaskDialog, no need to show it here
     try { trackTaskCreated(created, leadId); } catch {}
   }, []);
 
@@ -394,9 +394,9 @@ export function TasksBoard({
     const anyFailed = results.some((r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok));
     if (anyFailed) {
       setAssignees(prevAssignees);
-      setToast({ message: 'שגיאה בהקצאת נהג', type: 'error' });
+      toastError('שגיאה בהקצאת נהג');
     } else {
-      setToast({ message: 'נהג הוקצה בהצלחה', type: 'success' });
+      toastSuccess('נהג הוקצה בהצלחה');
     }
   }, [assignees, selectedIds]);
 
@@ -418,9 +418,9 @@ export function TasksBoard({
     const anyFailed = results.some((r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok));
     if (anyFailed) {
       setTasks(prevTasks);
-      setToast({ message: 'שגיאה בעדכון עדיפות', type: 'error' });
+      toastError('שגיאה בעדכון עדיפות');
     } else {
-      setToast({ message: 'עדיפות עודכנה', type: 'success' });
+      toastSuccess('עדיפות עודכנה');
     }
   }, [tasks, selectedIds]);
 
@@ -443,10 +443,10 @@ export function TasksBoard({
     if (anyFailed) {
       setTasks(prevTasks);
       setAssignees(prevAssignees);
-      setToast({ message: 'שגיאה במחיקה', type: 'error' });
+      toastError('שגיאה במחיקה');
     } else {
       setSelectedIds(new Set());
-      setToast({ message: 'נמחקו משימות שנבחרו', type: 'success' });
+      toastSuccess('נמחקו משימות שנבחרו');
     }
   }, [tasks, assignees, selectedIds]);
 
@@ -562,9 +562,9 @@ export function TasksBoard({
                 : t
             )
           );
-          setToast({ message: 'שגיאה בעדכון משימה', type: 'error' });
+          toastError('שגיאה בעדכון משימה');
         } else {
-          setToast({ message: 'המשימה עודכנה', type: 'success' });
+          toastSuccess('המשימה עודכנה');
       try {
         // Find the latest task snapshot
         setTasks((prev) => {
@@ -586,7 +586,7 @@ export function TasksBoard({
               : t
           )
         );
-        setToast({ message: 'שגיאה בעדכון משימה', type: 'error' });
+        toastError('שגיאה בעדכון משימה');
       }
     },
     [initialTasks]
@@ -607,9 +607,9 @@ export function TasksBoard({
           if (prevSnapshot) {
             setAssignees(prevSnapshot);
           }
-          setToast({ message: 'שגיאה בהקצאת נהג', type: 'error' });
+          toastError('שגיאה בהקצאת נהג');
         } else {
-          setToast({ message: 'נהג עודכן', type: 'success' });
+          toastSuccess('נהג עודכן');
       try {
         const t = tasks.find((x) => x.id === taskId);
         if (t) trackTaskAssigned(t, newDriverId);
@@ -891,19 +891,6 @@ export function TasksBoard({
           </>
         )}
         </div>
-        {/* Toast */}
-        {toast && (
-          <div
-            className={`fixed bottom-4 right-4 rounded px-4 py-2 text-white shadow ${
-              toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
-            }`}
-            role="status"
-            aria-live="polite"
-            onAnimationEnd={() => {}}
-          >
-            <span>{toast.message}</span>
-          </div>
-        )}
       </div>
 
       {/* Drag overlay - renders the dragged task during drag */}

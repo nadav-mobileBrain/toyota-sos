@@ -6,6 +6,7 @@ import { trackFormSubmitted } from '@/lib/events';
 import { useFeatureFlag } from '@/lib/useFeatureFlag';
 import { FLAG_MULTI_DRIVER, FLAG_PDF_GENERATION } from '@/lib/flagKeys';
 import { downloadBlob, generateTaskPdfLikeBlob } from '@/utils/pdf';
+import { toastSuccess, toastError } from '@/lib/toast';
 
 type Mode = 'create' | 'edit';
 
@@ -229,6 +230,7 @@ export function TaskDialog(props: TaskDialogProps) {
         }
         const json = await res.json();
         const created: Task = json.data;
+        toastSuccess('המשימה נוצרה בהצלחה!');
         onCreated?.(created, leadDriverId || undefined, coDriverIds);
         try {
           trackFormSubmitted({ form: 'TaskDialog', mode, success: true, task_id: created.id });
@@ -261,6 +263,7 @@ export function TaskDialog(props: TaskDialogProps) {
         }
         const json = await res.json();
         const updated: Task = json.data;
+        toastSuccess('המשימה עודכנה בהצלחה!');
         onUpdated?.(updated);
         try {
           trackFormSubmitted({ form: 'TaskDialog', mode, success: true, task_id: updated.id });
@@ -270,7 +273,9 @@ export function TaskDialog(props: TaskDialogProps) {
         onOpenChange(false);
       }
     } catch (err: any) {
-      setError(err?.message || 'שגיאה');
+      const errorMessage = err?.message || 'שגיאה';
+      setError(errorMessage);
+      toastError(errorMessage);
       try {
         trackFormSubmitted({ form: 'TaskDialog', mode, success: false, task_id: task?.id, error_message: err?.message });
       } catch {
