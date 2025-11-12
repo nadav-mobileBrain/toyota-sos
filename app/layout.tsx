@@ -6,6 +6,7 @@ import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import { ConnectivityProvider } from '@/components/ConnectivityProvider';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { InstallAppButton } from '@/components/InstallAppButton';
+import { MixpanelInit } from '@/components/MixpanelInit';
 import './globals.css';
 
 const geistSans = Geist({
@@ -48,6 +49,7 @@ export default function RootLayout({
       >
         <ServiceWorkerRegister />
         <ConnectivityProvider>
+          <MixpanelInit />
           {/* Install prompt button (conditionally rendered) */}
           <div className="fixed top-2 left-2 z-40">
             <InstallAppButton />
