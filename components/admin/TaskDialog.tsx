@@ -592,7 +592,7 @@ export function TaskDialog(props: TaskDialogProps) {
                 <CalendarComponent
                   mode="single"
                   selected={estimatedDate}
-                  className="min-w-[14rem] [--cell-size:2.6rem] bg-white"
+                  className="min-w-56 [--cell-size:2.6rem] bg-white"
                   onSelect={(date) => {
                     if (date) {
                       const result = estimatedDateSchema.safeParse(date);
@@ -604,7 +604,7 @@ export function TaskDialog(props: TaskDialogProps) {
                       }
                     }
                   }}
-                  initialFocus
+                  autoFocus={true}
                   disabled={(date) => {
                     const today = dayjs().startOf('day');
                     const selectedDay = dayjs(date).startOf('day');

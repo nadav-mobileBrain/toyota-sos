@@ -57,6 +57,14 @@ import {
   priorityLabel,
   typeLabel,
 } from './TaskCard';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
 type PostgresChangePayload = {
   eventType: 'INSERT' | 'UPDATE' | 'DELETE';
@@ -830,28 +838,57 @@ export function TasksBoard({
               onChange={(e) => setSearch(e.target.value)}
               className="w-64 rounded border border-gray-300 px-2 py-1 text-sm"
             />
-            <select
-              className="rounded border border-gray-300 px-2 py-1 text-sm"
-              value={filterType}
-              onChange={(e) =>
-                setFilterType(e.target.value as 'all' | TaskType)
-              }
-            >
-              <option value="all">כל הסוגים</option>
-              <option value="pickup_or_dropoff_car">
-                סוג: איסוף/הורדת רכב
-              </option>
-              <option value="replacement_car_delivery">
-                סוג: הסעת רכב חלופי
-              </option>
-              <option value="drive_client_home">סוג: הסעת לקוח הביתה</option>
-              <option value="drive_client_to_dealership">
-                סוג: הסעת לקוח למוסך
-              </option>
-              <option value="licence_test">סוג: בדיקת רישיון</option>
-              <option value="rescue_stuck_car">סוג: חילוץ רכב תקוע</option>
-              <option value="other">סוג: אחר</option>
-            </select>
+            {(() => {
+              const typeOptions: Array<{
+                value: 'all' | TaskType;
+                label: string;
+              }> = [
+                { value: 'all', label: 'כל הסוגים' },
+                { value: 'איסוף/הורדת רכב', label: 'איסוף/הורדת רכב' },
+                { value: 'הסעת רכב חלופי', label: 'הסעת רכב חלופי' },
+                { value: 'הסעת לקוח הביתה', label: 'הסעת לקוח הביתה' },
+                { value: 'הסעת לקוח למוסך', label: 'הסעת לקוח למוסך' },
+                { value: 'ביצוע טסט', label: 'ביצוע טסט' },
+                { value: 'חילוץ רכב תקוע', label: 'חילוץ רכב תקוע' },
+                { value: 'אחר', label: 'אחר' },
+              ];
+              const currentLabel =
+                typeOptions.find((o) => o.value === filterType)?.label ||
+                'כל הסוגים';
+              return (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="text-sm font-normal justify-start"
+                    >
+                      {currentLabel}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    className="w-56 bg-white text-right *:text-right"
+                    style={{ direction: 'rtl' }}
+                  >
+                    <DropdownMenuRadioGroup
+                      value={filterType}
+                      onValueChange={(value) =>
+                        setFilterType(value as 'all' | TaskType)
+                      }
+                    >
+                      {typeOptions.map(({ value, label }) => (
+                        <DropdownMenuRadioItem
+                          key={value as string}
+                          value={value as string}
+                          className="hover:bg-blue-600 hover:text-white"
+                        >
+                          {label}
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            })()}
             <select
               className="rounded border border-gray-300 px-2 py-1 text-sm"
               value={filterPriority}
@@ -1114,7 +1151,9 @@ function KanbanColumn({
       <div className="sticky top-0 border-b border-gray-200 bg-white px-4 py-3 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-gray-900">{column.label}</h3>
+            <h3 className="font-bold text-blue-700 underline text-xl">
+              {column.label}
+            </h3>
             <p className="text-xs font-medium text-gray-500">
               {tasks.length} {tasks.length === 1 ? 'משימה' : 'משימות'}
             </p>

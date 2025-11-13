@@ -132,10 +132,12 @@ export default async function AdminTasksPage() {
   ];
 
   return (
-    <main dir="rtl" className="min-h-screen bg-gray-50 p-4">
+    <main dir="rtl" className="min-h-screen bg-gray-50 p-8 mx-auto">
       <NavBar items={navItems} className="z-40" />
-      <div className="max-w-full mt-20 sm:mt-24">
-        <h1 className="mb-6 text-3xl font-bold text-gray-900">לוח משימות</h1>
+      <div className="max-w-full mt-4 sm:mt-8">
+        <h1 className="mb-6 text-3xl font-bold text-toyota-primary underline">
+          לוח משימות
+        </h1>
 
         {(tasksError || driversError || assigneesError) && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
