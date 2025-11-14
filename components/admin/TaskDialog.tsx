@@ -12,13 +12,6 @@ import { useFeatureFlag } from '@/lib/useFeatureFlag';
 import { FLAG_MULTI_DRIVER, FLAG_PDF_GENERATION } from '@/lib/flagKeys';
 import { downloadBlob, generateTaskPdfLikeBlob } from '@/utils/pdf';
 import { toastSuccess, toastError } from '@/lib/toast';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -29,6 +22,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Calendar, PlusIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RtlSelectDropdown } from './RtlSelectDropdown';
 type Mode = 'create' | 'edit';
 
 // Validation schema for estimated date (no past dates allowed)
@@ -503,105 +497,33 @@ export function TaskDialog(props: TaskDialogProps) {
             <span className="text-md underline font-medium text-blue-500">
               סוג
             </span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-md font-normal"
-                >
-                  {type}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-56 bg-white text-right *:text-right"
-                style={{ direction: 'rtl' }}
-              >
-                <DropdownMenuRadioGroup
-                  value={type}
-                  onValueChange={(value) => setType(value as TaskType)}
-                >
-                  {types.map((t) => (
-                    <DropdownMenuRadioItem
-                      key={t}
-                      value={t}
-                      className="hover:bg-blue-600 hover:text-white"
-                    >
-                      {t}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <RtlSelectDropdown
+              value={type}
+              options={types.map((t) => ({ value: t, label: t }))}
+              onChange={(value) => setType(value as TaskType)}
+            />
           </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-md underline font-medium text-blue-500">
               עדיפות
             </span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-md font-normal"
-                >
-                  {priority}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-56 bg-white text-right *:text-right"
-                style={{ direction: 'rtl' }}
-              >
-                <DropdownMenuRadioGroup
-                  value={priority}
-                  onValueChange={(value) => setPriority(value as TaskPriority)}
-                >
-                  {priorities.map((p) => (
-                    <DropdownMenuRadioItem
-                      key={p}
-                      value={p}
-                      className="hover:bg-blue-600 hover:text-white"
-                    >
-                      {p}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <RtlSelectDropdown
+              value={priority}
+              options={priorities.map((p) => ({ value: p, label: p }))}
+              onChange={(value) => setPriority(value as TaskPriority)}
+            />
           </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-md underline font-medium text-blue-500">
               סטטוס
             </span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-md font-normal"
-                >
-                  {status}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-56 bg-white text-right *:text-right"
-                style={{ direction: 'rtl' }}
-              >
-                <DropdownMenuRadioGroup
-                  value={status}
-                  onValueChange={(value) => setStatus(value as TaskStatus)}
-                >
-                  {statuses.map((s) => (
-                    <DropdownMenuRadioItem
-                      key={s}
-                      value={s}
-                      className="hover:bg-blue-600 hover:text-white"
-                    >
-                      {s}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <RtlSelectDropdown
+              value={status}
+              options={statuses.map((s) => ({ value: s, label: s }))}
+              onChange={(value) => setStatus(value as TaskStatus)}
+            />
           </label>
 
           <label className="col-span-1 md:col-span-2 flex flex-col gap-1">
@@ -885,18 +807,14 @@ export function TaskDialog(props: TaskDialogProps) {
           <div className="col-span-1 md:col-span-2 grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="flex flex-col gap-1">
               <span className="text-sm font-medium">נהג מוביל</span>
-              <select
-                className="rounded border border-gray-300 p-2"
+              <RtlSelectDropdown
                 value={leadDriverId}
-                onChange={(e) => setLeadDriverId(e.target.value)}
-              >
-                <option value="">—</option>
-                {drivers.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name || d.email}
-                  </option>
-                ))}
-              </select>
+                options={drivers.map((d) => ({
+                  value: d.id,
+                  label: d.name || d.email || '',
+                }))}
+                onChange={(value) => setLeadDriverId(value)}
+              />
             </label>
 
             {multiDriverEnabled && (
