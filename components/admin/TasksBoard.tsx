@@ -65,7 +65,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { ArrowUpDownIcon } from 'lucide-react';
+import { ArrowUpDownIcon, ListIcon, PlusIcon, UsersIcon } from 'lucide-react';
 
 type PostgresChangePayload = {
   eventType: 'INSERT' | 'UPDATE' | 'DELETE';
@@ -794,32 +794,37 @@ export function TasksBoard({
           >
             <button
               onClick={() => persistGroupBy('status')}
-              className={`px-4 py-2 text-sm font-medium rounded transition-colors ${
-                groupBy === 'status'
-                  ? 'bg-white text-toyota-primary shadow-sm'
-                  : 'text-gray-700 hover:text-gray-900'
-              }`}
+              className={`px-4 py-2 text-sm font-medium rounded transition-colors 
+                flex items-center gap-2
+                ${
+                  groupBy === 'status'
+                    ? 'bg-white text-toyota-primary shadow-sm'
+                    : 'text-gray-700 hover:text-gray-900'
+                }`}
               aria-pressed={groupBy === 'status'}
             >
+              <ListIcon className="w-4 h-4" />
               סטטוס
             </button>
             <button
               onClick={() => persistGroupBy('driver')}
-              className={`px-4 py-2 text-sm font-medium rounded transition-colors ${
+              className={`px-4 py-2 text-sm font-medium rounded transition-colors flex items-center gap-2 ${
                 groupBy === 'driver'
                   ? 'bg-white text-toyota-primary shadow-sm'
                   : 'text-gray-700 hover:text-gray-900'
               }`}
               aria-pressed={groupBy === 'driver'}
             >
+              <UsersIcon className="w-4 h-4" />
               נהג
             </button>
           </div>
 
           <button
             onClick={openCreateDialog}
-            className="ml-auto rounded bg-toyota-primary px-3 py-2 text-sm font-semibold text-white hover:bg-toyota-primary/90"
+            className="rounded bg-toyota-primary px-3 py-2 text-sm font-semibold text-white hover:bg-toyota-primary/90 flex items-center gap-2"
           >
+            <PlusIcon className="w-4 h-4" />
             משימה חדשה
           </button>
         </div>

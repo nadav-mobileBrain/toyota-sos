@@ -41,7 +41,7 @@ export function TaskCard({
     <div
       ref={setNodeRef}
       id={task.id}
-      className={`relative cursor-grab active:cursor-grabbing rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-all hover:shadow-md hover:border-gray-300 ${
+      className={`relative cursor-grab active:cursor-grabbing select-none rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-all hover:shadow-md hover:border-gray-300 ${
         isActive ? 'opacity-50 ring-2 ring-toyota-primary' : ''
       } ${isDragging ? 'opacity-50' : ''}`}
       aria-label={`משימה: ${task.title}`}
@@ -50,7 +50,7 @@ export function TaskCard({
       {...listeners}
     >
       {conflictInfo && (
-        <div className="absolute -top-2 -left-2 rounded bg-orange-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow">
+        <div className="pointer-events-none absolute -top-2 -left-2 rounded bg-orange-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow">
           עודכן ע&quot;י {conflictInfo.by || 'שרת'}{' '}
           {conflictInfo.at
             ? `(${new Date(conflictInfo.at).toLocaleTimeString()})`

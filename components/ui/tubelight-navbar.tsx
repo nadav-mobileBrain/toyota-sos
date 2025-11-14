@@ -1,68 +1,73 @@
-"use client"
+'use client';
 
-import React, { useEffect, useState } from "react"
-import { motion } from "framer-motion"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import * as Icons from "lucide-react"
-import { cn } from "@/lib/utils"
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import * as Icons from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface NavItem {
-  name: string
-  url: string
-  icon: string | React.ComponentType<{ size?: number; strokeWidth?: number }>
+  name: string;
+  url: string;
+  icon: string | React.ComponentType<{ size?: number; strokeWidth?: number }>;
 }
 
 interface NavBarProps {
-  items: NavItem[]
-  className?: string
+  items: NavItem[];
+  className?: string;
 }
 
-const iconMap: Record<string, React.ComponentType<{ size?: number; strokeWidth?: number }>> = {
+const iconMap: Record<
+  string,
+  React.ComponentType<{ size?: number; strokeWidth?: number }>
+> = {
   LayoutDashboard: Icons.LayoutDashboard,
   ClipboardList: Icons.ClipboardList,
   Home: Icons.Home,
   User: Icons.User,
   Briefcase: Icons.Briefcase,
   FileText: Icons.FileText,
-}
+};
 
 export function NavBar({ items, className }: NavBarProps) {
-  const pathname = usePathname()
-  const [isMobile, setIsMobile] = useState(false)
+  const pathname = usePathname();
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
+      setIsMobile(window.innerWidth < 768);
+    };
 
-    handleResize()
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div
       className={cn(
-        "fixed bottom-0 sm:top-0 left-1/2 -translate-x-1/2 z-40 mb-6 sm:pt-6",
-        className,
+        'fixed  sm:top-0 left-1/2 -translate-x-1/2 z-50 mb-6 sm:pt-6',
+        className
       )}
     >
       <div className="flex items-center gap-3 bg-background/5 border border-border backdrop-blur-lg py-1 px-1 rounded-full shadow-lg">
         {items.map((item) => {
-          const Icon = typeof item.icon === 'string' 
-            ? iconMap[item.icon] || Icons.LayoutDashboard
-            : item.icon
-          const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
+          const Icon =
+            typeof item.icon === 'string'
+              ? iconMap[item.icon] || Icons.LayoutDashboard
+              : item.icon;
+          const isActive =
+            pathname === item.url || pathname?.startsWith(item.url + '/');
 
           return (
             <Link
               key={item.name}
               href={item.url}
               className={cn(
-                "relative cursor-pointer text-sm font-semibold px-6 py-2 rounded-full transition-colors",
-                "text-foreground/80 hover:text-primary",
-                isActive && "bg-muted text-primary",
+                'relative cursor-pointer text-sm font-semibold px-6 py-2 rounded-full transition-colors',
+                'text-foreground/80 hover:text-primary',
+                isActive && 'bg-muted text-primary'
               )}
             >
               <span className="hidden md:inline">{item.name}</span>
@@ -75,7 +80,7 @@ export function NavBar({ items, className }: NavBarProps) {
                   className="absolute inset-0 w-full bg-primary/5 rounded-full -z-10"
                   initial={false}
                   transition={{
-                    type: "spring",
+                    type: 'spring',
                     stiffness: 300,
                     damping: 30,
                   }}
@@ -88,9 +93,9 @@ export function NavBar({ items, className }: NavBarProps) {
                 </motion.div>
               )}
             </Link>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }

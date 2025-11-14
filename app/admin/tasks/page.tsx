@@ -132,9 +132,12 @@ export default async function AdminTasksPage() {
   ];
 
   return (
-    <main dir="rtl" className="min-h-screen bg-gray-50 p-8 mx-auto">
+    <main
+      dir="rtl"
+      className="min-h-screen bg-gray-50 px-4 sm:px-8 pb-8 mx-auto"
+    >
       <NavBar items={navItems} className="z-40" />
-      <div className="max-w-full mt-4 sm:mt-8">
+      <div className="max-w-full mt-20 sm:mt-24">
         <h1 className="mb-6 text-3xl font-bold text-toyota-primary underline">
           לוח משימות
         </h1>
