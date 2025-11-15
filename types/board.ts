@@ -40,6 +40,7 @@ export interface KanbanColumnProps {
   toggleSelected: (taskId: string) => void;
   selectAllInColumn: (columnId: string, checked: boolean) => void;
   bulkEnabled: boolean;
+  onEdit: (task: Task) => void;
 }
 
 export interface TaskCardProps {

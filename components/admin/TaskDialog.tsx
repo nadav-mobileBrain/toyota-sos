@@ -4,7 +4,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 import dayjs from '@/lib/dayjs';
-import type { Task, TaskPriority, TaskStatus, TaskType } from '@/types/task';
+import type {
+  Task,
+  TaskPriority,
+  TaskStatus,
+  TaskType,
+  TaskAssignee,
+} from '@/types/task';
 import type { Driver } from '@/types/user';
 import type { Client, Vehicle } from '@/types/entity';
 import { trackFormSubmitted } from '@/lib/events';
@@ -22,6 +28,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Calendar, PlusIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { RtlSelectDropdown } from './RtlSelectDropdown';
 type Mode = 'create' | 'edit';
 
@@ -32,10 +39,27 @@ const estimatedDateSchema = z.date().refine((date) => {
   return selectedTime >= todayTime;
 }, 'תאריך לא יכול להיות בעבר');
 
+// Validation schema for driver selection (primary vs secondary)
+const driverSelectionSchema = z
+  .object({
+    leadDriverId: z.string().optional().or(z.literal('')),
+    coDriverIds: z.array(z.string()),
+  })
+  .refine(
+    (data) =>
+      !data.leadDriverId ||
+      data.leadDriverId === '' ||
+      !data.coDriverIds.includes(data.leadDriverId),
+    {
+      message: 'אי אפשר לבחור את אותו נהג כנהג מוביל ונהג משנה',
+    }
+  );
+
 interface TaskDialogProps {
   open: boolean;
   mode: Mode;
   task?: Task | null;
+  assignees?: TaskAssignee[];
   drivers: Driver[];
   clients: Client[];
   vehicles: Vehicle[];
@@ -45,7 +69,11 @@ interface TaskDialogProps {
     leadDriverId?: string,
     coDriverIds?: string[]
   ) => void;
-  onUpdated?: (task: Task) => void;
+  onUpdated?: (
+    task: Task,
+    leadDriverId?: string,
+    coDriverIds?: string[]
+  ) => void;
 }
 
 const types: TaskType[] = [
@@ -66,6 +94,7 @@ export function TaskDialog(props: TaskDialogProps) {
     onOpenChange,
     mode,
     task,
+    assignees = [],
     drivers,
     clients,
     vehicles,
@@ -165,14 +194,21 @@ export function TaskDialog(props: TaskDialogProps) {
       } else {
         setVehicleQuery('');
       }
-      setLeadDriverId('');
-      setCoDriverIds([]);
+      if (mode === 'edit' && assignees.length > 0) {
+        const lead = assignees.find((a) => a.is_lead);
+        const co = assignees.filter((a) => !a.is_lead).map((a) => a.driver_id);
+        setLeadDriverId(lead?.driver_id ?? '');
+        setCoDriverIds(co);
+      } else {
+        setLeadDriverId('');
+        setCoDriverIds([]);
+      }
       setClientsLocal(clients);
       setVehiclesLocal(vehicles);
       setShowAddClient(false);
       setShowAddVehicle(false);
     }
-  }, [open, task, clients, vehicles]);
+  }, [open, task, clients, vehicles, mode, assignees]);
 
   const coDriversSet = useMemo(() => new Set(coDriverIds), [coDriverIds]);
 
@@ -198,6 +234,7 @@ export function TaskDialog(props: TaskDialogProps) {
 
   const toggleCoDriver = (id: string) => {
     setCoDriverIds((prev) => {
+      if (id === leadDriverId) return prev;
       const s = new Set(prev);
       if (s.has(id)) s.delete(id);
       else s.add(id);
@@ -219,6 +256,15 @@ export function TaskDialog(props: TaskDialogProps) {
     if (startTime >= endTime) {
       return 'שעת התחלה לא יכולה להיות אחרי שעת סיום';
     }
+
+    const driverValidation = driverSelectionSchema.safeParse({
+      leadDriverId,
+      coDriverIds,
+    });
+    if (!driverValidation.success) {
+      return driverValidation.error.issues[0].message;
+    }
+
     return null;
   };
 
@@ -391,7 +437,10 @@ export function TaskDialog(props: TaskDialogProps) {
           .set('minute', parseInt(estimatedEndTime.split(':')[1]))
           .toISOString();
 
-        const update: Partial<Task> = {
+        const update: Partial<Task> & {
+          lead_driver_id?: string | null;
+          co_driver_ids?: string[];
+        } = {
           title: title.trim(),
           type,
           priority,
@@ -402,6 +451,8 @@ export function TaskDialog(props: TaskDialogProps) {
           address: address || '',
           client_id: clientId || null,
           vehicle_id: vehicleId || null,
+          lead_driver_id: leadDriverId || null,
+          co_driver_ids: coDriverIds,
         };
         const res = await fetch(`/api/admin/tasks/${task.id}`, {
           method: 'PATCH',
@@ -415,7 +466,7 @@ export function TaskDialog(props: TaskDialogProps) {
         const json = await res.json();
         const updated: Task = json.data;
         toastSuccess('המשימה עודכנה בהצלחה!');
-        onUpdated?.(updated);
+        onUpdated?.(updated, leadDriverId || undefined, coDriverIds);
         try {
           trackFormSubmitted({
             form: 'TaskDialog',
@@ -821,19 +872,24 @@ export function TaskDialog(props: TaskDialogProps) {
               <div className="flex flex-col gap-1">
                 <span className="text-sm font-medium">נהגי משנה</span>
                 <div className="max-h-28 overflow-auto rounded border border-gray-200 p-2">
-                  {drivers.map((d) => (
-                    <label
-                      key={d.id}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={coDriversSet.has(d.id)}
-                        onChange={() => toggleCoDriver(d.id)}
-                      />
-                      <span>{d.name || d.email}</span>
-                    </label>
-                  ))}
+                  {drivers.map((d) => {
+                    const id = `co-driver-${d.id}`;
+                    return (
+                      <Label
+                        key={d.id}
+                        htmlFor={id}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <Checkbox
+                          id={id}
+                          checked={coDriversSet.has(d.id)}
+                          onCheckedChange={() => toggleCoDriver(d.id)}
+                          disabled={leadDriverId === d.id}
+                        />
+                        <span>{d.name || d.email}</span>
+                      </Label>
+                    );
+                  })}
                 </div>
               </div>
             )}

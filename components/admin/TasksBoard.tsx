@@ -120,6 +120,7 @@ export function TasksBoard({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [dialogTask, setDialogTask] = useState<Task | null>(null);
+  const [dialogAssignees, setDialogAssignees] = useState<TaskAssignee[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   // Filters / search / sorting
   const [search, setSearch] = useState('');
@@ -296,8 +297,19 @@ export function TasksBoard({
   const openCreateDialog = useCallback(() => {
     setDialogMode('create');
     setDialogTask(null);
+    setDialogAssignees([]);
     setDialogOpen(true);
   }, []);
+
+  const openEditDialog = useCallback(
+    (task: Task) => {
+      setDialogMode('edit');
+      setDialogTask(task);
+      setDialogAssignees(taskAssigneeMap.get(task.id) || []);
+      setDialogOpen(true);
+    },
+    [taskAssigneeMap]
+  );
 
   const handleCreated = useCallback(
     (created: Task, leadId?: string, coIds?: string[]) => {
@@ -332,9 +344,43 @@ export function TasksBoard({
 
   // DnD: finalize drop and persist changes
 
-  const handleUpdated = useCallback((updated: Task) => {
-    setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-  }, []);
+  const handleUpdated = useCallback(
+    (updated: Task, leadId?: string, coIds?: string[]) => {
+      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+
+      // If driver info was provided, sync local assignees snapshot for this task
+      if (leadId !== undefined || coIds !== undefined) {
+        setAssignees((prev) => {
+          // Remove all existing assignees for this task
+          const without = prev.filter((ta) => ta.task_id !== updated.id);
+          const inserts: TaskAssignee[] = [];
+
+          if (leadId) {
+            inserts.push({
+              id: `local-${updated.id}-lead`,
+              task_id: updated.id,
+              driver_id: leadId,
+              is_lead: true,
+              assigned_at: new Date().toISOString(),
+            });
+          }
+
+          (coIds || []).forEach((id) => {
+            inserts.push({
+              id: `local-${updated.id}-${id}`,
+              task_id: updated.id,
+              driver_id: id,
+              is_lead: false,
+              assigned_at: new Date().toISOString(),
+            });
+          });
+
+          return [...without, ...inserts];
+        });
+      }
+    },
+    []
+  );
 
   const toggleSelected = useCallback((taskId: string) => {
     setSelectedIds((prev) => {
@@ -1050,6 +1096,7 @@ export function TasksBoard({
                       conflict={conflictByTaskId}
                       onDragStart={handleDragStart}
                       toggleSelected={toggleSelected}
+                      onEdit={openEditDialog}
                       selectAllInColumn={selectAllInColumn}
                       bulkEnabled={!!bulkEnabled}
                     />
@@ -1094,6 +1141,7 @@ export function TasksBoard({
             drivers={drivers}
             clients={clients}
             vehicles={vehicles}
+            assignees={dialogAssignees}
             onCreated={handleCreated}
             onUpdated={handleUpdated}
           />

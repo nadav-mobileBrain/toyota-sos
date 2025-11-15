@@ -5,6 +5,7 @@ import { useDraggable } from '@dnd-kit/core';
 import dayjs from '@/lib/dayjs';
 import type { TaskStatus, TaskPriority, TaskType } from '@/types/task';
 import type { TaskCardProps } from '@/types/board';
+import { PencilIcon } from 'lucide-react';
 
 /**
  * TaskCard Component
@@ -125,9 +126,10 @@ export function TaskCard({
           {statusLabel(task.status)}
         </span>
         <button
-          className="text-xs text-toyota-primary hover:underline"
+          className="text-xs text-toyota-primary hover:underline flex items-center gap-1"
           onClick={() => onEdit(task)}
         >
+          <PencilIcon className="w-4 h-4" />
           עריכה
         </button>
       </div>

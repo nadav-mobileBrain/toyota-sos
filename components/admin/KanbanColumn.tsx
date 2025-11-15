@@ -17,6 +17,7 @@ export function KanbanColumn({
   toggleSelected,
   selectAllInColumn,
   bulkEnabled,
+  onEdit,
 }: KanbanColumnProps) {
   // Setup droppable
   const { setNodeRef } = useDroppable({
@@ -85,7 +86,7 @@ export function KanbanColumn({
               vehicleMap={vehicleMap}
               conflictInfo={conflict[task.id]}
               onDragStart={onDragStart}
-              onEdit={() => {}}
+              onEdit={onEdit}
               selected={selectedIds.has(task.id)}
               onToggleSelected={() => toggleSelected(task.id)}
               showSelect={bulkEnabled}
@@ -96,5 +97,3 @@ export function KanbanColumn({
     </div>
   );
 }
-
-
