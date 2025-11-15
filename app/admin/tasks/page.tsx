@@ -45,6 +45,7 @@ export default async function AdminTasksPage() {
         updated_at
       `
       )
+      .is('deleted_at', null)
       .order('updated_at', { ascending: false })
       .limit(100);
 
@@ -102,7 +103,6 @@ export default async function AdminTasksPage() {
     const { data, error } = await admin
       .from('clients')
       .select('id, name, phone, email');
-    console.log('🚀 ~ AdminTasksPage ~ data:', data);
 
     if (!error) {
       clients = data || [];

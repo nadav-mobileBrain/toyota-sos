@@ -5,7 +5,18 @@ import { useDraggable } from '@dnd-kit/core';
 import dayjs from '@/lib/dayjs';
 import type { TaskStatus, TaskPriority, TaskType } from '@/types/task';
 import type { TaskCardProps } from '@/types/board';
-import { PencilIcon } from 'lucide-react';
+import { PencilIcon, Trash2Icon } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 
 /**
  * TaskCard Component
@@ -21,6 +32,7 @@ export function TaskCard({
   vehicleMap,
   conflictInfo,
   onEdit,
+  onDelete,
   selected,
   onToggleSelected,
   showSelect,
@@ -125,13 +137,40 @@ export function TaskCard({
         >
           {statusLabel(task.status)}
         </span>
-        <button
-          className="text-xs text-toyota-primary hover:underline flex items-center gap-1"
-          onClick={() => onEdit(task)}
-        >
-          <PencilIcon className="w-4 h-4" />
-          עריכה
-        </button>
+        <div className="flex flex-row items-end gap-4">
+          <button
+            className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+            onClick={() => onEdit(task)}
+          >
+            <PencilIcon className="w-4 h-4" />
+          </button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                type="button"
+                className="text-xs text-red-600 hover:underline flex items-center gap-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Trash2Icon className="w-4 h-4" />
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>למחוק את המשימה?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  פעולה זו תסמן את המשימה כמחוקה. אפשר יהיה לשחזר אותה מהמערכת
+                  במידת הצורך.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>בטל</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(task)}>
+                  מחק
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
     </div>
   );

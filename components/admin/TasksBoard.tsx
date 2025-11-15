@@ -319,6 +319,34 @@ export function TasksBoard({
     [taskAssigneeMap]
   );
 
+  const handleDeleteTask = useCallback(
+    async (task: Task) => {
+      const taskId = task.id;
+      const prevTasks = tasks;
+      const prevAssignees = assignees;
+
+      // optimistic remove
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+      setAssignees((prev) => prev.filter((ta) => ta.task_id !== taskId));
+
+      try {
+        const res = await fetch(`/api/admin/tasks/${taskId}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          throw new Error(text || 'שגיאה במחיקת משימה');
+        }
+        toastSuccess('המשימה נמחקה בהצלחה');
+      } catch (error) {
+        setTasks(prevTasks);
+        setAssignees(prevAssignees);
+        toastError('שגיאה במחיקת משימה');
+      }
+    },
+    [tasks, assignees]
+  );
+
   const handleCreated = useCallback(
     (created: Task, leadId?: string, coIds?: string[]) => {
       setTasks((prev) => [created, ...prev]);
@@ -1105,6 +1133,7 @@ export function TasksBoard({
                       onDragStart={handleDragStart}
                       toggleSelected={toggleSelected}
                       onEdit={openEditDialog}
+                      onDelete={handleDeleteTask}
                       selectAllInColumn={selectAllInColumn}
                       bulkEnabled={!!bulkEnabled}
                     />

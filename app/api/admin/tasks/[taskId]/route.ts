@@ -97,7 +97,11 @@ export async function DELETE(
 
     const { taskId } = await params;
     const admin = getSupabaseAdmin();
-    const { error } = await admin.from('tasks').delete().eq('id', taskId);
+    // Soft-delete: mark task as deleted instead of hard delete
+    const { error } = await admin
+      .from('tasks')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', taskId);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

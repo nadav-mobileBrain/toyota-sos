@@ -41,6 +41,7 @@ export interface KanbanColumnProps {
   selectAllInColumn: (columnId: string, checked: boolean) => void;
   bulkEnabled: boolean;
   onEdit: (task: Task) => void;
+  onDelete: (task: Task) => void;
 }
 
 export interface TaskCardProps {
@@ -54,6 +55,7 @@ export interface TaskCardProps {
   conflictInfo?: { by?: string | null; at?: string | null };
   onDragStart: (event: DragStartEvent) => void;
   onEdit: (task: Task) => void;
+  onDelete: (task: Task) => void;
   selected: boolean;
   onToggleSelected: () => void;
   showSelect: boolean;
