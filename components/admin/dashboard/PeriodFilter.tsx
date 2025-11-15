@@ -317,7 +317,7 @@ export function PeriodFilter({
       >
         <Button
           variant="ghost"
-          className={`px-3 py-1 text-sm rounded hover:bg-gray-50 ${
+          className={`px-3 py-1 text-sm rounded ${
             currentPreset === 'today' && !customOpen
               ? 'bg-toyota-primary text-white'
               : 'bg-white text-gray-800'
@@ -328,7 +328,7 @@ export function PeriodFilter({
         </Button>
         <Button
           variant="ghost"
-          className={`px-3 py-1 text-sm rounded hover:bg-gray-50 ${
+          className={`px-3 py-1 text-sm rounded ${
             currentPreset === 'yesterday' && !customOpen
               ? 'bg-toyota-primary text-white'
               : 'bg-white text-gray-800'
@@ -339,7 +339,7 @@ export function PeriodFilter({
         </Button>
         <Button
           variant="ghost"
-          className={`px-3 py-1 text-sm rounded hover:bg-gray-50 ${
+          className={`px-3 py-1 text-sm rounded ${
             currentPreset === 'last7' && !customOpen
               ? 'bg-toyota-primary text-white'
               : 'bg-white text-gray-800'
@@ -350,7 +350,7 @@ export function PeriodFilter({
         </Button>
         <Button
           variant="ghost"
-          className={`px-3 py-1 text-sm rounded hover:bg-gray-50 ${
+          className={`px-3 py-1 text-sm rounded ${
             currentPreset === 'last30' && !customOpen
               ? 'bg-toyota-primary text-white'
               : 'bg-white text-gray-800'
@@ -361,7 +361,7 @@ export function PeriodFilter({
         </Button>
         <Button
           variant="ghost"
-          className={`px-3 py-1 text-sm rounded hover:bg-gray-50 ${
+          className={`px-3 py-1 text-sm rounded ${
             currentPreset === 'custom' || customOpen
               ? 'bg-toyota-primary text-white'
               : 'bg-white text-gray-800'
