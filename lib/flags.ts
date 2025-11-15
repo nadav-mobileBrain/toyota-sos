@@ -19,6 +19,18 @@ let cacheExpiresAt = 0;
 const listeners = new Set<Listener>();
 let inflight: Promise<Record<string, boolean>> | null = null;
 
+function getRoleFromCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+  try {
+    const parts = document.cookie.split(';').map((c) => c.trim());
+    const entry = parts.find((c) => c.startsWith('toyota_role='));
+    if (!entry) return null;
+    return decodeURIComponent(entry.split('=').slice(1).join('='));
+  } catch {
+    return null;
+  }
+}
+
 function emit() {
   const obj = Object.fromEntries(cache.entries());
   for (const l of Array.from(listeners)) {
@@ -45,15 +57,33 @@ export function isStale() {
 }
 
 async function fetchFlags(): Promise<Record<string, boolean>> {
-  const res = await fetch('/api/admin/flags', { cache: 'no-store' });
-  if (!res.ok) throw new Error(await res.text().catch(() => 'flags fetch failed'));
-  const json = await res.json();
-  const rows: Array<{ key: string; enabled: boolean }> = json?.data || [];
-  const obj: Record<string, boolean> = {};
-  for (const row of rows) {
-    obj[row.key] = !!row.enabled;
+  // Drivers never need admin feature flags; avoid hitting the admin API entirely
+  const role = getRoleFromCookie();
+  if (role === 'driver') {
+    return {};
   }
-  return obj;
+
+  try {
+    const res = await fetch('/api/admin/flags', { cache: 'no-store' });
+    if (!res.ok) {
+      // For non-admin roles 401 is expected; just fall back to defaults without noisy errors
+      if (res.status !== 401) {
+        // eslint-disable-next-line no-console
+        console.warn('flags fetch failed', res.status);
+      }
+      return {};
+    }
+    const json = await res.json();
+    const rows: Array<{ key: string; enabled: boolean }> = json?.data || [];
+    const obj: Record<string, boolean> = {};
+    for (const row of rows) {
+      obj[row.key] = !!row.enabled;
+    }
+    return obj;
+  } catch {
+    // Network or other failure → fall back to defaults
+    return {};
+  }
 }
 
 export async function getFlags(force = false): Promise<Record<string, boolean>> {

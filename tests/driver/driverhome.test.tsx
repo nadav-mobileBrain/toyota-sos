@@ -11,13 +11,23 @@ jest.mock('next/navigation', () => {
   };
 });
 
-// Mock Supabase browser client RPC
+// Mock Supabase client via AuthProvider + driver session helper
 const rpcMock = jest.fn();
+const getDriverSessionMock = jest.fn();
+
+jest.mock('@/components/AuthProvider', () => {
+  return {
+    useAuth: () => ({
+      client: {
+        rpc: rpcMock,
+      },
+    }),
+  };
+});
+
 jest.mock('@/lib/auth', () => {
   return {
-    createBrowserClient: () => ({
-      rpc: rpcMock,
-    }),
+    getDriverSession: getDriverSessionMock,
   };
 });
 
@@ -60,6 +70,12 @@ describe('DriverHome filtering and tabs', () => {
 
   beforeEach(() => {
     rpcMock.mockReset();
+    getDriverSessionMock.mockReturnValue({
+      employeeId: '22222',
+      userId: 'driver-profile-id-22222',
+      role: 'driver',
+      createdAt: Date.now(),
+    });
     // default RPC returns "today" dataset
     rpcMock.mockResolvedValue({ data: todayItems, error: null });
   });
@@ -124,6 +140,12 @@ describe('pagination de-duplication', () => {
 
   beforeEach(() => {
     rpcMock.mockReset();
+    getDriverSessionMock.mockReturnValue({
+      employeeId: '22222',
+      userId: 'driver-profile-id-22222',
+      role: 'driver',
+      createdAt: Date.now(),
+    });
     rpcMock.mockResolvedValue({ data: page1, error: null });
   });
 
@@ -172,6 +194,12 @@ describe('pull-to-refresh', () => {
 
   beforeEach(() => {
     rpcMock.mockReset();
+    getDriverSessionMock.mockReturnValue({
+      employeeId: '22222',
+      userId: 'driver-profile-id-22222',
+      role: 'driver',
+      createdAt: Date.now(),
+    });
   });
 
   test('dragging down past threshold triggers a refresh RPC', async () => {

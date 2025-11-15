@@ -14,6 +14,7 @@ export default function AdminDashboardPage() {
   const navItems = [
     { name: 'לוח מחוונים', url: '/admin/dashboard', icon: 'LayoutDashboard' },
     { name: 'משימות', url: '/admin/tasks', icon: 'ClipboardList' },
+    { name: 'נהגים', url: '/admin/drivers', icon: 'Users' },
   ];
   const handleSignOut = async () => {
     try {

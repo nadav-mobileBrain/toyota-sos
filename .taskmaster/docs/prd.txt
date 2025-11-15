@@ -3,7 +3,7 @@
 
 > **Status**: v1.0 (Detailed)  
 > **Owner**: You (development on your org, transfer later)  
-> **Stack**: Next.js (TS) + Tailwind + shadcn/ui + Supabase (Auth, DB, Storage, Realtime) + Drizzle ORM + Mixpanel  
+> **Stack**: Next.js (TS) + Tailwind + shadcn/ui + Supabase (Auth, DB, Storage, Realtime) + Mixpanel  
 > **Lang/Locale**: Hebrew-only (RTL), date format `dd/mm/yyyy` (use dayjs)  
 > **Platforms**: PWA (mobile-first for Drivers; Admins on mobile/desktop)  
 > **Brand**: Toyota S.O.S — Primary `#d60b25`, Secondary black/white
@@ -184,7 +184,6 @@ Exportable csv for each widget.
 
 ## 6) Data Model (summary)
 
-> Full SQL/Drizzle models & RLS are in **`schema.md`** (companion file).
 
 Core tables: `profiles`, `tasks`, `task_assignees`, `task_forms`, `signatures`, `images`, `notifications`, `clients`, `vehicles`, `feature_flags`, `task_audit_log`.
 
@@ -405,7 +404,7 @@ Client flows:
 
 ## 20) References
 
-- Companion file: **`schema.md`** (DB, RLS, triggers, Drizzle, ERD)  
+- Companion file: **`schema.md`** (DB, RLS, triggers, ERD)  
 - Brand asset: `toyota.jpg` (used in header), primary color `#d60b25`
 
 ---
@@ -456,7 +455,7 @@ src/
     driver/
     admin/
   hooks/
-  lib/ (supabase, drizzle, dayjs, mixpanel)
+  lib/ (supabase, dayjs, mixpanel)
   styles/
   tests/
 public/

@@ -5,7 +5,8 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useRef } from 'react';
 import { TaskCard, TaskCardProps } from '@/components/driver/TaskCard';
 import { TaskSkeleton } from '@/components/driver/TaskSkeleton';
-import { createBrowserClient, getDriverSession } from '@/lib/auth';
+import { getDriverSession } from '@/lib/auth';
+import { useAuth } from '@/components/AuthProvider';
 
 export type DriverTask = TaskCardProps;
 
@@ -39,6 +40,7 @@ export function DriverHome() {
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
+  const { client } = useAuth();
   const urlTab =
     (search.get('tab') as 'today' | 'all' | 'overdue' | null) ?? 'today';
   const [tabState, setTabState] = useState<'today' | 'all' | 'overdue'>(urlTab);
@@ -98,16 +100,21 @@ export function DriverHome() {
   );
   useEffect(() => {
     fetchPageRef.current = async (reset: boolean) => {
+      if (!client) {
+        return;
+      }
+
       if (reset) {
         setIsInitialLoading(true);
         setError(null);
       }
-      const supa = createBrowserClient();
-      
+
+      const supa = client;
+
       // Get driver session from localStorage to pass driver_id if auth.uid() is null
       const driverSession = getDriverSession();
       const driverId = driverSession?.userId || null;
-      
+
       const params: Record<string, unknown> = {
         p_tab: tabState,
         p_limit: 10,
@@ -120,12 +127,17 @@ export function DriverHome() {
       if (driverId) {
         params.p_driver_id = driverId;
       }
-      
+
+      // eslint-disable-next-line no-console
+      console.log('[DriverHome] get_driver_tasks params', params);
+
       const { data, error } = (await supa.rpc('get_driver_tasks', params)) as {
         data: SupaTaskRow[] | null;
-        error: unknown | null;
+        error: any | null;
       };
       if (error) {
+        // eslint-disable-next-line no-console
+        console.error('[DriverHome] get_driver_tasks RPC error', error);
         setError('טעינת משימות נכשלה. נסה שוב.');
         setIsInitialLoading(false);
         return;
@@ -153,12 +165,13 @@ export function DriverHome() {
       }
       setIsInitialLoading(false);
     };
-  }, [tabState, cursor]);
+  }, [tabState, cursor, client]);
 
-  // Initial load and on tab changes, trigger fetch
+  // Initial load and on tab changes, trigger fetch once client is ready
   useEffect(() => {
+    if (!client) return;
     fetchPageRef.current(true);
-  }, [tabState]);
+  }, [tabState, client]);
 
   // IntersectionObserver to auto-load next page (server pagination)
   useEffect(() => {
