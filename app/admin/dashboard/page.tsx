@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { DashboardKPIs } from '@/components/admin/dashboard/DashboardKPIs';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/AuthProvider';
 import { NavBar } from '@/components/ui/tubelight-navbar';
+import { DashboardKPIs } from '@/components/admin/dashboard/DashboardKPIs';
+import { PeriodProvider } from '@/components/admin/dashboard/PeriodContext';
+import { PeriodFilter } from '@/components/admin/dashboard/PeriodFilter';
+import { DashboardCharts } from '@/components/admin/DashboardCharts';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -39,33 +42,18 @@ export default function AdminDashboardPage() {
           יציאה
         </Button>
       </div>
-      <div className="mx-auto max-w-7xl space-y-4 mt-20 sm:mt-24">
-        {/* Navbar */}
-        {/* <div className="flex items-center justify-between rounded-lg bg-white p-3 shadow-sm border border-gray-200">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/admin/tasks/"
-              className="text-sm font-medium text-gray-700 hover:text-gray-900 underline decoration-dotted"
-            >
-              מעבר למשימות
-            </Link>
+      <PeriodProvider>
+        <div className="mx-auto mt-20 max-w-7xl space-y-4 sm:mt-24">
+          <h1 className="text-4xl font-bold text-red-500 underline">
+            לוח מחוונים
+          </h1>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <PeriodFilter />
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              className="text-sm"
-              onClick={handleSignOut}
-              disabled={loading}
-            >
-              יציאה
-            </Button>
-          </div>
-        </div> */}
-        <h1 className="text-4xl font-bold text-red-500 underline">
-          לוח מחוונים
-        </h1>
-        <DashboardKPIs />
-      </div>
+          <DashboardKPIs />
+          <DashboardCharts />
+        </div>
+      </PeriodProvider>
     </div>
   );
 }

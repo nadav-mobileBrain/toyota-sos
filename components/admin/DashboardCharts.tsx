@@ -109,6 +109,11 @@ function WeeklyTrendsChart() {
             <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 4" />
             <XAxis
               dataKey="date"
+              tickFormatter={(value: string) =>
+                new Date(value).toLocaleDateString('he-IL', {
+                  weekday: 'short',
+                })
+              }
               tickLine={false}
               axisLine={false}
               tickMargin={8}
@@ -330,6 +335,21 @@ function DriverCompletionChart() {
                 dataKey="completionRate"
                 name={driverCompletionConfig.completionRate.label}
                 radius={[4, 4, 0, 0]}
+                label={({ x, y, width, value }) => {
+                  if (typeof value !== 'number') return null;
+                  const cx = (x ?? 0) + (width ?? 0) / 2;
+                  const cy = (y ?? 0) - 6;
+                  return (
+                    <text
+                      x={cx}
+                      y={cy}
+                      textAnchor="middle"
+                      className="fill-gray-700 text-[10px]"
+                    >
+                      {`${value}%`}
+                    </text>
+                  );
+                }}
               >
                 {data.map((entry) => (
                   <Cell
