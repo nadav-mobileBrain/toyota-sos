@@ -42,6 +42,7 @@ import type {
 import type { Driver } from '@/types/user';
 import type { Client, Vehicle } from '@/types/entity';
 import type { GroupBy, SortBy, SortDir, TasksBoardProps } from '@/types/board';
+import { usePeriod } from '@/components/admin/dashboard/PeriodContext';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   statusLabel,
@@ -131,6 +132,7 @@ export function TasksBoard({
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>('זמן');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const { range: timeRange } = usePeriod();
   // Conflict ribbons (server-wins notifications)
   const [conflictByTaskId, setConflictByTaskId] = useState<
     Record<string, { by?: string | null; at?: string | null }>
@@ -238,7 +240,7 @@ export function TasksBoard({
 
   // Compute filtered + sorted tasks snapshot
   const filteredSortedTasks = useMemo(() => {
-    const filtered = filterTasks({
+    const filteredByBasic = filterTasks({
       tasks,
       search,
       filterType,
@@ -246,10 +248,15 @@ export function TasksBoard({
       overdueOnly,
       clientMap,
       vehicleMap,
+    }).filter((t) => {
+      const start = new Date(t.estimated_start).getTime();
+      const from = new Date(timeRange.start).getTime();
+      const to = new Date(timeRange.end).getTime();
+      return start >= from && start <= to;
     });
 
     return sortTasks({
-      tasks: filtered,
+      tasks: filteredByBasic,
       sortBy,
       sortDir,
       driverMap,
@@ -267,6 +274,7 @@ export function TasksBoard({
     vehicleMap,
     driverMap,
     taskAssigneeMap,
+    timeRange,
   ]);
 
   // Compute columns based on groupBy mode

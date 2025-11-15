@@ -8,6 +8,7 @@ import type {
 } from '@/components/admin/TasksBoard';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { NavBar } from '@/components/ui/tubelight-navbar';
+import { AdminTasksShell } from '@/components/admin/AdminTasksShell';
 
 /**
  * Admin Tasks Page (7.1)
@@ -134,8 +135,8 @@ export default async function AdminTasksPage() {
   return (
     <main dir="rtl" className="min-h-screen bg-gray-50 p-8 mx-auto">
       <NavBar items={navItems} className="z-40" />
-      <div className="max-w-full mt-4 sm:mt-8">
-        <h1 className="mb-6 text-3xl font-bold text-toyota-primary underline">
+      <div className="max-w-full mt-4 sm:mt-8 space-y-4">
+        <h1 className="text-3xl font-bold text-toyota-primary underline">
           לוח משימות
         </h1>
 
@@ -156,7 +157,7 @@ export default async function AdminTasksPage() {
           </div>
         )}
 
-        <TasksBoard
+        <AdminTasksShell
           initialTasks={tasks}
           drivers={drivers}
           taskAssignees={taskAssignees}
