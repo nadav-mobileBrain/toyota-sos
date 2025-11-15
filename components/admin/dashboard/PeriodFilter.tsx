@@ -131,6 +131,51 @@ function validateDateRange(
   return null;
 }
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+function sameCalendarDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function inferPreset(
+  range: PeriodRange
+): 'today' | 'yesterday' | 'last7' | 'last30' | 'custom' {
+  const start = new Date(range.start);
+  const end = new Date(range.end);
+  const today = new Date();
+
+  const diffDays = Math.round(
+    Math.abs(end.getTime() - start.getTime()) / MS_PER_DAY
+  );
+
+  // today: start and end both today
+  if (sameCalendarDay(start, today) && sameCalendarDay(end, today)) {
+    return 'today';
+  }
+
+  // yesterday: start and end both yesterday
+  const yesterday = new Date(today.getTime() - MS_PER_DAY);
+  if (sameCalendarDay(start, yesterday) && sameCalendarDay(end, yesterday)) {
+    return 'yesterday';
+  }
+
+  // last 7 days: end is today, and span is 7 days
+  if (sameCalendarDay(end, today) && diffDays === 7) {
+    return 'last7';
+  }
+
+  // last 30 days: end is today, and span is 30 days
+  if (sameCalendarDay(end, today) && diffDays === 30) {
+    return 'last30';
+  }
+
+  return 'custom';
+}
+
 function DatePickerInput({
   label,
   value,
@@ -218,9 +263,25 @@ export function PeriodFilter({
     }
   }, [customFrom, customTo, customOpen]);
 
+  const currentPreset = React.useMemo(() => inferPreset(range), [range]);
+
   const apply = (r: PeriodRange) => {
     setRange(r);
     onChange?.(r);
+  };
+
+  const resetCustom = () => {
+    setCustomOpen(false);
+    setShowFromCal(false);
+    setShowToCal(false);
+    setCustomFrom('');
+    setCustomTo('');
+    setErrors({});
+  };
+
+  const applyPreset = (kind: 'today' | 'yesterday' | 'last7' | 'last30') => {
+    resetCustom();
+    apply(makeRange(kind));
   };
 
   const handleApply = () => {
@@ -256,35 +317,55 @@ export function PeriodFilter({
       >
         <Button
           variant="ghost"
-          className="px-3 py-1 text-sm rounded bg-white hover:bg-gray-50"
-          onClick={() => apply(makeRange('today'))}
+          className={`px-3 py-1 text-sm rounded hover:bg-gray-50 ${
+            currentPreset === 'today' && !customOpen
+              ? 'bg-toyota-primary text-white'
+              : 'bg-white text-gray-800'
+          }`}
+          onClick={() => applyPreset('today')}
         >
           היום
         </Button>
         <Button
           variant="ghost"
-          className="px-3 py-1 text-sm rounded bg-white hover:bg-gray-50"
-          onClick={() => apply(makeRange('yesterday'))}
+          className={`px-3 py-1 text-sm rounded hover:bg-gray-50 ${
+            currentPreset === 'yesterday' && !customOpen
+              ? 'bg-toyota-primary text-white'
+              : 'bg-white text-gray-800'
+          }`}
+          onClick={() => applyPreset('yesterday')}
         >
           אתמול
         </Button>
         <Button
           variant="ghost"
-          className="px-3 py-1 text-sm rounded bg-white hover:bg-gray-50"
-          onClick={() => apply(makeRange('last7'))}
+          className={`px-3 py-1 text-sm rounded hover:bg-gray-50 ${
+            currentPreset === 'last7' && !customOpen
+              ? 'bg-toyota-primary text-white'
+              : 'bg-white text-gray-800'
+          }`}
+          onClick={() => applyPreset('last7')}
         >
           7 ימים
         </Button>
         <Button
           variant="ghost"
-          className="px-3 py-1 text-sm rounded bg-white hover:bg-gray-50"
-          onClick={() => apply(makeRange('last30'))}
+          className={`px-3 py-1 text-sm rounded hover:bg-gray-50 ${
+            currentPreset === 'last30' && !customOpen
+              ? 'bg-toyota-primary text-white'
+              : 'bg-white text-gray-800'
+          }`}
+          onClick={() => applyPreset('last30')}
         >
           30 ימים
         </Button>
         <Button
           variant="ghost"
-          className="px-3 py-1 text-sm rounded bg-white hover:bg-gray-50"
+          className={`px-3 py-1 text-sm rounded hover:bg-gray-50 ${
+            currentPreset === 'custom' || customOpen
+              ? 'bg-toyota-primary text-white'
+              : 'bg-white text-gray-800'
+          }`}
           onClick={() => setCustomOpen((v) => !v)}
           aria-expanded={customOpen}
         >
@@ -342,8 +423,25 @@ export function PeriodFilter({
       )}
 
       <div className="ml-auto text-xs text-gray-600">
-        טווח נוכחי: {new Date(range.start).toLocaleDateString('he-IL')} –{' '}
-        {new Date(range.end).toLocaleDateString('he-IL')}
+        {(() => {
+          const label =
+            currentPreset === 'today'
+              ? 'היום'
+              : currentPreset === 'yesterday'
+              ? 'אתמול'
+              : currentPreset === 'last7'
+              ? '7 ימים'
+              : currentPreset === 'last30'
+              ? '30 ימים'
+              : 'מותאם';
+          return (
+            <>
+              טווח נוכחי: <span className="font-semibold">{label}</span> (
+              {new Date(range.start).toLocaleDateString('he-IL')} –{' '}
+              {new Date(range.end).toLocaleDateString('he-IL')})
+            </>
+          );
+        })()}
       </div>
     </div>
   );
