@@ -1,62 +1,22 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import dayjs from '@/lib/dayjs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import type { DriverInput } from '@/lib/schemas/driver';
-import { driverSchema } from '@/lib/schemas/driver';
-import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { toastError, toastSuccess } from '@/lib/toast';
-
-type DriverRow = {
-  id: string;
-  name: string | null;
-  email: string | null;
-  employee_id: string | null;
-  role: 'driver' | 'admin' | 'manager' | 'viewer';
-  created_at: string;
-  updated_at: string;
-};
+import type { DriverInput } from '@/lib/schemas/driver';
+import {
+  DriverEditDialog,
+  DriverFormSchema,
+  type DriverFormValues,
+  DeleteDriverDialog,
+} from '@/utils/admin/drivers/dialogs';
+import type { DriverRow } from '@/utils/admin/drivers/types';
+import { DriverListView } from '@/utils/admin/drivers/view';
 
 type Props = {
   initialDrivers?: DriverRow[];
 };
-
-const FormSchema = driverSchema.extend({
-  // Accept empty string for email and coerce to optional
-  email: z
-    .union([z.string().email('אימייל לא תקין').max(255), z.literal('')])
-    .optional()
-    .transform((val) => {
-      if (!val) return undefined;
-      const trimmed = val.trim();
-      return trimmed.length === 0 ? undefined : trimmed;
-    }),
-});
-
-type FormValues = z.infer<typeof FormSchema>;
-
-function formatTimestamp(ts: string | null) {
-  if (!ts) return '—';
-  try {
-    return dayjs(ts).format('DD/MM/YYYY HH:mm');
-  } catch {
-    return ts;
-  }
-}
 
 export function DriverCredentialsManager({ initialDrivers = [] }: Props) {
   const [drivers, setDrivers] = useState<DriverRow[]>(initialDrivers);
@@ -75,8 +35,8 @@ export function DriverCredentialsManager({ initialDrivers = [] }: Props) {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(FormSchema),
+  } = useForm<DriverFormValues>({
+    resolver: zodResolver(DriverFormSchema),
     defaultValues: {
       name: '',
       employeeId: '',
@@ -101,8 +61,9 @@ export function DriverCredentialsManager({ initialDrivers = [] }: Props) {
       const json = await res.json();
       const data = (json?.data as DriverRow[]) || [];
       setDrivers(data);
-    } catch (e: any) {
-      setError(e?.message || 'שגיאה בטעינת נהגים');
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'שגיאה בטעינת נהגים';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -123,7 +84,7 @@ export function DriverCredentialsManager({ initialDrivers = [] }: Props) {
 
   const canNext = useMemo(
     () => (page + 1) * pageSize < drivers.length,
-    [page, pageSize, drivers.length],
+    [page, pageSize, drivers.length]
   );
 
   const openCreateDialog = () => {
@@ -150,7 +111,7 @@ export function DriverCredentialsManager({ initialDrivers = [] }: Props) {
     setDialogOpen(true);
   };
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: DriverFormValues) => {
     setSubmitting(true);
     setError(null);
     try {
@@ -191,8 +152,7 @@ export function DriverCredentialsManager({ initialDrivers = [] }: Props) {
       if (res.status === 409) {
         const json = await res.json().catch(() => ({}));
         const msg =
-          json?.error ||
-          'מספר עובד כבר קיים, לא ניתן להשתמש באותו מספר עובד';
+          json?.error || 'מספר עובד כבר קיים, לא ניתן להשתמש באותו מספר עובד';
         setError(msg);
         toastError(msg);
         return;
@@ -210,9 +170,7 @@ export function DriverCredentialsManager({ initialDrivers = [] }: Props) {
         const txt = await res.text().catch(() => '');
         throw new Error(
           txt ||
-            (dialogMode === 'create'
-              ? 'שגיאה ביצירת נהג'
-              : 'שגיאה בעדכון נהג'),
+            (dialogMode === 'create' ? 'שגיאה ביצירת נהג' : 'שגיאה בעדכון נהג')
         );
       }
 
@@ -228,12 +186,13 @@ export function DriverCredentialsManager({ initialDrivers = [] }: Props) {
       setDialogOpen(false);
       setPage(0);
       await loadDrivers();
-    } catch (e: any) {
+    } catch (e) {
       const msg =
-        e?.message ||
-        (dialogMode === 'create'
+        e instanceof Error
+          ? e.message
+          : dialogMode === 'create'
           ? 'שגיאה ביצירת נהג'
-          : 'שגיאה בעדכון נהג');
+          : 'שגיאה בעדכון נהג';
       setError(msg);
       toastError(msg);
     } finally {
@@ -265,8 +224,8 @@ export function DriverCredentialsManager({ initialDrivers = [] }: Props) {
       toastSuccess('נהג נמחק בהצלחה');
       setDeletingId(null);
       await loadDrivers();
-    } catch (e: any) {
-      const msg = e?.message || 'שגיאה במחיקת נהג';
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'שגיאה במחיקת נהג';
       setError(msg);
       toastError(msg);
     } finally {
@@ -275,229 +234,38 @@ export function DriverCredentialsManager({ initialDrivers = [] }: Props) {
   };
 
   return (
-    <section
-      dir="rtl"
-      className="mt-4 space-y-4"
-      aria-label="ניהול פרטי הנהגים"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">כל הנהגים</h2>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={loadDrivers}
-            disabled={loading}
-          >
-            רענן
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={openCreateDialog}
-          >
-            הוסף נהג חדש
-          </Button>
-        </div>
-      </div>
-      <div className="space-y-3">
-        {loading ? <div className="text-sm">טוען נהגים...</div> : null}
-        {error ? (
-          <div role="alert" className="rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">
-            {error}
-          </div>
-        ) : null}
-        <div className="overflow-x-auto rounded border bg-white">
-          <table className="min-w-full text-sm rtl:text-right">
-            <thead className="bg-gray-50">
-              <tr className="text-xs font-semibold text-gray-600">
-                <th className="px-3 py-2 text-right">שם</th>
-                <th className="px-3 py-2 text-right">מספר עובד</th>
-                <th className="px-3 py-2 text-right">אימייל</th>
-                <th className="px-3 py-2 text-right">נוצר</th>
-                <th className="px-3 py-2 text-right">עודכן</th>
-                <th className="px-3 py-2 text-right">פעולות</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pagedDrivers.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-3 py-4 text-center text-xs text-gray-500"
-                  >
-                    אין נהגים להצגה.
-                  </td>
-                </tr>
-              ) : (
-                pagedDrivers.map((d) => (
-                  <tr key={d.id} className="border-t text-xs">
-                    <td className="px-3 py-2">{d.name || '—'}</td>
-                    <td className="px-3 py-2 font-mono">
-                      {d.employee_id || '—'}
-                    </td>
-                    <td className="px-3 py-2 break-all">
-                      {d.email || '—'}
-                    </td>
-                    <td className="px-3 py-2">
-                      {formatTimestamp(d.created_at)}
-                    </td>
-                    <td className="px-3 py-2">
-                      {formatTimestamp(d.updated_at)}
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-7 px-2 text-[11px]"
-                          onClick={() => openEditDialog(d)}
-                        >
-                          ערוך
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-7 px-2 text-[11px]"
-                          onClick={() => setDeletingId(d.id)}
-                        >
-                          מחק
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        {drivers.length > pageSize ? (
-          <div className="flex items-center justify-between text-xs">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-            >
-              קודם
-            </Button>
-            <span>
-              עמוד {page + 1} מתוך {Math.max(1, Math.ceil(drivers.length / pageSize))}
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => (canNext ? p + 1 : p))}
-              disabled={!canNext}
-            >
-              הבא
-            </Button>
-          </div>
-        ) : null}
-      </div>
+    <>
+      <DriverListView
+        drivers={drivers}
+        pagedDrivers={pagedDrivers}
+        page={page}
+        pageSize={pageSize}
+        canNext={canNext}
+        loading={loading}
+        error={error}
+        onRefresh={loadDrivers}
+        onOpenCreate={openCreateDialog}
+        onOpenEdit={openEditDialog}
+        onPageChange={setPage}
+        onStartDelete={setDeletingId}
+      />
 
-      <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {dialogMode === 'create' ? 'יצירת נהג חדש' : 'עריכת נהג'}
-            </AlertDialogTitle>
-          </AlertDialogHeader>
-          <form
-            className="mt-3 space-y-4"
-            onSubmit={handleSubmit(onSubmit)}
-          >
-            <div className="space-y-1.5">
-              <Label htmlFor="driver-name">שם הנהג</Label>
-              <Input
-                id="driver-name"
-                placeholder="שם מלא"
-                {...register('name')}
-              />
-              {errors.name ? (
-                <p className="text-xs text-red-600">{errors.name.message}</p>
-              ) : null}
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="driver-employee-id">מספר עובד</Label>
-              <Input
-                id="driver-employee-id"
-                placeholder="לדוגמה: 1234"
-                {...register('employeeId')}
-              />
-              {errors.employeeId ? (
-                <p className="text-xs text-red-600">
-                  {errors.employeeId.message}
-                </p>
-              ) : null}
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="driver-email">
-                אימייל (אופציונלי עבור ניהול מתקדם)
-              </Label>
-              <Input
-                id="driver-email"
-                type="email"
-                placeholder="example@toyota.co.il"
-                {...register('email')}
-              />
-              {errors.email ? (
-                <p className="text-xs text-red-600">{errors.email.message}</p>
-              ) : null}
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogAction
-                type="submit"
-                className="bg-toyota-primary hover:bg-toyota-primary/90"
-                disabled={submitting}
-              >
-                {dialogMode === 'create'
-                  ? submitting
-                    ? 'יוצר נהג...'
-                    : 'צור נהג'
-                  : submitting
-                    ? 'מעדכן נהג...'
-                    : 'עדכן נהג'}
-              </AlertDialogAction>
-              <AlertDialogCancel type="button" disabled={submitting}>
-                ביטול
-              </AlertDialogCancel>
-            </AlertDialogFooter>
-          </form>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DriverEditDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={dialogMode}
+        submitting={submitting}
+        register={register}
+        errors={errors}
+        onSubmit={handleSubmit(onSubmit)}
+      />
 
-      <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>מחיקת נהג</AlertDialogTitle>
-          </AlertDialogHeader>
-          <p className="mt-2 text-xs text-gray-700">
-            האם אתה בטוח שברצונך למחוק את הנהג? פעולה זו אינה הפיכה ועלולה להסיר
-            שיוכים למשימות.
-          </p>
-          <AlertDialogFooter>
-            <AlertDialogAction
-              type="button"
-              className="bg-red-600 hover:bg-red-700"
-              disabled={submitting}
-              onClick={confirmDelete}
-            >
-              מחק
-            </AlertDialogAction>
-            <AlertDialogCancel type="button" disabled={submitting}>
-              ביטול
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </section>
+      <DeleteDriverDialog
+        deletingId={deletingId}
+        submitting={submitting}
+        onConfirm={confirmDelete}
+        onOpenChange={() => setDeletingId(null)}
+      />
+    </>
   );
 }
-
-
