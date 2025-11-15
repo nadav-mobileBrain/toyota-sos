@@ -1454,6 +1454,21 @@
             "testStrategy": "Verify table fetches and displays all drivers correctly. Test timestamp formatting matches dd/mm/yyyy HH:mm format. Test pagination controls work correctly. Verify table refreshes after new driver is added. Test loading and error states display appropriately."
           }
         ]
+      },
+      {
+        "id": 15,
+        "title": "Implement task status update functionality on driver Today tab",
+        "description": "Enable drivers to change task status (in_progress, blocked, completed, etc.) directly from the Today tab on the driver screen, with real-time UI updates and status persistence to the database.",
+        "details": "1. Review the database schema (Task 3) to confirm task_status enum values and verify if status labels are stored in Hebrew or English in the schema. Check the task_status enum definition in the migrations.\n\n2. Enhance the TaskCard component (from Task 4) to make the status pill interactive:\n   - Convert the status display from static text to a clickable dropdown/select component\n   - Use shadcn/ui Select or Popover component for status selection\n   - Display available status options based on the task_status enum (pending, in_progress, blocked, completed)\n   - Ensure status labels match the schema language (Hebrew or English)\n\n3. Implement status update API endpoint or use existing endpoint:\n   - Create POST /api/tasks/{taskId}/status endpoint or use PATCH /api/tasks/{taskId}\n   - Validate that only the assigned driver can update their own task status\n   - Implement RLS policy to enforce driver can only update their assigned tasks\n   - Return updated task object with new status and updated_at timestamp\n\n4. Add status update logic in DriverHome.tsx component:\n   - Create handleStatusChange function that calls the API endpoint\n   - Implement optimistic UI update (update local state immediately)\n   - Show loading state during API call\n   - Handle errors gracefully with toast notifications\n   - Refresh task list on successful update or use real-time subscriptions\n\n5. Implement status transition validation:\n   - Define valid status transitions (e.g., pending → in_progress, in_progress → blocked/completed)\n   - Add client-side validation before allowing status change\n   - Consider business logic constraints (e.g., can't go from completed back to in_progress)\n\n6. Add audit logging:\n   - Ensure task_audit_log captures status changes with before/after values\n   - Track who changed the status and when (timestamp)\n   - Include this in the audit trail for admin review\n\n7. Test with real-time updates:\n   - Verify status changes reflect immediately in the UI\n   - Test that other drivers don't see status changes for tasks not assigned to them\n   - Confirm status persists after page refresh",
+        "testStrategy": "1. Log in as a driver and navigate to the driver home screen, Today tab.\n\n2. Verify task status display:\n   - Confirm all tasks display their current status (pending, in_progress, blocked, completed)\n   - Verify status labels are in the correct language (check if Hebrew or English per schema)\n   - Confirm status pills are visually distinct with appropriate colors/styling\n\n3. Test status update functionality:\n   - Click on a task's status pill to open the status selection dropdown\n   - Verify all available status options are displayed\n   - Select a new status (e.g., pending → in_progress)\n   - Confirm the UI updates immediately with the new status\n   - Verify the status persists after page refresh by checking the database\n\n4. Test status transitions:\n   - Attempt to change status from pending to in_progress (should succeed)\n   - Attempt to change status from in_progress to blocked (should succeed)\n   - Attempt to change status from completed back to pending (verify if this is allowed per business logic)\n   - Verify invalid transitions are prevented with appropriate error messages\n\n5. Test error handling:\n   - Simulate API failure and verify error toast notification appears\n   - Verify UI reverts to previous status on API failure\n   - Test with network disconnection and verify appropriate error handling\n\n6. Test audit logging:\n   - Verify status change is recorded in task_audit_log table\n   - Confirm audit log shows before/after status values\n   - Verify timestamp and driver_id are correctly recorded\n\n7. Test multi-driver scenarios:\n   - Log in as Driver A and change a task status\n   - Log in as Driver B and verify they cannot see or modify Driver A's tasks\n   - Verify RLS policies prevent unauthorized access\n\n8. Test real-time updates:\n   - Open the driver screen on two different devices/browsers\n   - Change task status on one device\n   - Verify the status updates in real-time on the other device (if real-time subscriptions are implemented)",
+        "status": "pending",
+        "dependencies": [
+          3,
+          4,
+          11
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
@@ -1466,7 +1481,7 @@
       ],
       "created": "2025-11-15T14:41:09.031Z",
       "description": "Tasks for master context",
-      "updated": "2025-11-15T14:58:14.078Z"
+      "updated": "2025-11-15T15:16:28.415Z"
     }
   }
 }
