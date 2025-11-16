@@ -190,53 +190,32 @@ export function DriverHome() {
     return () => obs.disconnect();
   }, [hasMore, isLoadingMore]);
 
-  // Realtime updates from admin/other clients -> driver board
+  // Realtime: refresh driver tasks when tasks or assignments change (admin updates/new tasks)
   useEffect(() => {
     if (!client) return;
-    const supa = client;
-    const channel = (
-      supa as unknown as {
-        channel: (name: string) => {
-          on: (
-            event: string,
-            filter: { event: string; schema: string; table: string },
-            cb: (payload: { new?: SupaTaskRow }) => void
-          ) => { subscribe: () => unknown };
-        };
-      }
-    )
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supa = client as any;
+    const channel = supa
       .channel('realtime:driver-tasks')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'tasks' },
-        (payload) => {
-          const row = payload.new;
-          if (!row || !row.id) return;
-          setRemoteTasks((prev): DriverTask[] =>
-            prev.map((t) =>
-              t.id === row.id
-                ? {
-                    ...t,
-                    status: row.status ?? t.status,
-                    title: row.title,
-                    type: row.type,
-                    priority: row.priority,
-                    estimatedStart: row.estimated_start,
-                    estimatedEnd: row.estimated_end,
-                    address: row.address,
-                  }
-                : t
-            )
-          );
+        { event: '*', schema: 'public', table: 'tasks' },
+        () => {
+          fetchPageRef.current(true);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'task_assignees' },
+        () => {
+          fetchPageRef.current(true);
         }
       )
       .subscribe();
 
     return () => {
       try {
-        (
-          supa as unknown as { removeChannel: (c: unknown) => void }
-        ).removeChannel(channel);
+        supa.removeChannel(channel);
       } catch {
         // ignore cleanup errors
       }

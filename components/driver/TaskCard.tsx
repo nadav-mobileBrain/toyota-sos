@@ -54,25 +54,31 @@ export function TaskCard(props: TaskCardProps) {
   return (
     <div className="rounded-lg border border-gray-200 p-4 shadow-sm bg-white">
       <div className="flex items-center justify-between gap-2">
-        <span
-          className={`inline-flex px-2 py-1 rounded text-xs text-white ${priorityColor}`}
-        >
-          {priority}
-        </span>
-        <ToggleGroup
-          type="single"
-          value={status}
-          onValueChange={(value) => {
-            if (!value || value === status) return;
-            onStatusChange?.(value as TaskCardProps['status']);
-          }}
-          aria-label="סטטוס משימה"
-        >
-          <ToggleGroupItem value="בהמתנה">בהמתנה</ToggleGroupItem>
-          <ToggleGroupItem value="בעבודה">בעבודה</ToggleGroupItem>
-          <ToggleGroupItem value="חסומה">חסומה</ToggleGroupItem>
-          <ToggleGroupItem value="הושלמה">הושלמה</ToggleGroupItem>
-        </ToggleGroup>
+        <div className="flex flex-col items-center gap-2">
+          <span>עדיפות</span>
+          <span
+            className={`inline-flex px-2 py-1 rounded text-xs text-white ${priorityColor}`}
+          >
+            {priority}
+          </span>
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <span>סטטוס</span>
+          <ToggleGroup
+            type="single"
+            value={status}
+            onValueChange={(value) => {
+              if (!value || value === status) return;
+              onStatusChange?.(value as TaskCardProps['status']);
+            }}
+            aria-label="סטטוס משימה"
+          >
+            <ToggleGroupItem value="בהמתנה">בהמתנה</ToggleGroupItem>
+            <ToggleGroupItem value="בעבודה">בעבודה</ToggleGroupItem>
+            <ToggleGroupItem value="חסומה">חסומה</ToggleGroupItem>
+            <ToggleGroupItem value="הושלמה">הושלמה</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
       </div>
 
       <h3 className="mt-2 text-lg font-semibold">{title}</h3>
