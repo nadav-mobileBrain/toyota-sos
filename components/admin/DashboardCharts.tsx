@@ -26,6 +26,26 @@ const DriverDurationChart = dynamic(
   { ssr: false }
 );
 
+function ChartLegend({
+  items,
+}: {
+  items: Array<{ label: string; color: string }>;
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap items-center justify-center gap-3 text-xs">
+      {items.map((item, idx) => (
+        <div key={idx} className="flex items-center gap-1.5">
+          <div
+            className="h-2.5 w-2.5 rounded-full border border-gray-300"
+            style={{ backgroundColor: item.color }}
+          />
+          <span className="text-gray-600">{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function DashboardCharts() {
   return (
     <section className="space-y-4">
@@ -39,6 +59,13 @@ export function DashboardCharts() {
             קו המציג משימות שהושלמו, לא הושלמו ומשימות באיחור לאורך השבוע.
           </p>
           <WeeklyTrendsChart />
+          <ChartLegend
+            items={[
+              { label: 'הושלמו', color: '#16a34a' },
+              { label: 'לא הושלמו', color: '#f97316' },
+              { label: 'באיחור', color: '#ef4444' },
+            ]}
+          />
         </div>
 
         {/* Chart 2 - Driver Task Completion Comparison (Bar Chart) */}
@@ -50,6 +77,13 @@ export function DashboardCharts() {
             אחוז השלמת משימות לכל נהג, כולל אפשרות למיון לפי ביצועים.
           </p>
           <DriverCompletionChart />
+          <ChartLegend
+            items={[
+              { label: 'מעל 80%', color: '#16a34a' },
+              { label: '60%-80%', color: '#eab308' },
+              { label: 'מתחת ל-60%', color: '#ef4444' },
+            ]}
+          />
         </div>
 
         {/* Chart 3 - Driver Task Duration Analysis */}
@@ -61,6 +95,9 @@ export function DashboardCharts() {
             משך משימה ממוצע בדקות לכל נהג, עם אפשרות לפירוק לפי סוג משימה.
           </p>
           <DriverDurationChart />
+          <ChartLegend
+            items={[{ label: 'משך משימה ממוצע', color: '#0ea5e9' }]}
+          />
         </div>
       </div>
     </section>

@@ -53,7 +53,7 @@ export interface DashboardData {
 // Simple in-memory cache (server-runtime only)
 type CacheEntry<T> = { value: T; expiresAt: number };
 const FIVE_MINUTES_MS = 5 * 60 * 1000;
-const cache = new Map<string, CacheEntry<any>>();
+const cache = new Map<string, CacheEntry<unknown>>();
 
 function makeKey(kind: string, range: DateRange) {
   return `${kind}:${range.start}:${range.end}:${range.timezone || 'UTC'}`;
@@ -66,7 +66,7 @@ function getCached<T>(key: string): T | null {
     cache.delete(key);
     return null;
   }
-  return hit.value as T;
+  return hit.value as unknown as T;
 }
 
 function setCached<T>(key: string, value: T, ttlMs: number = FIVE_MINUTES_MS) {
@@ -80,7 +80,7 @@ function getClient(client?: SupabaseClient) {
 }
 
 // Helpers
-function toYMD(dateIso: string, tz?: string): string {
+function toYMD(dateIso: string): string {
   try {
     const d = new Date(dateIso);
     // Basic Y-M-D; for tz shifts we accept slight inaccuracies in SSR context
@@ -171,9 +171,9 @@ export async function getOnTimeRate(
     setCached(key, 0);
     return 0;
   }
-  let total = data.length;
+  const total = data.length;
   let onTime = 0;
-  for (const row of data as any[]) {
+  for (const row of data) {
     if (!row.estimated_end || !row.updated_at) continue;
     if (
       new Date(row.updated_at).getTime() <=
@@ -211,13 +211,13 @@ export async function getCreatedCompletedSeries(
       .limit(5000),
   ]);
   const byDate: Record<string, { created: number; completed: number }> = {};
-  (createdData || []).forEach((r: any) => {
-    const d = toYMD(r.created_at, range.timezone);
+  (createdData || []).forEach((r) => {
+    const d = toYMD(r.created_at);
     byDate[d] = byDate[d] || { created: 0, completed: 0 };
     byDate[d].created++;
   });
-  (completedData || []).forEach((r: any) => {
-    const d = toYMD(r.updated_at, range.timezone);
+  (completedData || []).forEach((r) => {
+    const d = toYMD(r.updated_at);
     byDate[d] = byDate[d] || { created: 0, completed: 0 };
     byDate[d].completed++;
   });
@@ -254,15 +254,25 @@ export async function getOverdueByDriver(
   }
   const counts = new Map<string, { name: string; count: number }>();
   (data as any[]).forEach((row) => {
-    const t = row.tasks;
-    if (!t) return;
+    const tasks = row.tasks;
+    if (!tasks) return;
+    // Handle both array and single object cases from Supabase join
+    const taskArray = Array.isArray(tasks) ? tasks : [tasks];
+    const task = taskArray[0];
+    if (!task || !task.status) return;
     const overdue =
-      t.status !== 'הושלמה' &&
-      t.estimated_end &&
-      new Date(t.estimated_end).getTime() < new Date(range.end).getTime();
+      task.status !== 'הושלמה' &&
+      task.estimated_end &&
+      new Date(task.estimated_end).getTime() < new Date(range.end).getTime();
     if (!overdue) return;
     const id = row.driver_id as string;
-    const name = (row.profiles?.name as string) || '—';
+    const profiles = row.profiles;
+    const profileArray = Array.isArray(profiles)
+      ? profiles
+      : profiles
+      ? [profiles]
+      : [];
+    const name = (profileArray[0]?.name as string) || '—';
     const prev = counts.get(id) || { name, count: 0 };
     prev.count += 1;
     counts.set(id, prev);
@@ -300,7 +310,7 @@ export async function getOnTimeVsLate(
   }
   let onTime = 0;
   let late = 0;
-  (data as any[]).forEach((t) => {
+  data.forEach((t) => {
     if (!t.estimated_end || !t.updated_at) return;
     if (new Date(t.updated_at).getTime() <= new Date(t.estimated_end).getTime())
       onTime++;
