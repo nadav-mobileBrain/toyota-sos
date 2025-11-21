@@ -36,6 +36,7 @@ export interface DashboardMetricsSummary {
   tasksCompleted: number;
   overdueCount: number;
   onTimeRatePct: number; // 0..100
+  slaViolations: number;
 }
 
 export interface DashboardDatasets {
@@ -184,6 +185,41 @@ export async function getOnTimeRate(
   const pct = total === 0 ? 0 : Math.round((onTime / total) * 100);
   setCached(key, pct);
   return pct;
+}
+
+export async function getSlaViolations(
+  range: DateRange,
+  client?: SupabaseClient
+): Promise<number> {
+  const key = makeKey('slaViolations', range);
+  const cached = getCached<number>(key);
+  if (cached !== null) return cached;
+  const supa = getClient(client);
+  // SLA violations: tasks completed after their estimated_end deadline
+  const { data, error } = await supa
+    .from('tasks')
+    .select('id, updated_at, estimated_end')
+    .eq('status', 'הושלמה')
+    .gte('updated_at', range.start)
+    .lt('updated_at', range.end)
+    .not('estimated_end', 'is', null)
+    .limit(2000); // safety
+  if (error || !data) {
+    setCached(key, 0);
+    return 0;
+  }
+  let violations = 0;
+  for (const row of data) {
+    if (!row.estimated_end || !row.updated_at) continue;
+    // Violation: completed after estimated_end
+    if (
+      new Date(row.updated_at).getTime() > new Date(row.estimated_end).getTime()
+    ) {
+      violations++;
+    }
+  }
+  setCached(key, violations);
+  return violations;
 }
 
 // Datasets
@@ -374,6 +410,7 @@ export async function fetchDashboardData(
     tasksCompleted,
     overdueCount,
     onTimeRatePct,
+    slaViolations,
     createdCompletedSeries,
     overdueByDriver,
     onTimeVsLate,
@@ -383,6 +420,7 @@ export async function fetchDashboardData(
     getTasksCompletedCount(range, client),
     getOverdueCount(range, client),
     getOnTimeRate(range, client),
+    getSlaViolations(range, client),
     getCreatedCompletedSeries(range, client),
     getOverdueByDriver(range, client),
     getOnTimeVsLate(range, client),
@@ -395,6 +433,7 @@ export async function fetchDashboardData(
       tasksCompleted,
       overdueCount,
       onTimeRatePct,
+      slaViolations,
     },
     datasets: {
       createdCompletedSeries,

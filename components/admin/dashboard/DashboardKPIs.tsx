@@ -178,6 +178,7 @@ export function DashboardKPIs() {
       { metric: 'tasksCompleted', value: data.summary.tasksCompleted },
       { metric: 'overdueCount', value: data.summary.overdueCount },
       { metric: 'onTimeRatePct', value: data.summary.onTimeRatePct },
+      { metric: 'slaViolations', value: data.summary.slaViolations },
     ];
     const summaryCsv = (toCsv(summaryRows, ['metric', 'value']) || '').slice(1); // strip BOM, we add once at the end
     secs.push('Section,Summary');
@@ -306,6 +307,16 @@ export function DashboardKPIs() {
     downloadCsv(makeCsvFilename('dashboard_funnel', range.timezone), csv);
   }, [datasets, range.timezone]);
 
+  const exportSlaViolations = React.useCallback(() => {
+    if (!summary) return;
+    const rows = [{ metric: 'slaViolations', value: summary.slaViolations }];
+    const csv = toCsv(rows, ['metric', 'value']);
+    downloadCsv(
+      makeCsvFilename('dashboard_sla_violations', range.timezone),
+      csv
+    );
+  }, [summary, range.timezone]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
@@ -429,16 +440,25 @@ export function DashboardKPIs() {
         />
         <KpiCard
           title="הפרות SLA"
-          value="—"
+          value={summary?.slaViolations ?? 0}
           loading={loading}
           error={error}
+          secondary="משימות שהושלמו אחרי היעד"
           actionArea={
-            <button
-              className="text-xs text-toyota-primary hover:underline"
-              onClick={exportFunnel}
-            >
-              CSV
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                className="text-xs text-toyota-primary hover:underline"
+                onClick={exportSlaViolations}
+              >
+                CSV
+              </button>
+              <button
+                className="text-xs text-gray-600 hover:underline"
+                onClick={() => openDrilldown('late', 'הפרות SLA')}
+              >
+                פרטים
+              </button>
+            </div>
           }
         />
       </div>
