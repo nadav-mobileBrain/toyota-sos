@@ -1,12 +1,15 @@
 'use client';
 
+import React from 'react';
+import { NotificationsList } from '@/components/notifications/NotificationsList';
+
 export default function DriverNotificationsPage() {
   return (
-    <main className="min-h-[60vh] p-2">
-      <h2 className="text-xl font-semibold">התראות</h2>
-      <p className="mt-2 text-gray-600">זהו עמוד התראות זמני.</p>
+    <main className="min-h-[60vh] p-4">
+      <div className="mb-4">
+        <h2 className="text-xl font-bold">התראות</h2>
+      </div>
+      <NotificationsList />
     </main>
   );
 }
-
-

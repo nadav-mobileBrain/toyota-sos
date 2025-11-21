@@ -31,15 +31,19 @@ export function NotificationsList({ pageSize = 20 }: { pageSize?: number }) {
     try {
       const from = pageIndex * pageSize;
       const to = from + pageSize - 1;
-      // Hide soft-deleted notifications: payload.deleted != true
+      // Fetch notifications (client-side filter for soft-delete for now to avoid null issues)
       const { data, error } = await supa
         .from('notifications')
         .select('*')
-        .not('payload->>deleted', 'eq', 'true')
         .order('created_at', { ascending: false })
         .range(from, to);
       if (error) throw error;
-      setRows((data as NotificationRow[]) || []);
+      
+      const validRows = (data as NotificationRow[] || []).filter(r => {
+        const deleted = r.payload?.deleted;
+        return deleted !== true && deleted !== 'true';
+      });
+      setRows(validRows);
     } catch (e: any) {
       setError(e?.message || 'Failed to load notifications');
     } finally {

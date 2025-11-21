@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import type { TaskAssignee } from '@/types/task';
+import { notifyWithPreferences } from '../../functions/notify/handler-with-prefs';
 
 /**
  * POST /api/admin/tasks
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       co_driver_ids,
     } = body || {};
 
-    if (!title || !type || !priority || !status) {
+    if (!type || !priority || !status) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -92,6 +93,31 @@ export async function POST(request: NextRequest) {
     }
     if (inserts.length > 0) {
       await admin.from('task_assignees').insert(inserts);
+
+      // Notify assigned drivers
+      try {
+        const recipientIds = inserts.map((i) => i.driver_id);
+        // We don't have subscriptions here yet, but notifyWithPreferences will insert DB notifications
+        const recipients = recipientIds.map((uid) => ({
+          user_id: uid,
+          subscription: undefined,
+        }));
+
+        await notifyWithPreferences({
+          type: 'assigned',
+          task_id: created.id,
+          recipients,
+          payload: {
+            title: 'משימה חדשה',
+            body: `הוקצתה לך משימה חדשה: ${created.title || 'ללא כותרת'}`,
+            taskId: created.id,
+            url: `/driver/tasks/${created.id}`,
+          },
+        });
+      } catch (err) {
+        console.error('Failed to notify drivers on create:', err);
+        // Do not fail the request if notification fails
+      }
     }
 
     return NextResponse.json({ ok: true, data: created }, { status: 200 });

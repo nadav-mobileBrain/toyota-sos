@@ -243,8 +243,6 @@ export function TaskDialog(props: TaskDialogProps) {
   };
 
   const validate = (): string | null => {
-    if (!title.trim()) return 'חובה להזין כותרת';
-
     // Validate date
     const dateValidation = estimatedDateSchema.safeParse(estimatedDate);
     if (!dateValidation.success) {
@@ -389,7 +387,7 @@ export function TaskDialog(props: TaskDialogProps) {
           .toISOString();
 
         const body = {
-          title: title.trim(),
+          title: title.trim() || null,
           type,
           priority,
           status,
@@ -441,7 +439,7 @@ export function TaskDialog(props: TaskDialogProps) {
           lead_driver_id?: string | null;
           co_driver_ids?: string[];
         } = {
-          title: title.trim(),
+          title: title.trim() || 'משימה ללא כותרת',
           type,
           priority,
           status,
@@ -532,7 +530,8 @@ export function TaskDialog(props: TaskDialogProps) {
           onSubmit={handleSubmit}
           className="grid grid-cols-1 gap-3 md:grid-cols-2"
         >
-          <label className="flex flex-col gap-1">
+          {/* Title field removed per request, but logic kept if needed back. */}
+          {/* <label className="flex flex-col gap-1">
             <span className="text-md underline font-medium text-blue-500">
               כותרת
             </span>
@@ -542,7 +541,7 @@ export function TaskDialog(props: TaskDialogProps) {
               onChange={(e) => setTitle(e.target.value)}
               required
             />
-          </label>
+          </label> */}
 
           <label className="flex flex-col gap-1 ">
             <span className="text-md underline font-medium text-blue-500">
