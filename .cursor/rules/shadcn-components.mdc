@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+
+when creating a new component like button , form , dashboard, input , dropdown , etc
+Always use shadcn component if available .
+install the component if needed , with bun add.

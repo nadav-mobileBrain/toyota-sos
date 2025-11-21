@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client';
 
 import dayjs from '@/lib/dayjs';
@@ -5,7 +6,10 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useRef } from 'react';
 import { TaskCard, TaskCardProps } from '@/components/driver/TaskCard';
 import { TaskSkeleton } from '@/components/driver/TaskSkeleton';
-import { createBrowserClient } from '@/lib/auth';
+import { getDriverSession } from '@/lib/auth';
+import { useAuth } from '@/components/AuthProvider';
+import { ChecklistModal } from '@/components/driver/ChecklistModal';
+import { getStartChecklistForTaskType } from '@/components/driver/checklists';
 
 export type DriverTask = TaskCardProps;
 
@@ -30,7 +34,7 @@ function intersectsToday(
 function isOverdue(task: DriverTask): boolean {
   return (
     !!task.estimatedEnd &&
-    task.status !== 'completed' &&
+    task.status !== 'הושלמה' &&
     dayjs(task.estimatedEnd).isBefore(dayjs())
   );
 }
@@ -39,6 +43,7 @@ export function DriverHome() {
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
+  const { client } = useAuth();
   const urlTab =
     (search.get('tab') as 'today' | 'all' | 'overdue' | null) ?? 'today';
   const [tabState, setTabState] = useState<'today' | 'all' | 'overdue'>(urlTab);
@@ -73,6 +78,14 @@ export function DriverHome() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Checklist flow state: when a status change requires a start checklist
+  const [checklistState, setChecklistState] = useState<{
+    task: DriverTask;
+    nextStatus: DriverTask['status'];
+  } | null>(null);
+
+  const driverId = getDriverSession()?.userId || null;
+
   function mergeById(prev: DriverTask[], next: DriverTask[]): DriverTask[] {
     if (!prev.length) return next;
     const map = new Map<string, DriverTask>();
@@ -98,11 +111,21 @@ export function DriverHome() {
   );
   useEffect(() => {
     fetchPageRef.current = async (reset: boolean) => {
+      if (!client) {
+        return;
+      }
+
       if (reset) {
         setIsInitialLoading(true);
         setError(null);
       }
-      const supa = createBrowserClient();
+
+      const supa = client;
+
+      // Get driver session from localStorage to pass driver_id if auth.uid() is null
+      const driverSession = getDriverSession();
+      const driverId = driverSession?.userId || null;
+
       const params: Record<string, unknown> = {
         p_tab: tabState,
         p_limit: 10,
@@ -111,11 +134,17 @@ export function DriverHome() {
         params.p_cursor_updated = cursor.updated_at;
         params.p_cursor_id = cursor.id;
       }
+      // Pass driver_id if available (for localStorage-only sessions)
+      if (driverId) {
+        params.p_driver_id = driverId;
+      }
+
       const { data, error } = (await supa.rpc('get_driver_tasks', params)) as {
         data: SupaTaskRow[] | null;
-        error: unknown | null;
+        error: Error | null;
       };
       if (error) {
+        console.error('[DriverHome] get_driver_tasks RPC error', error);
         setError('טעינת משימות נכשלה. נסה שוב.');
         setIsInitialLoading(false);
         return;
@@ -143,12 +172,13 @@ export function DriverHome() {
       }
       setIsInitialLoading(false);
     };
-  }, [tabState, cursor]);
+  }, [tabState, cursor, client]);
 
-  // Initial load and on tab changes, trigger fetch
+  // Initial load and on tab changes, trigger fetch once client is ready
   useEffect(() => {
+    if (!client) return;
     fetchPageRef.current(true);
-  }, [tabState]);
+  }, [tabState, client]);
 
   // IntersectionObserver to auto-load next page (server pagination)
   useEffect(() => {
@@ -169,6 +199,38 @@ export function DriverHome() {
     obs.observe(el);
     return () => obs.disconnect();
   }, [hasMore, isLoadingMore]);
+
+  // Realtime: refresh driver tasks when tasks or assignments change (admin updates/new tasks)
+  useEffect(() => {
+    if (!client) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supa = client as any;
+    const channel = supa
+      .channel('realtime:driver-tasks')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tasks' },
+        () => {
+          fetchPageRef.current(true);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'task_assignees' },
+        () => {
+          fetchPageRef.current(true);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try {
+        supa.removeChannel(channel);
+      } catch {
+        // ignore cleanup errors
+      }
+    };
+  }, [client]);
 
   return (
     <div
@@ -295,35 +357,101 @@ export function DriverHome() {
           <ul className="space-y-3" role="list" aria-busy={isRefreshing}>
             {remoteTasks.map((task) => (
               <li key={task.id} role="listitem">
-                <TaskCard {...task} />
+                <TaskCard
+                  {...task}
+                  onStatusChange={async (next) => {
+                    if (!client || next === task.status) return;
+
+                    // If moving into "בעבודה" and this task type has a start checklist,
+                    // open the checklist modal instead of immediately updating status.
+                    if (next === 'בעבודה') {
+                      const schema = getStartChecklistForTaskType(task.type);
+                      if (schema && schema.length > 0) {
+                        setChecklistState({ task, nextStatus: next });
+                        return;
+                      }
+                    }
+
+                    const { error: upErr } = await client
+                      .from('tasks')
+                      .update({ status: next })
+                      .eq('id', task.id);
+                    if (upErr) {
+                      return;
+                    }
+                    setRemoteTasks((prev) =>
+                      prev.map((t) =>
+                        t.id === task.id ? { ...t, status: next } : t
+                      )
+                    );
+                  }}
+                />
               </li>
             ))}
           </ul>
-
           {!error && remoteTasks.length === 0 ? (
-            <div className="text-center text-sm text-gray-500 py-10" aria-live="polite">
+            <div
+              className="text-center text-sm text-gray-500 py-10"
+              aria-live="polite"
+            >
               אין משימות להצגה
             </div>
           ) : null}
+          {hasMore ? (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                className="rounded-md bg-gray-100 px-4 py-2 text-sm hover:bg-gray-200"
+                disabled={isLoadingMore}
+                onClick={() => fetchPageRef.current(false)}
+              >
+                {isLoadingMore ? 'טוען…' : 'טען עוד'}
+              </button>
+            </div>
+          ) : null}
 
-        {/* Load more button (fallback) */}
-        {hasMore ? (
-          <div className="flex justify-center">
-            <button
-              type="button"
-              className="rounded-md bg-gray-100 px-4 py-2 text-sm hover:bg-gray-200"
-              disabled={isLoadingMore}
-              onClick={() => fetchPageRef.current(false)}
-            >
-              {isLoadingMore ? 'טוען…' : 'טען עוד'}
-            </button>
-          </div>
-        ) : null}
-
-        {/* Sentinel for infinite scroll */}
-        <div ref={sentinelRef} />
+          {/* Sentinel for infinite scroll */}
+          <div ref={sentinelRef} />
         </div>
       )}
+
+      {/* Mandatory start checklist for specific task types (e.g. licence_test / "ביצוע טסט") */}
+      {checklistState ? (
+        <ChecklistModal
+          open={!!checklistState}
+          onOpenChange={(open) => {
+            if (!open) {
+              setChecklistState(null);
+            }
+          }}
+          schema={getStartChecklistForTaskType(checklistState.task.type) ?? []}
+          title="צ׳ק-ליסט לפני יציאה לטסט"
+          description="לפני תחילת ביצוע טסט, אשר שאספת את כל המסמכים הנדרשים."
+          persist
+          taskId={checklistState.task.id}
+          driverId={driverId || undefined}
+          forceCompletion
+          onSubmit={async () => {
+            if (!client || !checklistState) return;
+            const { error: upErr } = await client
+              .from('tasks')
+              .update({ status: checklistState.nextStatus })
+              .eq('id', checklistState.task.id);
+            if (upErr) {
+              // Let ChecklistModal show persistence errors for the form itself;
+              // here we simply avoid updating local state on failure.
+              return;
+            }
+            setRemoteTasks((prev) =>
+              prev.map((t) =>
+                t.id === checklistState.task.id
+                  ? { ...t, status: checklistState.nextStatus }
+                  : t
+              )
+            );
+          }}
+        />
+      ) : null}
     </div>
   );
 }

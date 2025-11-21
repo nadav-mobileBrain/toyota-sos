@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { cookies } from 'next/headers';
+import { notifyWithPreferences } from '../../../functions/notify/handler-with-prefs';
 
 /**
  * PATCH /api/admin/tasks/[taskId]
@@ -68,6 +69,38 @@ export async function PATCH(
       );
     }
 
+    // Notify assigned drivers about the update
+    try {
+      // 1. Get assignees
+      const { data: assignees } = await admin
+        .from('task_assignees')
+        .select('driver_id')
+        .eq('task_id', taskId);
+
+      if (assignees && assignees.length > 0) {
+        const recipients = assignees.map((a) => ({
+          user_id: a.driver_id,
+          subscription: undefined,
+        }));
+
+        await notifyWithPreferences({
+          type: 'updated',
+          task_id: taskId,
+          recipients,
+          payload: {
+            title: 'עדכון משימה',
+            body: `עודכנו פרטי משימה: ${data.title || 'ללא כותרת'}`,
+            taskId: taskId,
+            url: `/driver/tasks/${taskId}`,
+            changes: Object.keys(updatePayload),
+          },
+        });
+      }
+    } catch (notifyErr) {
+      console.error('Failed to notify drivers on update:', notifyErr);
+      // Do not fail the response
+    }
+
     return NextResponse.json({ success: true, data }, { status: 200 });
   } catch (error) {
     console.error('Error in PATCH /api/admin/tasks/[taskId]:', error);
@@ -97,7 +130,11 @@ export async function DELETE(
 
     const { taskId } = await params;
     const admin = getSupabaseAdmin();
-    const { error } = await admin.from('tasks').delete().eq('id', taskId);
+    // Soft-delete: mark task as deleted instead of hard delete
+    const { error } = await admin
+      .from('tasks')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', taskId);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

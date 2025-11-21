@@ -15,7 +15,7 @@ const config: Config = {
       },
     },
   },
-  darkMode: 'class',
+  darkMode: ['class', 'class'],
 };
 
 export default config;

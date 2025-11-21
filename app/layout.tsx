@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { Heebo } from 'next/font/google';
 import { AuthProvider } from '@/components/AuthProvider';
 import { SupabaseConfigProvider } from '@/components/SupabaseConfigProvider';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
@@ -7,6 +8,7 @@ import { ConnectivityProvider } from '@/components/ConnectivityProvider';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { InstallAppButton } from '@/components/InstallAppButton';
 import { MixpanelInit } from '@/components/MixpanelInit';
+import { Toaster } from '@/lib/toast';
 import './globals.css';
 
 const geistSans = Geist({
@@ -17,6 +19,13 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+});
+
+const heebo = Heebo({
+  variable: '--font-hebrew',
+  subsets: ['hebrew', 'latin'],
+  weight: ['400', '500', '700'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -45,7 +54,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#d60b25" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${heebo.variable} antialiased`}
       >
         <ServiceWorkerRegister />
         <ConnectivityProvider>
@@ -56,6 +65,47 @@ export default function RootLayout({
           </div>
           <OfflineBanner />
           <AuthProvider>{children}</AuthProvider>
+          <Toaster
+            position="top-center"
+            reverseOrder={false}
+            gutter={8}
+            containerClassName=""
+            containerStyle={{}}
+            toastOptions={{
+              // Default options for all toasts
+              className: '',
+              duration: 4000,
+              style: {
+                background: '#fff',
+                color: '#363636',
+                fontFamily: 'var(--font-hebrew)',
+                direction: 'rtl',
+              },
+              // Success toast
+              success: {
+                duration: 4000,
+                iconTheme: {
+                  primary: '#10b981',
+                  secondary: '#fff',
+                },
+              },
+              // Error toast
+              error: {
+                duration: 5000,
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
+                },
+              },
+              // Loading toast
+              loading: {
+                iconTheme: {
+                  primary: '#3b82f6',
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
         </ConnectivityProvider>
       </body>
     </html>

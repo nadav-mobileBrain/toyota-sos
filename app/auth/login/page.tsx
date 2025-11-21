@@ -40,8 +40,9 @@ function LoginContent() {
       } else {
         setError(result.error || 'Login failed');
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error('An error occurred');
+      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -57,13 +58,19 @@ function LoginContent() {
       if (result.success) {
         setSuccess('Login successful! Redirecting...');
         setTimeout(() => {
-          router.push(redirectTo || '/admin');
+          // If redirectTo is within /admin, normalize to /admin/dashboard as the landing page
+          const target =
+            redirectTo && !redirectTo.startsWith('/admin')
+              ? redirectTo
+              : '/admin/dashboard';
+          router.push(target);
         }, 500);
       } else {
         setError(result.error || 'Login failed');
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error('An error occurred');
+      setError(error.message);
     } finally {
       setLoading(false);
     }

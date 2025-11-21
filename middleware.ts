@@ -23,7 +23,9 @@ export function middleware(request: NextRequest) {
   }
 
   // Check if route requires authentication (prefix match)
-  const matchedPrefix = AUTH_REQUIRED_ROUTES.find((route) => pathname.startsWith(route));
+  const matchedPrefix = AUTH_REQUIRED_ROUTES.find((route) =>
+    pathname.startsWith(route)
+  );
   if (!matchedPrefix) {
     // Route is not protected, allow access
     return NextResponse.next();
@@ -54,7 +56,7 @@ export function middleware(request: NextRequest) {
       roleCookie === 'driver'
         ? '/driver'
         : roleCookie === 'admin' || roleCookie === 'manager'
-        ? '/admin/tasks'
+        ? '/admin/dashboard'
         : '/viewer';
     const url = new URL(defaultHome, request.url);
     return NextResponse.redirect(url);
@@ -76,4 +78,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|api).*)',
   ],
 };
-

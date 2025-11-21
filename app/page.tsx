@@ -2,9 +2,30 @@
 
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/AuthProvider';
+import { useEffect } from 'react';
 
 export default function Home() {
   const router = useRouter();
+  const { session, loading } = useAuth();
+
+  // Auto-redirect if already logged in
+  useEffect(() => {
+    if (!loading && session) {
+      if (session.role === 'driver') {
+        router.replace('/driver');
+      } else if (session.role === 'admin' || session.role === 'manager') {
+        router.replace('/admin/dashboard');
+      } else if (session.role === 'viewer') {
+        router.replace('/viewer');
+      }
+    }
+  }, [session, loading, router]);
+
+  if (loading) {
+    // Optional: render a loading spinner or skeleton
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <main className="min-h-screen bg-linear-to-b from-white to-gray-50">

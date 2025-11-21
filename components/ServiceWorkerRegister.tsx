@@ -6,22 +6,20 @@ export function ServiceWorkerRegister() {
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!('serviceWorker' in navigator)) return;
-    const controller = new AbortController();
+
     const register = async () => {
       try {
-        // Register the core SW; scope defaults to '/'
-        await navigator.serviceWorker.register('/sw.js', { scope: '/', type: 'classic' });
-      } catch {
-        // ignore registration failures in dev/test
+        const reg = await navigator.serviceWorker.register('/sw.js');
+        console.log('Service Worker registered:', reg);
+      } catch (err) {
+        console.error('Service Worker registration failed:', err);
       }
     };
-    // Defer a tick to avoid blocking first paint
-    const t = setTimeout(register, 0);
-    return () => {
-      clearTimeout(t);
-      controller.abort();
-    };
+
+    // Register immediately
+    register();
   }, []);
+
   return null;
 }
 

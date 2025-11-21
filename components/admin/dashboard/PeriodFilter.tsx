@@ -1,7 +1,18 @@
+/* eslint-disable max-lines */
 'use client';
 
 import React from 'react';
 import { usePeriod, PeriodRange } from './PeriodContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { he } from 'date-fns/locale';
+import { z } from 'zod';
 
 function isoDayStart(d: Date) {
   const x = new Date(d);
@@ -14,7 +25,9 @@ function isoDayEnd(d: Date) {
   return x.toISOString();
 }
 
-function makeRange(kind: 'today' | 'yesterday' | 'last7' | 'last30'): PeriodRange {
+function makeRange(
+  kind: 'today' | 'yesterday' | 'last7' | 'last30'
+): PeriodRange {
   const now = new Date();
   if (kind === 'today') {
     const start = isoDayStart(now);
@@ -27,97 +40,409 @@ function makeRange(kind: 'today' | 'yesterday' | 'last7' | 'last30'): PeriodRang
   }
   const days = kind === 'last7' ? 7 : 30;
   const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-  return { start: startDate.toISOString(), end: now.toISOString(), timezone: 'UTC' };
+  return {
+    start: startDate.toISOString(),
+    end: now.toISOString(),
+    timezone: 'UTC',
+  };
 }
 
-export function PeriodFilter({ onChange }: { onChange?: (r: PeriodRange) => void }) {
+// Safari does not reliably parse YYYY-MM-DD via new Date(). Parse manually.
+function parseDateInput(value: string): Date | null {
+  if (!value) return null;
+  const parts = value.split('-').map((p) => Number(p));
+  if (parts.length !== 3) return null;
+  const [y, m, d] = parts;
+  if (!y || !m || !d) return null;
+  const dt = new Date(y, m - 1, d);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
+function formatInputDate(d: Date | null): string {
+  if (!d) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+const dateRangeSchema = z
+  .object({
+    from: z.date(),
+    to: z.date(),
+  })
+  .refine((data) => data.from <= data.to, {
+    message: 'תאריך התחלה חייב להיות לפני או שווה לתאריך הסיום',
+    path: ['from'],
+  })
+  .refine(
+    (data) => {
+      const now = new Date();
+      now.setHours(23, 59, 59, 999);
+      return data.to <= now;
+    },
+    {
+      message: 'תאריך סיום לא יכול להיות בעתיד',
+      path: ['to'],
+    }
+  )
+  .refine(
+    (data) => {
+      const diffTime = Math.abs(data.to.getTime() - data.from.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays <= 365;
+    },
+    {
+      message: 'הטווח לא יכול להיות גדול מ-365 ימים',
+      path: ['to'],
+    }
+  );
+
+function validateDateRange(
+  customFrom: string,
+  customTo: string
+): { from?: string; to?: string } | null {
+  const fromDate = parseDateInput(customFrom);
+  const toDate = parseDateInput(customTo);
+
+  if (!customFrom && !customTo) return null;
+  if (!customFrom || !customTo) {
+    return {
+      from: !customFrom ? 'תאריך התחלה נדרש' : undefined,
+      to: !customTo ? 'תאריך סיום נדרש' : undefined,
+    };
+  }
+  if (!fromDate || !toDate) {
+    return {
+      from: !fromDate ? 'תאריך התחלה לא תקין' : undefined,
+      to: !toDate ? 'תאריך סיום לא תקין' : undefined,
+    };
+  }
+
+  const result = dateRangeSchema.safeParse({ from: fromDate, to: toDate });
+  if (!result.success) {
+    const zodErrors: { from?: string; to?: string } = {};
+    result.error.issues.forEach((issue) => {
+      if (issue.path[0] === 'from') zodErrors.from = issue.message;
+      else if (issue.path[0] === 'to') zodErrors.to = issue.message;
+    });
+    return zodErrors;
+  }
+  return null;
+}
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+function sameCalendarDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function inferPreset(
+  range: PeriodRange
+): 'today' | 'yesterday' | 'last7' | 'last30' | 'custom' {
+  const start = new Date(range.start);
+  const end = new Date(range.end);
+  const today = new Date();
+
+  const diffDays = Math.round(
+    Math.abs(end.getTime() - start.getTime()) / MS_PER_DAY
+  );
+
+  // today: start and end both today
+  if (sameCalendarDay(start, today) && sameCalendarDay(end, today)) {
+    return 'today';
+  }
+
+  // yesterday: start and end both yesterday
+  const yesterday = new Date(today.getTime() - MS_PER_DAY);
+  if (sameCalendarDay(start, yesterday) && sameCalendarDay(end, yesterday)) {
+    return 'yesterday';
+  }
+
+  // last 7 days: end is today, and span is 7 days
+  if (sameCalendarDay(end, today) && diffDays === 7) {
+    return 'last7';
+  }
+
+  // last 30 days: end is today, and span is 30 days
+  if (sameCalendarDay(end, today) && diffDays === 30) {
+    return 'last30';
+  }
+
+  return 'custom';
+}
+
+function DatePickerInput({
+  label,
+  value,
+  error,
+  open,
+  onOpenChange,
+  onSelect,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  error?: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSelect: (date: Date) => void;
+  disabled: (date: Date) => boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1">
+        <label className="text-sm text-gray-700">{label}</label>
+        <Popover open={open} onOpenChange={onOpenChange}>
+          <PopoverTrigger asChild>
+            <Input
+              type="text"
+              className={`text-sm cursor-pointer w-[140px] ${
+                error ? 'border-red-500' : ''
+              }`}
+              placeholder="YYYY-MM-DD"
+              readOnly
+              value={value}
+            />
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-auto p-0 bg-white z-[100]"
+            align="end"
+            side="bottom"
+            sideOffset={8}
+            dir="rtl"
+          >
+            <Calendar
+              mode="single"
+              selected={parseDateInput(value) ?? undefined}
+              onSelect={(date) => {
+                if (date) {
+                  onSelect(date);
+                  onOpenChange(false);
+                }
+              }}
+              locale={he}
+              defaultMonth={parseDateInput(value) ?? new Date()}
+              className="rounded-md border bg-white"
+              captionLayout="dropdown"
+              disabled={disabled}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+      {error && <span className="text-xs text-red-500">{error}</span>}
+    </div>
+  );
+}
+
+export function PeriodFilter({
+  onChange,
+}: {
+  onChange?: (r: PeriodRange) => void;
+}) {
   const { range, setRange } = usePeriod();
   const [customOpen, setCustomOpen] = React.useState(false);
   const [customFrom, setCustomFrom] = React.useState<string>('');
   const [customTo, setCustomTo] = React.useState<string>('');
+  const [showFromCal, setShowFromCal] = React.useState(false);
+  const [showToCal, setShowToCal] = React.useState(false);
+  const [errors, setErrors] = React.useState<{
+    from?: string;
+    to?: string;
+    general?: string;
+  }>({});
+
+  React.useEffect(() => {
+    if (customOpen && (customFrom || customTo)) {
+      const validationErrors = validateDateRange(customFrom, customTo);
+      setErrors(validationErrors || {});
+    }
+  }, [customFrom, customTo, customOpen]);
+
+  const currentPreset = React.useMemo(() => inferPreset(range), [range]);
 
   const apply = (r: PeriodRange) => {
     setRange(r);
     onChange?.(r);
   };
 
+  const resetCustom = () => {
+    setCustomOpen(false);
+    setShowFromCal(false);
+    setShowToCal(false);
+    setCustomFrom('');
+    setCustomTo('');
+    setErrors({});
+  };
+
+  const applyPreset = (kind: 'today' | 'yesterday' | 'last7' | 'last30') => {
+    resetCustom();
+    apply(makeRange(kind));
+  };
+
+  const handleApply = () => {
+    const validationErrors = validateDateRange(customFrom, customTo);
+    if (validationErrors) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    const start = parseDateInput(customFrom);
+    const end = parseDateInput(customTo);
+    if (!start || !end) return;
+
+    apply({
+      start: isoDayStart(start),
+      end: isoDayEnd(end),
+      timezone: 'UTC',
+    });
+    setCustomOpen(false);
+    setShowFromCal(false);
+    setShowToCal(false);
+    setCustomFrom('');
+    setCustomTo('');
+    setErrors({});
+  };
+
   return (
     <div dir="rtl" className="flex flex-wrap items-center gap-2">
-      <div className="inline-flex rounded-lg border border-gray-300 bg-gray-100 p-1" role="group" aria-label="טווח זמן">
-        <button
-          className="px-3 py-1 text-sm rounded bg-white hover:bg-gray-50"
-          onClick={() => apply(makeRange('today'))}
+      <div
+        className="inline-flex rounded-lg border border-gray-300 bg-gray-100 p-1"
+        role="group"
+        aria-label="טווח זמן"
+      >
+        <Button
+          variant="ghost"
+          className={`px-3 py-1 text-sm rounded ${
+            currentPreset === 'today' && !customOpen
+              ? 'bg-toyota-primary text-white'
+              : 'bg-white text-gray-800'
+          }`}
+          onClick={() => applyPreset('today')}
         >
           היום
-        </button>
-        <button
-          className="px-3 py-1 text-sm rounded bg-white hover:bg-gray-50"
-          onClick={() => apply(makeRange('yesterday'))}
+        </Button>
+        <Button
+          variant="ghost"
+          className={`px-3 py-1 text-sm rounded ${
+            currentPreset === 'yesterday' && !customOpen
+              ? 'bg-toyota-primary text-white'
+              : 'bg-white text-gray-800'
+          }`}
+          onClick={() => applyPreset('yesterday')}
         >
           אתמול
-        </button>
-        <button
-          className="px-3 py-1 text-sm rounded bg-white hover:bg-gray-50"
-          onClick={() => apply(makeRange('last7'))}
+        </Button>
+        <Button
+          variant="ghost"
+          className={`px-3 py-1 text-sm rounded ${
+            currentPreset === 'last7' && !customOpen
+              ? 'bg-toyota-primary text-white'
+              : 'bg-white text-gray-800'
+          }`}
+          onClick={() => applyPreset('last7')}
         >
           7 ימים
-        </button>
-        <button
-          className="px-3 py-1 text-sm rounded bg-white hover:bg-gray-50"
-          onClick={() => apply(makeRange('last30'))}
+        </Button>
+        <Button
+          variant="ghost"
+          className={`px-3 py-1 text-sm rounded ${
+            currentPreset === 'last30' && !customOpen
+              ? 'bg-toyota-primary text-white'
+              : 'bg-white text-gray-800'
+          }`}
+          onClick={() => applyPreset('last30')}
         >
           30 ימים
-        </button>
-        <button
-          className="px-3 py-1 text-sm rounded bg-white hover:bg-gray-50"
+        </Button>
+        <Button
+          variant="ghost"
+          className={`px-3 py-1 text-sm rounded ${
+            currentPreset === 'custom' || customOpen
+              ? 'bg-toyota-primary text-white'
+              : 'bg-white text-gray-800'
+          }`}
           onClick={() => setCustomOpen((v) => !v)}
           aria-expanded={customOpen}
         >
           מותאם
-        </button>
+        </Button>
       </div>
 
       {customOpen && (
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-700">
-            מ
-            <input
-              type="date"
-              className="ml-1 rounded border border-gray-300 px-2 py-1 text-sm"
+        <div className="flex flex-col gap-2">
+          <div className="flex items-start gap-2">
+            <DatePickerInput
+              label="מ"
               value={customFrom}
-              onChange={(e) => setCustomFrom(e.target.value)}
+              error={errors.from}
+              open={showFromCal}
+              onOpenChange={(open) => {
+                setShowFromCal(open);
+                if (open) setShowToCal(false);
+              }}
+              onSelect={(date) => setCustomFrom(formatInputDate(date))}
+              disabled={(date) => {
+                const toDate = parseDateInput(customTo);
+                return toDate ? date > toDate : date > new Date();
+              }}
             />
-          </label>
-          <label className="text-sm text-gray-700">
-            עד
-            <input
-              type="date"
-              className="ml-1 rounded border border-gray-300 px-2 py-1 text-sm"
+            <DatePickerInput
+              label="עד"
               value={customTo}
-              onChange={(e) => setCustomTo(e.target.value)}
+              error={errors.to}
+              open={showToCal}
+              onOpenChange={(open) => {
+                setShowToCal(open);
+                if (open) setShowFromCal(false);
+              }}
+              onSelect={(date) => setCustomTo(formatInputDate(date))}
+              disabled={(date) => {
+                const fromDate = parseDateInput(customFrom);
+                return fromDate ? date < fromDate : date > new Date();
+              }}
             />
-          </label>
-          <button
-            className="rounded bg-toyota-primary px-3 py-1 text-sm font-semibold text-white hover:bg-toyota-primary/90"
-            onClick={() => {
-              if (!customFrom || !customTo) return;
-              const start = new Date(customFrom);
-              const end = new Date(customTo);
-              if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return;
-              apply({ start: isoDayStart(start), end: isoDayEnd(end), timezone: 'UTC' });
-              setCustomOpen(false);
-            }}
-          >
-            החל
-          </button>
+            <Button
+              className="bg-toyota-primary hover:bg-toyota-primary/90 px-3 py-1 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleApply}
+              disabled={
+                !!errors.from || !!errors.to || !customFrom || !customTo
+              }
+            >
+              החל
+            </Button>
+          </div>
+          {errors.general && (
+            <span className="text-xs text-red-500">{errors.general}</span>
+          )}
         </div>
       )}
 
       <div className="ml-auto text-xs text-gray-600">
-        טווח נוכחי: {new Date(range.start).toLocaleDateString('he-IL')} – {new Date(range.end).toLocaleDateString('he-IL')}
+        {(() => {
+          const label =
+            currentPreset === 'today'
+              ? 'היום'
+              : currentPreset === 'yesterday'
+              ? 'אתמול'
+              : currentPreset === 'last7'
+              ? '7 ימים'
+              : currentPreset === 'last30'
+              ? '30 ימים'
+              : 'מותאם';
+          return (
+            <>
+              טווח נוכחי: <span className="font-semibold">{label}</span> (
+              {new Date(range.start).toLocaleDateString('he-IL')} –{' '}
+              {new Date(range.end).toLocaleDateString('he-IL')})
+            </>
+          );
+        })()}
       </div>
     </div>
   );
 }
-
-

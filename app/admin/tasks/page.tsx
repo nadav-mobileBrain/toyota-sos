@@ -7,6 +7,8 @@ import type {
   Vehicle,
 } from '@/components/admin/TasksBoard';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { NavBar } from '@/components/ui/tubelight-navbar';
+import { AdminTasksShell } from '@/components/admin/AdminTasksShell';
 
 /**
  * Admin Tasks Page (7.1)
@@ -43,6 +45,7 @@ export default async function AdminTasksPage() {
         updated_at
       `
       )
+      .is('deleted_at', null)
       .order('updated_at', { ascending: false })
       .limit(100);
 
@@ -100,7 +103,6 @@ export default async function AdminTasksPage() {
     const { data, error } = await admin
       .from('clients')
       .select('id, name, phone, email');
-    console.log('🚀 ~ AdminTasksPage ~ data:', data);
 
     if (!error) {
       clients = data || [];
@@ -125,10 +127,19 @@ export default async function AdminTasksPage() {
     // silently ignore vehicle fetch errors
   }
 
+  const navItems = [
+    { name: 'לוח מחוונים', url: '/admin/dashboard', icon: 'LayoutDashboard' },
+    { name: 'משימות', url: '/admin/tasks', icon: 'ClipboardList' },
+    { name: 'נהגים', url: '/admin/drivers', icon: 'Users' },
+  ];
+
   return (
-    <main dir="rtl" className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-full">
-        <h1 className="mb-6 text-3xl font-bold text-gray-900">לוח משימות</h1>
+    <main dir="rtl" className="min-h-screen bg-gray-50 p-8 mx-auto">
+      <NavBar items={navItems} className="z-40" />
+      <div className="max-w-full mt-4 sm:mt-8 space-y-4">
+        <h1 className="text-3xl font-bold text-toyota-primary underline">
+          לוח משימות
+        </h1>
 
         {(tasksError || driversError || assigneesError) && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
@@ -147,7 +158,7 @@ export default async function AdminTasksPage() {
           </div>
         )}
 
-        <TasksBoard
+        <AdminTasksShell
           initialTasks={tasks}
           drivers={drivers}
           taskAssignees={taskAssignees}

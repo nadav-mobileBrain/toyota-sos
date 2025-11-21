@@ -39,6 +39,11 @@ export type ChecklistModalProps = {
   persist?: boolean;
   taskId?: string;
   driverId?: string;
+  /**
+   * When true, the modal cannot be dismissed until a successful submit.
+   * Used for mandatory checklists on status changes.
+   */
+  forceCompletion?: boolean;
 };
 
 export function ChecklistModal(props: ChecklistModalProps) {
@@ -52,6 +57,7 @@ export function ChecklistModal(props: ChecklistModalProps) {
     persist = false,
     taskId,
     driverId,
+    forceCompletion = false,
   } = props;
 
   // Focus management / trap
@@ -63,6 +69,9 @@ export function ChecklistModal(props: ChecklistModalProps) {
   const [attempted, setAttempted] = useState(false);
   const [persistError, setPersistError] = useState<string | null>(null);
   const [persisting, setPersisting] = useState(false);
+
+  // Allow dismissing if not forced, or if persistence failed (so the user isn't trapped).
+  const canDismiss = !forceCompletion || !!persistError;
 
   const focusableSelectors = useMemo(
     () => [
@@ -115,7 +124,9 @@ export function ChecklistModal(props: ChecklistModalProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.stopPropagation();
-      onOpenChange(false);
+      if (canDismiss) {
+        onOpenChange(false);
+      }
       return;
     }
     if (e.key === 'Tab') {
@@ -244,7 +255,7 @@ export function ChecklistModal(props: ChecklistModalProps) {
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40"
       onClick={(e) => {
-        if (e.target === overlayRef.current) onOpenChange(false);
+        if (e.target === overlayRef.current && canDismiss) onOpenChange(false);
       }}
       aria-hidden={false}
     >
@@ -269,14 +280,16 @@ export function ChecklistModal(props: ChecklistModalProps) {
               </p>
             ) : null}
           </div>
-          <button
-            type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-toyota-primary"
-            onClick={() => onOpenChange(false)}
-            aria-label="סגור"
-          >
-            ✕
-          </button>
+          {canDismiss ? (
+            <button
+              type="button"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-md text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-toyota-primary"
+              onClick={() => onOpenChange(false)}
+              aria-label="סגור"
+            >
+              ✕
+            </button>
+          ) : null}
         </div>
 
         <div className="p-4 overflow-y-auto">
@@ -387,13 +400,17 @@ export function ChecklistModal(props: ChecklistModalProps) {
         </div>
 
         <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
-          <button
-            type="button"
-            className="rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-toyota-primary min-h-[44px]"
-            onClick={() => onOpenChange(false)}
-          >
-            ביטול
-          </button>
+          {canDismiss ? (
+            <button
+              type="button"
+              className="rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-toyota-primary min-h-[44px]"
+              onClick={() => onOpenChange(false)}
+            >
+              ביטול
+            </button>
+          ) : (
+            <span />
+          )}
           <button
             type="button"
             className="rounded-md bg-toyota-primary px-3 py-2 text-sm text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-toyota-primary min-h-[44px]"
