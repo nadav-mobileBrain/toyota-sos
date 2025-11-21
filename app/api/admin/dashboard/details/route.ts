@@ -31,20 +31,20 @@ export async function GET(request: NextRequest) {
     if (metric === 'created') {
       q = q.gte('created_at', from).lte('created_at', to);
     } else if (metric === 'completed') {
-      q = q.eq('status', 'completed').gte('updated_at', from).lte('updated_at', to);
+      q = q.eq('status', 'הושלמה').gte('updated_at', from).lte('updated_at', to);
     } else if (metric === 'overdue') {
-      q = q.neq('status', 'completed').lte('estimated_end', to);
+      q = q.neq('status', 'הושלמה').lte('estimated_end', to);
     } else if (metric === 'on_time') {
       // completed and completed (updated_at) <= estimated_end within range
       q = q
-        .eq('status', 'completed')
+        .eq('status', 'הושלמה')
         .gte('updated_at', from)
         .lte('updated_at', to)
         .or(`estimated_end.gte.${from},estimated_end.lte.${to}`);
     } else if (metric === 'late') {
       // completed but updated_at > estimated_end within range
       q = q
-        .eq('status', 'completed')
+        .eq('status', 'הושלמה')
         .gte('updated_at', from)
         .lte('updated_at', to);
       // will filter client-side for lateness to avoid complex SQL

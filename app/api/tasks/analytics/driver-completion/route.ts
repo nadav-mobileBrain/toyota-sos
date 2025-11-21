@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       existing.total += 1;
 
       if (
-        task.status === 'completed' &&
+        task.status === 'הושלמה' &&
         task.updated_at &&
         new Date(task.updated_at).toISOString() >= rangeStart &&
         new Date(task.updated_at).toISOString() <= rangeEnd

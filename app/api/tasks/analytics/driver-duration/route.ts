@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       if (!driverId || !task) return;
 
       if (
-        task.status !== 'completed' ||
+        task.status !== 'הושלמה' ||
         !task.updated_at ||
         !task.estimated_start
       ) {
