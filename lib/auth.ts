@@ -56,7 +56,7 @@ export interface DriverSession {
 export interface AdminSession {
   userId: string;
   username: string;
-  role: 'admin' | 'viewer';
+  role: 'admin' | 'manager' | 'viewer';
   email?: string;
 }
 
@@ -363,7 +363,7 @@ export const getCurrentSession = async (client: SupabaseClient): Promise<AuthSes
 /**
  * Get current user role
  */
-export const getCurrentRole = async (client: SupabaseClient): Promise<'driver' | 'admin' | 'viewer' | null> => {
+export const getCurrentRole = async (client: SupabaseClient): Promise<'driver' | 'admin' | 'manager' | 'viewer' | null> => {
   const session = await getCurrentSession(client);
   return session?.role || null;
 };

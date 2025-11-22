@@ -40,7 +40,10 @@ export function ChartTooltipContent({
   active,
   payload,
   label,
-}: TooltipProps<number, string>) {
+}: TooltipProps<number, string> & {
+  payload?: Array<{ value?: number; dataKey?: string; color?: string }>;
+  label?: string;
+}) {
   const { config } = useChartConfig();
   if (!active || !payload || payload.length === 0) return null;
 

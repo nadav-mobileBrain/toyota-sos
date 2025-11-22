@@ -60,7 +60,7 @@ export function DashboardCharts() {
             {/* Subtle gradient overlay */}
             <div className="absolute inset-0 rounded-[11px] bg-gradient-to-br from-gray-50/30 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
 
-            <div className="relative">
+            <div className="relative ">
               <h2 className="text-sm font-semibold text-gray-900">
                 מגמת משימות שבועית
               </h2>

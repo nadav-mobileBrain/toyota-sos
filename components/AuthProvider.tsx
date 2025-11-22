@@ -19,7 +19,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   client: SupabaseClient;
-  role: 'driver' | 'admin' | 'viewer' | null;
+  role: 'driver' | 'admin' | 'manager' | 'viewer' | null;
   loginDriver: (employeeId: string) => Promise<{ success: boolean; error?: string }>;
   loginAdmin: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -31,10 +31,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthSession>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [role, setRole] = useState<'driver' | 'admin' | 'viewer' | null>(null);
+  const [role, setRole] = useState<'driver' | 'admin' | 'manager' | 'viewer' | null>(null);
   const [client, setClient] = useState<SupabaseClient | null>(null);
 
-  const writeRoleCookie = (newRole: 'driver' | 'admin' | 'viewer' | null) => {
+  const writeRoleCookie = (newRole: 'driver' | 'admin' | 'manager' | 'viewer' | null) => {
     try {
       if (!newRole) {
         // clear cookie
