@@ -13,36 +13,33 @@ import {
 } from '@/components/ui/popover';
 import { he } from 'date-fns/locale';
 import { z } from 'zod';
+import dayjs from '@/lib/dayjs';
 
 function isoDayStart(d: Date) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x.toISOString();
+  return dayjs(d).startOf('day').toISOString();
 }
 function isoDayEnd(d: Date) {
-  const x = new Date(d);
-  x.setHours(23, 59, 59, 999);
-  return x.toISOString();
+  return dayjs(d).endOf('day').toISOString();
 }
 
 function makeRange(
   kind: 'today' | 'yesterday' | 'last7' | 'last30'
 ): PeriodRange {
-  const now = new Date();
+  const now = dayjs();
   if (kind === 'today') {
-    const start = isoDayStart(now);
-    const end = isoDayEnd(now);
+    const start = now.startOf('day').toISOString();
+    const end = now.endOf('day').toISOString();
     return { start, end, timezone: 'UTC' };
   }
   if (kind === 'yesterday') {
-    const y = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    return { start: isoDayStart(y), end: isoDayEnd(y), timezone: 'UTC' };
+    const y = now.subtract(1, 'day');
+    return { start: y.startOf('day').toISOString(), end: y.endOf('day').toISOString(), timezone: 'UTC' };
   }
   const days = kind === 'last7' ? 7 : 30;
-  const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  const startDate = now.subtract(days, 'day').startOf('day');
   return {
     start: startDate.toISOString(),
-    end: now.toISOString(),
+    end: now.endOf('day').toISOString(),
     timezone: 'UTC',
   };
 }
@@ -54,16 +51,13 @@ function parseDateInput(value: string): Date | null {
   if (parts.length !== 3) return null;
   const [y, m, d] = parts;
   if (!y || !m || !d) return null;
-  const dt = new Date(y, m - 1, d);
-  return isNaN(dt.getTime()) ? null : dt;
+  const dt = dayjs(`${y}-${m}-${d}`, 'YYYY-M-D');
+  return dt.isValid() ? dt.toDate() : null;
 }
 
 function formatInputDate(d: Date | null): string {
   if (!d) return '';
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return dayjs(d).format('YYYY-MM-DD');
 }
 
 const dateRangeSchema = z
@@ -77,9 +71,8 @@ const dateRangeSchema = z
   })
   .refine(
     (data) => {
-      const now = new Date();
-      now.setHours(23, 59, 59, 999);
-      return data.to <= now;
+      const now = dayjs().endOf('day');
+      return dayjs(data.to).isBefore(now) || dayjs(data.to).isSame(now, 'day');
     },
     {
       message: 'תאריך סיום לא יכול להיות בעתיד',
@@ -88,9 +81,8 @@ const dateRangeSchema = z
   )
   .refine(
     (data) => {
-      const diffTime = Math.abs(data.to.getTime() - data.from.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays <= 365;
+      const diffDays = dayjs(data.to).diff(dayjs(data.from), 'day');
+      return Math.abs(diffDays) <= 365;
     },
     {
       message: 'הטווח לא יכול להיות גדול מ-365 ימים',
@@ -131,45 +123,37 @@ function validateDateRange(
   return null;
 }
 
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
-
 function sameCalendarDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+  return dayjs(a).isSame(dayjs(b), 'day');
 }
 
 function inferPreset(
   range: PeriodRange
 ): 'today' | 'yesterday' | 'last7' | 'last30' | 'custom' {
-  const start = new Date(range.start);
-  const end = new Date(range.end);
-  const today = new Date();
+  const start = dayjs(range.start);
+  const end = dayjs(range.end);
+  const today = dayjs();
 
-  const diffDays = Math.round(
-    Math.abs(end.getTime() - start.getTime()) / MS_PER_DAY
-  );
+  const diffDays = Math.abs(end.diff(start, 'day'));
 
   // today: start and end both today
-  if (sameCalendarDay(start, today) && sameCalendarDay(end, today)) {
+  if (start.isSame(today, 'day') && end.isSame(today, 'day')) {
     return 'today';
   }
 
   // yesterday: start and end both yesterday
-  const yesterday = new Date(today.getTime() - MS_PER_DAY);
-  if (sameCalendarDay(start, yesterday) && sameCalendarDay(end, yesterday)) {
+  const yesterday = today.subtract(1, 'day');
+  if (start.isSame(yesterday, 'day') && end.isSame(yesterday, 'day')) {
     return 'yesterday';
   }
 
   // last 7 days: end is today, and span is 7 days
-  if (sameCalendarDay(end, today) && diffDays === 7) {
+  if (end.isSame(today, 'day') && diffDays === 7) {
     return 'last7';
   }
 
   // last 30 days: end is today, and span is 30 days
-  if (sameCalendarDay(end, today) && diffDays === 30) {
+  if (end.isSame(today, 'day') && diffDays === 30) {
     return 'last30';
   }
 
@@ -388,7 +372,8 @@ export function PeriodFilter({
               onSelect={(date) => setCustomFrom(formatInputDate(date))}
               disabled={(date) => {
                 const toDate = parseDateInput(customTo);
-                return toDate ? date > toDate : date > new Date();
+                const dateDayjs = dayjs(date);
+                return toDate ? dateDayjs.isAfter(dayjs(toDate), 'day') : dateDayjs.isAfter(dayjs(), 'day');
               }}
             />
             <DatePickerInput
@@ -403,7 +388,8 @@ export function PeriodFilter({
               onSelect={(date) => setCustomTo(formatInputDate(date))}
               disabled={(date) => {
                 const fromDate = parseDateInput(customFrom);
-                return fromDate ? date < fromDate : date > new Date();
+                const dateDayjs = dayjs(date);
+                return fromDate ? dateDayjs.isBefore(dayjs(fromDate), 'day') : dateDayjs.isAfter(dayjs(), 'day');
               }}
             />
             <Button
@@ -437,8 +423,8 @@ export function PeriodFilter({
           return (
             <>
               טווח נוכחי: <span className="font-semibold">{label}</span> (
-              {new Date(range.start).toLocaleDateString('he-IL')} –{' '}
-              {new Date(range.end).toLocaleDateString('he-IL')})
+              {dayjs(range.start).format('DD/MM/YYYY')} –{' '}
+              {dayjs(range.end).format('DD/MM/YYYY')})
             </>
           );
         })()}

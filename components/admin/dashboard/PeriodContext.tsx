@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import dayjs from '@/lib/dayjs';
 
 export type Iso = string;
 export interface PeriodRange {
@@ -15,9 +16,14 @@ interface PeriodContextValue {
 }
 
 const defaultRange: PeriodRange = (() => {
-  const end = new Date();
-  const start = new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
-  return { start: start.toISOString(), end: end.toISOString(), timezone: 'UTC' };
+  const now = dayjs();
+  const start = now.startOf('day');
+  const end = now.endOf('day');
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+    timezone: 'UTC',
+  };
 })();
 
 const PeriodContext = React.createContext<PeriodContextValue>({
@@ -29,8 +35,16 @@ export function usePeriod() {
   return React.useContext(PeriodContext);
 }
 
-export function PeriodProvider({ children, initial }: { children: React.ReactNode; initial?: PeriodRange }) {
-  const [range, setRange] = React.useState<PeriodRange>(initial || defaultRange);
+export function PeriodProvider({
+  children,
+  initial,
+}: {
+  children: React.ReactNode;
+  initial?: PeriodRange;
+}) {
+  const [range, setRange] = React.useState<PeriodRange>(
+    initial || defaultRange
+  );
 
   // rehydrate from URL/localStorage on mount
   React.useEffect(() => {
@@ -39,7 +53,11 @@ export function PeriodProvider({ children, initial }: { children: React.ReactNod
       const from = url.searchParams.get('from');
       const to = url.searchParams.get('to');
       if (from && to) {
-        setRange({ start: new Date(from).toISOString(), end: new Date(to).toISOString(), timezone: 'UTC' });
+        setRange({
+          start: dayjs(from).toISOString(),
+          end: dayjs(to).toISOString(),
+          timezone: 'UTC',
+        });
         return;
       }
       const stored = window.localStorage.getItem('dashboard.period');
@@ -59,13 +77,19 @@ export function PeriodProvider({ children, initial }: { children: React.ReactNod
       const url = new URL(window.location.href);
       url.searchParams.set('from', range.start);
       url.searchParams.set('to', range.end);
-      window.history.replaceState(null, '', `${url.pathname}?${url.searchParams.toString()}`);
+      window.history.replaceState(
+        null,
+        '',
+        `${url.pathname}?${url.searchParams.toString()}`
+      );
     } catch {
       // no-op
     }
   }, [range]);
 
-  return <PeriodContext.Provider value={{ range, setRange }}>{children}</PeriodContext.Provider>;
+  return (
+    <PeriodContext.Provider value={{ range, setRange }}>
+      {children}
+    </PeriodContext.Provider>
+  );
 }
-
-
