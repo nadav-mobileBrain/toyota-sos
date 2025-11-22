@@ -16,7 +16,9 @@ export function FeatureFlags() {
       .catch((e) => setError(e?.message || 'שגיאה בטעינת דגלים'))
       .finally(() => setLoading(false));
     const unsub = subscribe((snapshot) => setFlags(snapshot));
-    return () => unsub();
+    return () => {
+      unsub();
+    };
   }, []);
 
   const keys = useMemo(() => Object.keys(flags).sort(), [flags]);

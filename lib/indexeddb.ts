@@ -159,8 +159,8 @@ export async function cacheDeleteNotification(id: string): Promise<boolean> {
 // Forms queue
 export async function enqueueForm(payload: Json): Promise<number | null> {
   const record: QueuedForm = { payload, status: 'queued', createdAt: Date.now() };
-  const res = await withStore<number>(STORES.forms, 'readwrite', (s) => promisify(s.add(record as any)));
-  return (res as any) ?? null;
+  const res = await withStore<IDBValidKey>(STORES.forms, 'readwrite', (s) => promisify(s.add(record as any)));
+  return typeof res === 'number' ? res : null;
 }
 export async function getQueuedForms(): Promise<QueuedForm[]> {
   const res = await withStore<QueuedForm[]>(STORES.forms, 'readonly', (s) => promisify(s.getAll()));
@@ -184,8 +184,8 @@ export async function deleteForm(id: number): Promise<boolean> {
 // Images queue
 export async function enqueueImage(blob: Blob, metadata?: Json): Promise<number | null> {
   const record: QueuedBlobRecord = { blob, metadata: metadata || {}, createdAt: Date.now() };
-  const res = await withStore<number>(STORES.images, 'readwrite', (s) => promisify(s.add(record as any)));
-  return (res as any) ?? null;
+  const res = await withStore<IDBValidKey>(STORES.images, 'readwrite', (s) => promisify(s.add(record as any)));
+  return typeof res === 'number' ? res : null;
 }
 export async function getQueuedImages(): Promise<QueuedBlobRecord[]> {
   const res = await withStore<QueuedBlobRecord[]>(STORES.images, 'readonly', (s) => promisify(s.getAll()));
@@ -199,8 +199,8 @@ export async function deleteImage(id: number): Promise<boolean> {
 // Signatures queue
 export async function enqueueSignature(blob: Blob, metadata?: Json): Promise<number | null> {
   const record: QueuedBlobRecord = { blob, metadata: metadata || {}, createdAt: Date.now() };
-  const res = await withStore<number>(STORES.signatures, 'readwrite', (s) => promisify(s.add(record as any)));
-  return (res as any) ?? null;
+  const res = await withStore<IDBValidKey>(STORES.signatures, 'readwrite', (s) => promisify(s.add(record as any)));
+  return typeof res === 'number' ? res : null;
 }
 export async function getQueuedSignatures(): Promise<QueuedBlobRecord[]> {
   const res = await withStore<QueuedBlobRecord[]>(STORES.signatures, 'readonly', (s) => promisify(s.getAll()));

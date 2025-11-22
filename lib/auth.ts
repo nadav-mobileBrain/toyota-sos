@@ -363,7 +363,7 @@ export const getCurrentSession = async (client: SupabaseClient): Promise<AuthSes
 /**
  * Get current user role
  */
-export const getCurrentRole = async (client: SupabaseClient): Promise<'driver' | 'admin' | 'viewer' | null> => {
+export const getCurrentRole = async (client: SupabaseClient): Promise<'driver' | 'admin' | 'manager' | 'viewer' | null> => {
   const session = await getCurrentSession(client);
   return session?.role || null;
 };
