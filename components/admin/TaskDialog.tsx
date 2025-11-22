@@ -74,6 +74,8 @@ interface TaskDialogProps {
     leadDriverId?: string,
     coDriverIds?: string[]
   ) => void;
+  onClientCreated?: (client: Client) => void;
+  onVehicleCreated?: (vehicle: Vehicle) => void;
 }
 
 const types: TaskType[] = [
@@ -100,6 +102,8 @@ export function TaskDialog(props: TaskDialogProps) {
     vehicles,
     onCreated,
     onUpdated,
+    onClientCreated,
+    onVehicleCreated,
   } = props;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -208,7 +212,8 @@ export function TaskDialog(props: TaskDialogProps) {
       setShowAddClient(false);
       setShowAddVehicle(false);
     }
-  }, [open, task, clients, vehicles, mode, assignees]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, task, mode, assignees]);
 
   const coDriversSet = useMemo(() => new Set(coDriverIds), [coDriverIds]);
 
@@ -316,6 +321,7 @@ export function TaskDialog(props: TaskDialogProps) {
       const json = await res.json();
       const created: Client = json.data;
       setClientsLocal((prev) => [...prev, created]);
+      onClientCreated?.(created);
       setClientId(created.id);
       setClientQuery(created.name || '');
       setShowAddClient(false);
@@ -345,7 +351,11 @@ export function TaskDialog(props: TaskDialogProps) {
       const json = await res.json();
       const created: Vehicle = json.data;
       setVehiclesLocal((prev) => [...prev, created]);
+      onVehicleCreated?.(created);
       setVehicleId(created.id);
+      setVehicleQuery(
+        `${created.license_plate}${created.model ? ` · ${created.model}` : ''}`
+      );
       setShowAddVehicle(false);
       setNewVehiclePlate('');
       setNewVehicleModel('');
@@ -376,6 +386,35 @@ export function TaskDialog(props: TaskDialogProps) {
     setSubmitting(true);
     setError(null);
     try {
+      // Resolve vehicleId from query if not set but query exists (exact match on license plate)
+      let finalVehicleId = vehicleId;
+      if (!finalVehicleId && vehicleQuery.trim()) {
+        const normalizedQuery = vehicleQuery.trim().toLowerCase();
+        const match = vehiclesLocal.find((v) => {
+          const plate = v.license_plate.toLowerCase();
+          // Check against plate only, or the formatted "plate · model" string
+          const formatted = `${v.license_plate}${
+            v.model ? ` · ${v.model}` : ''
+          }`.toLowerCase();
+          return plate === normalizedQuery || formatted === normalizedQuery;
+        });
+        if (match) {
+          finalVehicleId = match.id;
+        }
+      }
+
+      // Resolve clientId from query if not set (exact match on name)
+      let finalClientId = clientId;
+      if (!finalClientId && clientQuery.trim()) {
+        const normalizedQuery = clientQuery.trim().toLowerCase();
+        const match = clientsLocal.find(
+          (c) => c.name.toLowerCase() === normalizedQuery
+        );
+        if (match) {
+          finalClientId = match.id;
+        }
+      }
+
       if (mode === 'create') {
         const estimatedStartDatetime = dayjs(estimatedDate)
           .set('hour', parseInt(estimatedStartTime.split(':')[0]))
@@ -394,9 +433,9 @@ export function TaskDialog(props: TaskDialogProps) {
           details: details || null,
           estimated_start: estimatedStartDatetime || null,
           estimated_end: estimatedEndDatetime || null,
-          address: address || '',
-          client_id: clientId || null,
-          vehicle_id: vehicleId || null,
+          address: addressQuery || '',
+          client_id: finalClientId || null,
+          vehicle_id: finalVehicleId || null,
           lead_driver_id: leadDriverId || null,
           co_driver_ids: coDriverIds,
         };
@@ -446,9 +485,9 @@ export function TaskDialog(props: TaskDialogProps) {
           details: details || null,
           estimated_start: estimatedStartDatetime || undefined,
           estimated_end: estimatedEndDatetime || undefined,
-          address: address || '',
-          client_id: clientId || null,
-          vehicle_id: vehicleId || null,
+          address: addressQuery || '',
+          client_id: finalClientId || null,
+          vehicle_id: finalVehicleId || null,
           lead_driver_id: leadDriverId || null,
           co_driver_ids: coDriverIds,
         };

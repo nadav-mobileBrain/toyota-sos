@@ -119,9 +119,20 @@ export function TaskCard({
       {vehicle && (
         <div className="mb-2 flex items-center gap-1 text-xs text-gray-600">
           <span className="font-medium">🚗</span>
-          <span className="font-mono font-bold">{vehicle.license_plate}</span>
+          <span className="font-mono font-bold">
+            {vehicle.license_plate}
+            {vehicle.model ? ` · ${vehicle.model}` : ''}
+          </span>
         </div>
       )}
+
+      {/* Address info */}
+      <div className="mb-2 flex items-center gap-1 text-xs text-gray-600">
+        <span className="font-medium">📍</span>
+        <span className="truncate" title={task.address || 'לא הוכנסה כתובת'}>
+          {task.address || 'לא הוכנסה כתובת'}
+        </span>
+      </div>
 
       {/* Time window */}
       <div className="mb-2 text-xs text-gray-500">

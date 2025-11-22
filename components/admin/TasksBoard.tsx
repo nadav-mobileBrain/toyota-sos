@@ -111,6 +111,8 @@ export function TasksBoard({
   // State management
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [assignees, setAssignees] = useState<TaskAssignee[]>(taskAssignees);
+  const [vehiclesState, setVehiclesState] = useState<Vehicle[]>(vehicles);
+  const [clientsState, setClientsState] = useState<Client[]>(clients);
   // Persisted groupBy via URL query (?groupBy=driver|status) and localStorage
   const initialGroupBy = 'status' as GroupBy;
   const [groupBy, setGroupBy] = useState<GroupBy>(initialGroupBy);
@@ -234,9 +236,9 @@ export function TasksBoard({
     [assignees]
   );
 
-  const clientMap = useMemo(() => buildClientMap(clients), [clients]);
+  const clientMap = useMemo(() => buildClientMap(clientsState), [clientsState]);
 
-  const vehicleMap = useMemo(() => buildVehicleMap(vehicles), [vehicles]);
+  const vehicleMap = useMemo(() => buildVehicleMap(vehiclesState), [vehiclesState]);
 
   // Compute filtered + sorted tasks snapshot
   const filteredSortedTasks = useMemo(() => {
@@ -300,6 +302,14 @@ export function TasksBoard({
       }),
     [filteredSortedTasks, groupBy, assignees]
   );
+
+  const handleVehicleCreated = useCallback((vehicle: Vehicle) => {
+    setVehiclesState((prev) => [...prev, vehicle]);
+  }, []);
+
+  const handleClientCreated = useCallback((client: Client) => {
+    setClientsState((prev) => [...prev, client]);
+  }, []);
 
   // Dialog helpers
   const openCreateDialog = useCallback(() => {
@@ -1199,11 +1209,13 @@ export function TasksBoard({
             mode={dialogMode}
             task={dialogTask}
             drivers={drivers}
-            clients={clients}
-            vehicles={vehicles}
+            clients={clientsState}
+            vehicles={vehiclesState}
             assignees={dialogAssignees}
             onCreated={handleCreated}
             onUpdated={handleUpdated}
+            onVehicleCreated={handleVehicleCreated}
+            onClientCreated={handleClientCreated}
           />
         </Suspense>
       )}

@@ -103,6 +103,9 @@ export function DriverHome() {
     estimated_start: string | null;
     estimated_end: string | null;
     address: string | null;
+    client_name: string | null;
+    vehicle_license_plate: string | null;
+    vehicle_model: string | null;
     updated_at: string;
   };
 
@@ -158,8 +161,13 @@ export function DriverHome() {
         estimatedStart: t.estimated_start,
         estimatedEnd: t.estimated_end,
         address: t.address,
-        clientName: null,
-        vehicle: null,
+        clientName: t.client_name,
+        vehicle: t.vehicle_license_plate
+          ? {
+              licensePlate: t.vehicle_license_plate,
+              model: t.vehicle_model,
+            }
+          : null,
       }));
       setRemoteTasks((prev) => (reset ? mapped : mergeById(prev, mapped)));
       setHasMore((mapped?.length ?? 0) === 10);
