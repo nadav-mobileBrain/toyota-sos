@@ -22,9 +22,9 @@ import dayjs from '@/lib/dayjs';
 
 export const DriverFormSchema = driverSchema.extend({
   // Accept empty string for email and coerce to optional
+  // Required in form (to match defaultValues), but transforms to undefined if empty
   email: z
     .union([z.string().email('אימייל לא תקין').max(255), z.literal('')])
-    .optional()
     .transform((val) => {
       if (!val) return undefined;
       const trimmed = val.trim();
@@ -32,7 +32,10 @@ export const DriverFormSchema = driverSchema.extend({
     }),
 });
 
-export type DriverFormValues = z.infer<typeof DriverFormSchema>;
+// Explicitly type to ensure email is string | undefined (not optional)
+export type DriverFormValues = Omit<z.infer<typeof DriverFormSchema>, 'email'> & {
+  email: string | undefined;
+};
 
 export function formatDriverTimestamp(ts: string | null) {
   if (!ts) return '—';
