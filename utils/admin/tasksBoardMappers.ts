@@ -1,3 +1,4 @@
+import dayjs from '@/lib/dayjs';
 import type {
   Task,
   TaskStatus,
@@ -134,7 +135,7 @@ export function sortTasks(params: {
   const list = tasks.slice().sort((a, b) => {
     if (sortBy === 'עדיפות') {
       const diff = priorityRank[b.priority] - priorityRank[a.priority];
-      return diff === 0 ? a.title.localeCompare(b.title) : diff;
+      return diff === 0 ? (a.title || '').localeCompare(b.title || '') : diff;
     }
     if (sortBy === 'נהג') {
       const la =
@@ -145,11 +146,11 @@ export function sortTasks(params: {
       const nb = lb ? driverMap.get(lb)?.name || '' : '';
       return na.localeCompare(nb);
     }
-    const ta = new Date(a.estimated_start).getTime();
-    const tb = new Date(b.estimated_start).getTime();
+    const ta = a.estimated_start ? dayjs(a.estimated_start).valueOf() : 0;
+    const tb = b.estimated_start ? dayjs(b.estimated_start).valueOf() : 0;
     return (
       (sortDir === 'asc' ? ta - tb : tb - ta) ||
-      a.title.localeCompare(b.title)
+      (a.title || '').localeCompare(b.title || '')
     );
   });
 

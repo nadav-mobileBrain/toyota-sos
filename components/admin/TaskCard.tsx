@@ -81,9 +81,9 @@ export function TaskCard({
               aria-label="בחר משימה"
             />
           )}
-          <h4 className="flex-1 line-clamp-2 font-semibold text-gray-900 text-sm">
+          {/* <h4 className="flex-1 line-clamp-2 font-semibold text-gray-900 text-sm">
             {task.title}
-          </h4>
+          </h4> */}
         </div>
         <span
           className={`shrink-0 inline-block rounded-full px-1.5 py-0.5 text-xs font-bold text-white ${priorityColor(
