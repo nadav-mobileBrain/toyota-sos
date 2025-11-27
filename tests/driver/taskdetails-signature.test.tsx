@@ -55,6 +55,11 @@ jest.mock('@/lib/auth', () => {
       rpc: rpcMock,
       from: fromMock,
     }),
+    getDriverSession: jest.fn().mockReturnValue({
+      employeeId: '123',
+      userId: 'u1',
+      role: 'driver',
+    }),
   };
 });
 
@@ -87,9 +92,12 @@ describe('TaskDetails signature-required completion', () => {
     fireEvent.click(completeBtn);
 
     await waitFor(() => {
-      // ensure update called to mark completed
-      expect(updateMock).toHaveBeenCalledWith({ status: 'completed' });
-      expect(eqMock).toHaveBeenCalledWith('id', 't1');
+      // ensure update called to mark completed via RPC
+      expect(rpcMock).toHaveBeenCalledWith('update_task_status', expect.objectContaining({
+        p_task_id: 't1',
+        p_status: 'completed',
+        p_driver_id: 'u1'
+      }));
     });
   });
 });
