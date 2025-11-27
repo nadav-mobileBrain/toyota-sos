@@ -467,37 +467,64 @@ async function compressIfNeeded(
     canvas.height = img.naturalHeight || (img as any).height || 0;
     if (canvas.width === 0 || canvas.height === 0) return file;
 
+    // Resize if needed (max 1600px)
+    const MAX_DIMENSION = 1600;
+    if (canvas.width > MAX_DIMENSION || canvas.height > MAX_DIMENSION) {
+      const ratio = Math.min(
+        MAX_DIMENSION / canvas.width,
+        MAX_DIMENSION / canvas.height
+      );
+      canvas.width = Math.round(canvas.width * ratio);
+      canvas.height = Math.round(canvas.height * ratio);
+    }
+
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    const attempt = (quality: number) =>
+    const attempt = (quality: number, type: string) =>
       new Promise<Blob | null>((resolve) => {
         (canvas as HTMLCanvasElement).toBlob(
           (blob) => resolve(blob),
-          'image/jpeg',
+          type,
           Math.min(Math.max(quality, 0.3), 0.92)
         );
       });
 
     // Heuristic quality based on ratio
     const ratio = maxSizeBytes / Math.max(1, file.size);
-    const baseQ = Math.min(Math.max(ratio * 0.92, 0.3), 0.92);
+    const baseQ = 0.65; // Default aggressive quality
 
-    let blob = await attempt(baseQ);
+    // Try WebP first
+    let blob = await attempt(baseQ, 'image/webp');
+    let type = 'image/webp';
+
+    // Fallback to JPEG if WebP fails or is larger (unlikely but possible)
+    if (!blob) {
+      blob = await attempt(baseQ, 'image/jpeg');
+      type = 'image/jpeg';
+    }
+
     if (!blob) return file;
+
+    // If still too large, reduce quality
     if (blob.size > maxSizeBytes) {
-      blob = await attempt(baseQ * 0.7);
+      blob = await attempt(baseQ * 0.7, type);
       if (!blob) return file;
     }
     if (blob.size > maxSizeBytes) {
-      blob = await attempt(baseQ * 0.5);
+      blob = await attempt(baseQ * 0.5, type);
       if (!blob) return file;
     }
+
+    // If compression actually made it larger (unlikely with resize), keep original
     if (blob.size >= file.size) {
-      // no improvement
       return file;
     }
-    const out = new File([blob], file.name, {
-      type: 'image/jpeg',
+
+    const ext = type === 'image/webp' ? 'webp' : 'jpg';
+    const newName = file.name.replace(/\.[^/.]+$/, '') + '.' + ext;
+
+    const out = new File([blob], newName, {
+      type: type,
       lastModified: Date.now(),
     });
     return out;

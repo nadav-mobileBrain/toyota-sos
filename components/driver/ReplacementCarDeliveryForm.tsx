@@ -240,7 +240,7 @@ export function ReplacementCarDeliveryForm({
                 label="צלם/י תמונות"
                 multiple
                 capture="environment"
-                maxSizeBytes={5 * 1024 * 1024}
+                maxSizeBytes={500 * 1024}
               />
               {carPhotos.length > 0 && (
                 <div className="text-sm text-green-600 mt-2 font-medium">
