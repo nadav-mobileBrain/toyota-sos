@@ -153,6 +153,7 @@ export function TaskDialog(props: TaskDialogProps) {
   const [newVehiclePlate, setNewVehiclePlate] = useState('');
   const [newVehicleModel, setNewVehicleModel] = useState('');
   const [newVehicleVin, setNewVehicleVin] = useState('');
+  const [advisorName, setAdvisorName] = useState(task?.advisor_name ?? '');
 
   useEffect(() => {
     if (open) {
@@ -163,6 +164,7 @@ export function TaskDialog(props: TaskDialogProps) {
       setPriority(task?.priority ?? 'בינונית');
       setStatus(task?.status ?? 'בהמתנה');
       setDetails(task?.details ?? '');
+      setAdvisorName(task?.advisor_name ?? '');
       setEstimatedDate(
         task?.estimated_start ? new Date(task.estimated_start) : new Date()
       );
@@ -425,6 +427,19 @@ export function TaskDialog(props: TaskDialogProps) {
         }
       }
 
+      // Validation for "Drive Client Home"
+      if (type === 'הסעת לקוח הביתה') {
+        if (!finalClientId) {
+          throw new Error('חובה לבחור לקוח עבור משימת הסעת לקוח הביתה');
+        }
+        if (!finalVehicleId) {
+          throw new Error('חובה לבחור רכב עבור משימת הסעת לקוח הביתה');
+        }
+        if (!advisorName.trim()) {
+          throw new Error('חובה להזין שם יועץ עבור משימת הסעת לקוח הביתה');
+        }
+      }
+
       if (mode === 'create') {
         const estimatedStartDatetime = dayjs(estimatedDate)
           .set('hour', parseInt(estimatedStartTime.split(':')[0]))
@@ -441,6 +456,7 @@ export function TaskDialog(props: TaskDialogProps) {
           priority,
           status,
           details: details || null,
+          advisor_name: advisorName.trim() || null,
           estimated_start: estimatedStartDatetime || null,
           estimated_end: estimatedEndDatetime || null,
           address: addressQuery || '',
@@ -493,6 +509,7 @@ export function TaskDialog(props: TaskDialogProps) {
           priority,
           status,
           details: details || null,
+          advisor_name: advisorName.trim() || null,
           estimated_start: estimatedStartDatetime || undefined,
           estimated_end: estimatedEndDatetime || undefined,
           address: addressQuery || '',
@@ -634,6 +651,21 @@ export function TaskDialog(props: TaskDialogProps) {
               rows={3}
               value={details}
               onChange={(e) => setDetails(e.target.value)}
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium">
+              שם יועץ{' '}
+              {type === 'הסעת לקוח הביתה' && (
+                <span className="text-red-500">*</span>
+              )}
+            </span>
+            <input
+              className="rounded border border-gray-300 p-2"
+              value={advisorName}
+              onChange={(e) => setAdvisorName(e.target.value)}
+              placeholder="הזן שם יועץ"
             />
           </label>
 

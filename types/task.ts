@@ -27,6 +27,7 @@ export interface Task {
   vehicle_id: string | null;
   created_by: string | null;
   updated_by: string | null;
+  advisor_name?: string | null;
   created_at: string;
   updated_at: string;
 }

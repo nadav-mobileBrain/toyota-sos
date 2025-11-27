@@ -39,6 +39,7 @@ export async function PATCH(
       'address',
       'client_id',
       'vehicle_id',
+      'advisor_name',
     ];
     const updatePayload: Record<string, any> = {};
 
