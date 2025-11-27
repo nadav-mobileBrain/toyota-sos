@@ -167,14 +167,17 @@ export async function getOverdueCount(
   const cached = getCached<number>(key);
   if (cached !== null) return cached;
   const supa = getClient(client);
-  // Overdue as of range.end for tasks not completed
+  // Overdue: tasks whose deadline falls within the selected period and are not completed
   const { count, error } = await supa
     .from('tasks')
     .select('id', { count: 'exact', head: true })
     .neq('status', 'הושלמה')
+    .gte('estimated_end', range.start)
     .lt('estimated_end', range.end);
   const value = error ? 0 : count || 0;
-  setCached(key, value);
+  // Use shorter TTL for recent date ranges to ensure fresh data
+  const ttl = isRecentRange(range) ? THIRTY_SECONDS_MS : FIVE_MINUTES_MS;
+  setCached(key, value, ttl);
   return value;
 }
 
@@ -383,10 +386,14 @@ export async function getOverdueByDriver(
     const taskArray = Array.isArray(tasks) ? tasks : [tasks];
     const task = taskArray[0];
     if (!task || !task.status) return;
+    const deadlineTime = task.estimated_end
+      ? new Date(task.estimated_end).getTime()
+      : null;
     const overdue =
       task.status !== 'הושלמה' &&
-      task.estimated_end &&
-      new Date(task.estimated_end).getTime() < new Date(range.end).getTime();
+      deadlineTime !== null &&
+      deadlineTime >= new Date(range.start).getTime() &&
+      deadlineTime < new Date(range.end).getTime();
     if (!overdue) return;
     const id = row.driver_id as string;
     const profiles = row.profiles;

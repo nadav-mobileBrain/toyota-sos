@@ -15,7 +15,7 @@ export default function AdminDashboardPage() {
   const { logout } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
   const navItems = [
-    { name: 'לוח מחוונים', url: '/admin/dashboard', icon: 'LayoutDashboard' },
+    { name: 'דשבורד', url: '/admin/dashboard', icon: 'LayoutDashboard' },
     { name: 'משימות', url: '/admin/tasks', icon: 'ClipboardList' },
     { name: 'נהגים', url: '/admin/drivers', icon: 'Users' },
   ];
@@ -45,7 +45,7 @@ export default function AdminDashboardPage() {
       <PeriodProvider>
         <div className="mx-auto mt-20 max-w-7xl space-y-4 sm:mt-24">
           <h1 className="text-4xl font-bold text-primary underline">
-            לוח מחוונים
+            דשבורד נהגים
           </h1>
           <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <PeriodFilter />

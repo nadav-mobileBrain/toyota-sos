@@ -128,7 +128,7 @@ export default async function AdminTasksPage() {
   }
 
   const navItems = [
-    { name: 'לוח מחוונים', url: '/admin/dashboard', icon: 'LayoutDashboard' },
+    { name: 'דשבורד', url: '/admin/dashboard', icon: 'LayoutDashboard' },
     { name: 'משימות', url: '/admin/tasks', icon: 'ClipboardList' },
     { name: 'נהגים', url: '/admin/drivers', icon: 'Users' },
   ];

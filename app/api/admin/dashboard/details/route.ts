@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     } else if (metric === 'completed') {
       q = q.eq('status', 'הושלמה').gte('updated_at', from).lte('updated_at', to);
     } else if (metric === 'overdue') {
-      q = q.neq('status', 'הושלמה').lte('estimated_end', to);
+      q = q.neq('status', 'הושלמה').gte('estimated_end', from).lte('estimated_end', to);
     } else if (metric === 'on_time') {
       // completed and completed (updated_at) <= estimated_end within range
       q = q
