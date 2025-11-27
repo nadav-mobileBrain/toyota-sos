@@ -65,7 +65,7 @@ export function PermissionPrompt() {
         <button
           type="button"
           onClick={onEnable}
-          disabled={status === 'requesting' || status === 'granted'}
+          disabled={status === 'requesting'}
           className="rounded-md bg-primary px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50 min-h-[44px]"
           aria-busy={status === 'requesting' ? 'true' : undefined}
         >

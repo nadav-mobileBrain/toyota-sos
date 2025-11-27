@@ -165,7 +165,9 @@ export function ReplacementCarDeliveryForm({
           task_id: task.id,
           method: 'upload',
           bytes: blob.size,
-          storage_path: storagePath
+          storage_path: storagePath,
+          width: canvasRef.current?.width || 0,
+          height: canvasRef.current?.height || 0,
         });
       } catch {}
 
