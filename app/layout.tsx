@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Image from 'next/image';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Heebo } from 'next/font/google';
 import { AuthProvider } from '@/components/AuthProvider';
@@ -29,15 +30,15 @@ const heebo = Heebo({
 });
 
 export const metadata: Metadata = {
-  title: 'Toyota SOS - Task Management',
-  description: 'Toyota field service management system',
+  title: 'Toyota SOS -ניהול נהגים',
+  description: 'מערכת ניהול משימות ושינוע רכבים',
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#d60b25',
+  themeColor: 'var(--primary)',
 };
 
 export default function RootLayout({
@@ -51,7 +52,7 @@ export default function RootLayout({
         <SupabaseConfigProvider />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.ico" />
-        <meta name="theme-color" content="#d60b25" />
+        <meta name="theme-color" content="var(--primary)" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${heebo.variable} antialiased`}
@@ -62,6 +63,16 @@ export default function RootLayout({
           {/* Install prompt button (conditionally rendered) */}
           <div className="fixed top-2 left-2 z-40">
             <InstallAppButton />
+          </div>
+          {/* App Logo */}
+          <div className="absolute top-4 right-4 z-50">
+            <Image
+              src="/icons/icon-192.png"
+              alt="Toyota SOS"
+              width={78}
+              height={78}
+              className="rounded-xl shadow-md bg-white/90 backdrop-blur-sm"
+            />
           </div>
           <OfflineBanner />
           <AuthProvider>{children}</AuthProvider>

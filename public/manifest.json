@@ -1,14 +1,14 @@
 {
-  "name": "Toyota SOS - Task Management",
+  "name": "Toyota SOS - ניהול נהגים",
   "short_name": "ToyotaSOS",
-  "description": "Toyota field service management system",
+  "description": "מערכת ניהול משימות ושינוע רכבים",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "dir": "rtl",
   "lang": "he",
   "background_color": "#ffffff",
-  "theme_color": "#d60b25",
+  "theme_color": "var(--primary)",
   "orientation": "portrait",
   "icons": [
     {
@@ -41,5 +41,3 @@
   ],
   "categories": ["productivity", "business"]
 }
-
-
