@@ -120,6 +120,22 @@ export function TasksBoard({
   const [overId, setOverId] = useState<string | null>(null);
   const [isLoading] = useState(false);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+
+  // Sync reference data from props
+  useEffect(() => {
+    setVehiclesState(vehicles);
+  }, [vehicles]);
+
+  useEffect(() => {
+    setClientsState(clients);
+  }, [clients]);
+
+  useEffect(() => {
+    setAssignees(taskAssignees);
+  }, [taskAssignees]);
+
+  // We generally don't sync tasks automatically to avoid overwriting optimistic updates or drag-drop state,
+  // unless we are sure about the flow. But typically reference data like vehicles/clients is safe.
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [dialogTask, setDialogTask] = useState<Task | null>(null);

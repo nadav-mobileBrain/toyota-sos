@@ -27,7 +27,6 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Calendar, PlusIcon, SaveIcon, XIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { RtlSelectDropdown } from './RtlSelectDropdown';
 type Mode = 'create' | 'edit';
 
@@ -127,7 +126,7 @@ export function TaskDialog(props: TaskDialogProps) {
     task?.priority ?? 'בינונית'
   );
   const [status, setStatus] = useState<TaskStatus>(
-    task?.status ?? 'ממתינה לביצוע'
+    task?.status ?? ('ממתינה לביצוע' as TaskStatus)
   );
   const [details, setDetails] = useState(task?.details ?? '');
   const [estimatedDate, setEstimatedDate] = useState<Date>(
@@ -161,6 +160,14 @@ export function TaskDialog(props: TaskDialogProps) {
   const [newVehiclePlate, setNewVehiclePlate] = useState('');
   const [newVehicleModel, setNewVehicleModel] = useState('');
   const [advisorName, setAdvisorName] = useState(task?.advisor_name ?? '');
+
+  useEffect(() => {
+    setClientsLocal(clients);
+  }, [clients]);
+
+  useEffect(() => {
+    setVehiclesLocal(vehicles);
+  }, [vehicles]);
 
   useEffect(() => {
     if (open) {
@@ -224,8 +231,6 @@ export function TaskDialog(props: TaskDialogProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, task, mode, assignees]);
 
-  const coDriversSet = useMemo(() => new Set(coDriverIds), [coDriverIds]);
-
   const clientSuggestions = useMemo(() => {
     const q = clientQuery.trim().toLowerCase();
     if (!q) return [];
@@ -245,16 +250,6 @@ export function TaskDialog(props: TaskDialogProps) {
       })
       .slice(0, 8);
   }, [vehiclesLocal, vehicleQuery]);
-
-  const toggleCoDriver = (id: string) => {
-    setCoDriverIds((prev) => {
-      if (id === leadDriverId) return prev;
-      const s = new Set(prev);
-      if (s.has(id)) s.delete(id);
-      else s.add(id);
-      return Array.from(s);
-    });
-  };
 
   const validate = (): string | null => {
     // Validate date
@@ -280,31 +275,58 @@ export function TaskDialog(props: TaskDialogProps) {
     return null;
   };
 
-  // Address autocomplete (debounced, mock suggestions if no external API)
+  // Address autocomplete using data.gov.il API
   useEffect(() => {
-    const h = setTimeout(() => {
+    // Disabled for now
+    setAddressSuggestions([]);
+
+    /*
+    const controller = new AbortController();
+    const h = setTimeout(async () => {
       const q = (addressQuery || '').trim();
       if (q.length < 3) {
         setAddressSuggestions([]);
         return;
       }
-      // Mock suggestions set (RTL examples)
-      const pool = [
-        'תל אביב-יפו, ישראל',
-        'רחוב דיזנגוף 100, תל אביב',
-        'רחוב הרצל 10, תל אביב',
-        'ירושלים, ישראל',
-        'חיפה, ישראל',
-        'ראשון לציון, ישראל',
-        'בת ים, ישראל',
-        'אשדוד, ישראל',
-      ];
-      const results = pool
-        .filter((s) => s.toLowerCase().includes(q.toLowerCase()))
-        .slice(0, 5);
-      setAddressSuggestions(results);
-    }, 250);
-    return () => clearTimeout(h);
+      try {
+        const res = await fetch(
+          `https://data.gov.il/api/3/action/datastore_search?resource_id=9ad3862c-8391-4b2f-84a4-2d4c68625f4b&q=${encodeURIComponent(
+            q
+          )}`,
+          { signal: controller.signal }
+        );
+        const data = await res.json();
+        const records = data?.result?.records ?? [];
+        const suggestions = records
+          .map((r: Record<string, unknown>) => {
+            const street = (
+              typeof r['שם_רחוב'] === 'string' ? r['שם_רחוב'] : ''
+            ).trim();
+            const city = (
+              typeof r['שם_ישוב'] === 'string' ? r['שם_ישוב'] : ''
+            ).trim();
+            if (street && city) return `${street}, ${city}`;
+            return street || city;
+          })
+          .filter(Boolean)
+          // Deduplicate
+          .filter(
+            (val: string, idx: number, arr: string[]) =>
+              arr.indexOf(val) === idx
+          )
+          .slice(0, 5);
+        setAddressSuggestions(suggestions);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setAddressSuggestions([]);
+        }
+      }
+    }, 300);
+    return () => {
+      clearTimeout(h);
+      controller.abort();
+    };
+    */
   }, [addressQuery]);
 
   const pickSuggestion = (s: string) => {
@@ -683,7 +705,7 @@ export function TaskDialog(props: TaskDialogProps) {
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium text-primary">
               שם יועץ{' '}
               {type === 'הסעת לקוח הביתה' && (
                 <span className="text-red-500">*</span>
@@ -698,7 +720,7 @@ export function TaskDialog(props: TaskDialogProps) {
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">תאריך</span>
+            <span className="text-sm font-medium text-primary">תאריך</span>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -742,7 +764,7 @@ export function TaskDialog(props: TaskDialogProps) {
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">שעת התחלה</span>
+            <span className="text-sm font-medium text-primary">שעת התחלה</span>
             <input
               type="time"
               className="rounded border border-gray-300 p-2"
@@ -752,7 +774,7 @@ export function TaskDialog(props: TaskDialogProps) {
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">שעת סיום</span>
+            <span className="text-sm font-medium text-primary">שעת סיום</span>
             <input
               type="time"
               className="rounded border border-gray-300 p-2"
@@ -762,7 +784,7 @@ export function TaskDialog(props: TaskDialogProps) {
           </label>
 
           <label className="col-span-1 md:col-span-2 flex flex-col gap-1">
-            <span className="text-sm font-medium">כתובת</span>
+            <span className="text-sm font-medium text-primary">כתובת</span>
             <input
               className="rounded border border-gray-300 p-2"
               value={addressQuery}
@@ -788,7 +810,9 @@ export function TaskDialog(props: TaskDialogProps) {
           <label className="flex flex-col gap-1">
             <div className="flex gap-2">
               <div className="grid w-full max-w-sm items-center gap-1">
-                <Label htmlFor="client">לקוח</Label>
+                <Label htmlFor="client" className="text-primary">
+                  לקוח
+                </Label>
                 <Input
                   type="text"
                   id="client"
@@ -845,12 +869,12 @@ export function TaskDialog(props: TaskDialogProps) {
                   value={newClientPhone}
                   onChange={(e) => setNewClientPhone(e.target.value)}
                 />
-                <input
+                {/* <input
                   className="rounded border border-gray-300 p-2 col-span-1"
                   placeholder="אימייל"
                   value={newClientEmail}
                   onChange={(e) => setNewClientEmail(e.target.value)}
-                />
+                /> */}
                 <div className="col-span-3 flex justify-end gap-2">
                   <button
                     type="button"
@@ -874,7 +898,9 @@ export function TaskDialog(props: TaskDialogProps) {
           <label className="flex flex-col gap-1">
             <div className="flex gap-2">
               <div className="grid w-full max-w-sm items-center gap-1">
-                <Label htmlFor="vehicle">רכב</Label>
+                <Label htmlFor="vehicle" className="text-primary">
+                  רכב
+                </Label>
                 <Input
                   type="text"
                   id="vehicle"
@@ -956,7 +982,9 @@ export function TaskDialog(props: TaskDialogProps) {
           {/* Drivers */}
           <div className="col-span-1 md:col-span-2 grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium">נהג מוביל</span>
+              <span className="text-sm font-medium text-primary">
+                נהג מוביל
+              </span>
               <RtlSelectDropdown
                 value={leadDriverId}
                 options={drivers.map((d) => ({
@@ -969,27 +997,21 @@ export function TaskDialog(props: TaskDialogProps) {
 
             {multiDriverEnabled && (
               <div className="flex flex-col gap-1">
-                <span className="text-sm font-medium">נהגי משנה</span>
-                <div className="max-h-28 overflow-auto rounded border border-gray-200 p-2">
-                  {drivers.map((d) => {
-                    const id = `co-driver-${d.id}`;
-                    return (
-                      <Label
-                        key={d.id}
-                        htmlFor={id}
-                        className="flex items-center gap-2 text-sm"
-                      >
-                        <Checkbox
-                          id={id}
-                          checked={coDriversSet.has(d.id)}
-                          onCheckedChange={() => toggleCoDriver(d.id)}
-                          disabled={leadDriverId === d.id}
-                        />
-                        <span>{d.name || d.email}</span>
-                      </Label>
-                    );
-                  })}
-                </div>
+                <span className="text-sm font-medium text-primary">
+                  נהגי משנה
+                </span>
+                <RtlSelectDropdown
+                  value={coDriverIds}
+                  options={drivers
+                    .filter((d) => d.id !== leadDriverId)
+                    .map((d) => ({
+                      value: d.id,
+                      label: d.name || d.email || '',
+                    }))}
+                  onChange={(val) => setCoDriverIds(val as string[])}
+                  multiple
+                  placeholder="בחר נהגי משנה"
+                />
               </div>
             )}
           </div>

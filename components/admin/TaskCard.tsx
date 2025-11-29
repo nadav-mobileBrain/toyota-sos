@@ -134,6 +134,26 @@ export function TaskCard({
         </span>
       </div>
 
+      {/* Advisor info */}
+      {task.advisor_name && (
+        <div className="mb-2 flex items-center gap-1 text-xs text-gray-600">
+          <span className="font-medium">👨‍💼</span>
+          <span className="truncate" title={task.advisor_name}>
+            {task.advisor_name}
+          </span>
+        </div>
+      )}
+
+      {/* Task Details */}
+      {task.details && (
+        <div className="mb-2 flex items-start gap-1 text-xs text-gray-600">
+          <span className="font-medium shrink-0">📝</span>
+          <span className="line-clamp-2" title={task.details}>
+            {task.details}
+          </span>
+        </div>
+      )}
+
       {/* Time window */}
 
       <div className="mb-2 text-xs text-gray-500">
