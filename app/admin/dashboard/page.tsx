@@ -22,7 +22,16 @@ export default function AdminDashboardPage() {
   const handleSignOut = async () => {
     try {
       setSigningOut(true);
+      // Explicitly clear cookies and storage to ensure full sign out
+      document.cookie =
+        'toyota_role=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
       await logout();
+    } catch (err) {
+      console.error('Logout failed:', err);
     } finally {
       setSigningOut(false);
       router.replace('/auth/login');

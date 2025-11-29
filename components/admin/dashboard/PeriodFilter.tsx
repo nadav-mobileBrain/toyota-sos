@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client';
 
 import React from 'react';
@@ -117,9 +116,9 @@ function validateDateRange(
   return null;
 }
 
-function sameCalendarDay(a: Date, b: Date): boolean {
-  return dayjs(a).isSame(dayjs(b), 'day');
-}
+// function sameCalendarDay(a: Date, b: Date): boolean {
+//   return dayjs(a).isSame(dayjs(b), 'day');
+// }
 
 function inferPreset(
   range: PeriodRange
@@ -188,7 +187,7 @@ function DatePickerInput({
             />
           </PopoverTrigger>
           <PopoverContent
-            className="w-auto p-0 bg-white z-[100]"
+            className="w-auto p-0 bg-white z-100"
             align="end"
             side="bottom"
             sideOffset={8}
