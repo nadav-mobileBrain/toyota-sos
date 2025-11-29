@@ -18,12 +18,14 @@ interface WeeklyPoint {
   completed: number;
   notCompleted: number;
   overdue: number;
+  total: number;
 }
 
 const weeklyChartConfig = {
   completed: { label: 'הושלמו', color: '#16a34a' }, // green-600
   notCompleted: { label: 'לא הושלמו', color: '#f97316' }, // orange-500
   overdue: { label: 'באיחור', color: '#ef4444' }, // red-500
+  total: { label: 'סה״כ משימות', color: '#3b82f6' }, // blue-500
 } as const;
 
 function useWeeklyTrends() {
@@ -49,7 +51,14 @@ function useWeeklyTrends() {
         if (!resp.ok) throw new Error(await resp.text());
         const json = await resp.json();
         if (!json?.ok) throw new Error(json?.error || 'failed');
-        if (!cancelled) setData(json.points || []);
+        if (!cancelled) {
+          // Filter out Saturdays (day 6)
+          const points = (json.points || []).filter((p: WeeklyPoint) => {
+            const d = new Date(p.date);
+            return d.getDay() !== 6;
+          });
+          setData(points);
+        }
       } catch (e: unknown) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : 'failed');
@@ -126,6 +135,15 @@ export function WeeklyTrendsChart() {
               cursor={{ stroke: '#9ca3af', strokeDasharray: '3 3' }}
               wrapperStyle={{ outline: 'none' }}
               content={<ChartTooltipContent />}
+            />
+            <Line
+              type="monotone"
+              dataKey="total"
+              stroke={weeklyChartConfig.total.color}
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              dot={false}
+              name={weeklyChartConfig.total.label}
             />
             <Line
               type="monotone"

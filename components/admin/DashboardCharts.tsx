@@ -52,15 +52,12 @@ export function DashboardCharts() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Chart 1 - Weekly Task Trends (Line Chart) */}
         <div className="rounded-xl border-2 border-primary bg-white p-4 shadow-md transition-all duration-200 hover:border-primary/50 hover:shadow-lg">
-          <h2 className="text-sm font-semibold text-gray-900">
-            מגמת משימות שבועית
-          </h2>
-          <p className="mt-1 text-xs text-gray-500">
-            קו המציג משימות שהושלמו, לא הושלמו ומשימות באיחור לאורך השבוע.
-          </p>
+          <h2 className="text-sm font-semibold text-gray-900">מגמת משימות</h2>
+
           <WeeklyTrendsChart />
           <ChartLegend
             items={[
+              { label: 'סה״כ משימות', color: '#3b82f6' },
               { label: 'הושלמו', color: '#16a34a' },
               { label: 'לא הושלמו', color: '#f97316' },
               { label: 'באיחור', color: '#ef4444' },

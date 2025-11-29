@@ -25,7 +25,7 @@ export async function GET(req: Request) {
 
     const byDate = new Map<
       string,
-      { completed: number; notCompleted: number; overdue: number }
+      { completed: number; notCompleted: number; overdue: number; total: number }
     >();
 
     data.datasets.createdCompletedSeries.forEach((p) => {
@@ -33,10 +33,12 @@ export async function GET(req: Request) {
         completed: 0,
         notCompleted: 0,
         overdue: 0,
+        total: 0,
       };
       existing.completed += p.completed;
       const open = Math.max(p.created - p.completed, 0);
       existing.notCompleted += open;
+      existing.total += p.created;
       byDate.set(p.date, existing);
     });
 
@@ -51,8 +53,12 @@ export async function GET(req: Request) {
           completed: 0,
           notCompleted: 0,
           overdue: 0,
+          total: 0,
         };
         existing.overdue += overdueTotal;
+        // Should overdue affect total? Probably not if total is "created".
+        // But if total means "Total Active", then yes.
+        // Assuming user means "Total Created/Scheduled" for the day.
         byDate.set(lastKey, existing);
       }
     }
@@ -64,6 +70,7 @@ export async function GET(req: Request) {
         completed: v.completed,
         notCompleted: v.notCompleted,
         overdue: v.overdue,
+        total: v.total,
       }));
 
     return NextResponse.json({ ok: true, points });
