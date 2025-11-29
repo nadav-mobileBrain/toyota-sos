@@ -39,7 +39,7 @@ export function DrilldownModal({
             <table className="w-full text-right text-sm">
               <thead className="sticky top-0 bg-gray-100">
                 <tr>
-                  <th className="px-2 py-2 font-semibold">כותרת</th>
+                  <th className="px-2 py-2 font-semibold">סוג משימה</th>
                   <th className="px-2 py-2 font-semibold">סטטוס</th>
                   <th className="px-2 py-2 font-semibold">עדיפות</th>
                   <th className="px-2 py-2 font-semibold">נהג מוביל</th>
@@ -50,7 +50,7 @@ export function DrilldownModal({
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id} className="border-b hover:bg-gray-50">
-                    <td className="px-2 py-2">{r.title || r.id}</td>
+                    <td className="px-2 py-2">{r.type || r.title || r.id}</td>
                     <td className="px-2 py-2">{r.status || '—'}</td>
                     <td className="px-2 py-2">{r.priority || '—'}</td>
                     <td className="px-2 py-2">{r.driver_name || '—'}</td>

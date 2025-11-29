@@ -54,6 +54,7 @@ export function DashboardKPIs() {
     Array<{
       id: string;
       title: string;
+      type: string;
       status: string;
       priority: string;
       created_at: string;
@@ -420,7 +421,7 @@ export function DashboardKPIs() {
         </div>
 
         <KpiCard
-          title="בוטלו/חסומות"
+          title="חסומות"
           value={summary?.cancelledTasks ?? 0}
           percentage={getPct(summary?.cancelledTasks ?? 0, scheduled)}
           loading={loading}
