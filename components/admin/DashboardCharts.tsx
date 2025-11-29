@@ -26,6 +26,22 @@ const DriverDurationChart = dynamic(
   { ssr: false }
 );
 
+const StatusByPriorityChart = dynamic(
+  () =>
+    import('@/components/admin/dashboard/charts/StatusByPriorityChart').then(
+      (mod) => ({ default: mod.StatusByPriorityChart })
+    ),
+  { ssr: false }
+);
+
+const StatusByTypeChart = dynamic(
+  () =>
+    import('@/components/admin/dashboard/charts/StatusByTypeChart').then(
+      (mod) => ({ default: mod.StatusByTypeChart })
+    ),
+  { ssr: false }
+);
+
 function ChartLegend({
   items,
 }: {
@@ -95,6 +111,12 @@ export function DashboardCharts() {
             items={[{ label: 'משך משימה ממוצע', color: '#0ea5e9' }]}
           />
         </div>
+
+        {/* Chart 4 - Status by Priority */}
+        <StatusByPriorityChart />
+
+        {/* Chart 5 - Status by Type */}
+        <StatusByTypeChart />
       </div>
     </section>
   );

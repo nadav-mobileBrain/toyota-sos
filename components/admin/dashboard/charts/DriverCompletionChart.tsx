@@ -25,7 +25,7 @@ interface DriverCompletionPoint {
 type DriverSortBy = 'name' | 'rate' | 'total';
 
 const driverCompletionConfig = {
-  completed: { label: 'הושלמו', color: '#16a34a' },
+  completed: { label: 'הושלמו', color: '#00ff55' },
   incomplete: { label: 'לא הושלמו', color: '#9ca3af' }, // gray-400
 } as const;
 
