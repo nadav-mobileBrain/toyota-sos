@@ -67,11 +67,11 @@ export default function RootLayout({
           {/* App Logo */}
           <div className="absolute top-4 right-4 z-50">
             <Image
-              src="/icons/icon-192.png"
+              src="/icons/newIcon-192.jpeg"
               alt="Toyota SOS"
               width={78}
               height={78}
-              className="rounded-xl shadow-md bg-white/90 backdrop-blur-sm"
+              className="rounded-xl shadow-md bg-white/90 backdrop-blur-sm border border-red-200"
             />
           </div>
           <OfflineBanner />

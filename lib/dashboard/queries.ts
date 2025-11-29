@@ -282,7 +282,7 @@ export async function getCancelledTasksCount(
   const { count, error } = await supa
     .from('tasks')
     .select('id', { count: 'exact', head: true })
-    .in('status', ['בוטלה', 'חסומה'])
+    .eq('status', 'חסומה')
     .gte('estimated_start', range.start)
     .lt('estimated_start', range.end);
     

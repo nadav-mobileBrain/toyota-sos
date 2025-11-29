@@ -20,7 +20,7 @@ export default function AdminDashboardPage() {
       <PeriodProvider>
         <div className="mx-auto mt-20 max-w-7xl space-y-4 sm:mt-24">
           <h1 className="text-4xl font-bold text-primary underline">
-            דשבורד נהגים
+            דשבורד ניהול משימות{' '}
           </h1>
           <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <PeriodFilter />

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client';
 
 import React from 'react';
@@ -16,6 +15,14 @@ import type {
 } from '@/lib/dashboard/queries';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { DownloadIcon } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // lazy drilldown modal (client-only)
 const DrilldownModal = dynamic(
@@ -57,6 +64,9 @@ export function DashboardKPIs() {
   >([]);
   const [ddLoading, setDdLoading] = React.useState(false);
   const [ddError, setDdError] = React.useState<string | null>(null);
+  const [breakdownView, setBreakdownView] = React.useState<'late' | 'on_time'>(
+    'on_time'
+  );
 
   React.useEffect(() => {
     let cancelled = false;
@@ -152,23 +162,6 @@ export function DashboardKPIs() {
   }, [range.start, range.end, range.timezone, isOnline]);
 
   const summary = data?.summary;
-  const datasets = data?.datasets;
-
-  const exportCreatedCompleted = React.useCallback(() => {
-    if (!datasets) return;
-    const rows = datasets.createdCompletedSeries.map(
-      (p: CreatedCompletedPoint) => ({
-        date: p.date,
-        created: p.created,
-        completed: p.completed,
-      })
-    );
-    const csv = toCsv(rows, ['date', 'created', 'completed']);
-    downloadCsv(
-      makeCsvFilename('dashboard_created_completed', range.timezone),
-      csv
-    );
-  }, [datasets, range.timezone]);
 
   const exportAllCsv = React.useCallback(() => {
     if (!data) return;
@@ -243,19 +236,6 @@ export function DashboardKPIs() {
     const joined = bom + secs.join('\n');
     downloadCsv(makeCsvFilename('dashboard_all', range.timezone), joined);
   }, [data, range.timezone]);
-  const exportOverdueByDriver = React.useCallback(() => {
-    if (!datasets) return;
-    const rows = datasets.overdueByDriver.map((p: OverdueByDriverPoint) => ({
-      driver_id: p.driver_id,
-      driver_name: p.driver_name,
-      overdue: p.overdue,
-    }));
-    const csv = toCsv(rows, ['driver_id', 'driver_name', 'overdue']);
-    downloadCsv(
-      makeCsvFilename('dashboard_overdue_by_driver', range.timezone),
-      csv
-    );
-  }, [datasets, range.timezone]);
 
   const openDrilldown = React.useCallback(
     async (
@@ -297,39 +277,6 @@ export function DashboardKPIs() {
     [range.start, range.end, range.timezone]
   );
 
-  const exportOnTimeVsLate = React.useCallback(() => {
-    if (!datasets) return;
-    const rows = [
-      { label: 'onTime', count: datasets.onTimeVsLate.onTime },
-      { label: 'late', count: datasets.onTimeVsLate.late },
-    ];
-    const csv = toCsv(rows, ['label', 'count']);
-    downloadCsv(
-      makeCsvFilename('dashboard_on_time_vs_late', range.timezone),
-      csv
-    );
-  }, [datasets, range.timezone]);
-
-  const exportFunnel = React.useCallback(() => {
-    if (!datasets) return;
-    const rows = datasets.funnel.map((p: FunnelStep) => ({
-      step: p.step,
-      count: p.count,
-    }));
-    const csv = toCsv(rows, ['step', 'count']);
-    downloadCsv(makeCsvFilename('dashboard_funnel', range.timezone), csv);
-  }, [datasets, range.timezone]);
-
-  const exportSlaViolations = React.useCallback(() => {
-    if (!summary) return;
-    const rows = [{ metric: 'slaViolations', value: summary.slaViolations }];
-    const csv = toCsv(rows, ['metric', 'value']);
-    downloadCsv(
-      makeCsvFilename('dashboard_sla_violations', range.timezone),
-      csv
-    );
-  }, [summary, range.timezone]);
-
   // Helper for percentage
   const getPct = (num: number | undefined, total: number | undefined) => {
     if (!num || !total || total === 0) return 0;
@@ -345,10 +292,11 @@ export function DashboardKPIs() {
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <button
-          className="rounded border border-gray-300 bg-white px-3 py-1 text-sm font-semibold text-primary hover:bg-gray-50"
+          className="flex items-center gap-2 rounded border border-gray-300 bg-primary/10 px-3 py-1 text-sm font-semibold text-primary hover:bg-gray-50"
           onClick={exportAllCsv}
         >
-          ייצוא CSV כולל
+          <DownloadIcon className="w-4 h-4 mr-2" />
+          ייצוא CSV
         </button>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -369,10 +317,10 @@ export function DashboardKPIs() {
             </div>
           }
         />
-        
+
         <div className="flex flex-col gap-2">
           <KpiCard
-            title="משימות שהושלמו"
+            title="משימות שבוצעו"
             value={completed}
             percentage={getPct(completed, scheduled)}
             loading={loading}
@@ -388,90 +336,87 @@ export function DashboardKPIs() {
               </div>
             }
           />
-          
+
           {/* Completion Breakdown Sub-section */}
-          <div className="grid grid-cols-2 gap-2 pr-2">
-            <KpiCard
-              title="הושלמו באיחור"
-              value={late}
-              percentage={getPct(late, completed)}
-              percentageLabel="מסך שהושלמו"
-              variant="secondary"
-              loading={loading}
-              error={error}
-              actionArea={
-                <div className="flex items-center gap-2">
-                  <button
-                    className="text-xs text-gray-600 hover:underline"
-                    onClick={() => openDrilldown('late', 'הושלמו באיחור')}
-                  >
-                    פרטים
-                  </button>
-                </div>
-              }
-            />
-            <KpiCard
-              title="הושלמו בזמן"
-              value={onTime}
-              percentage={getPct(onTime, completed)}
-              percentageLabel="מסך שהושלמו"
-              variant="secondary"
-              loading={loading}
-              error={error}
-              actionArea={
-                <div className="flex items-center gap-2">
-                  <button
-                    className="text-xs text-gray-600 hover:underline"
-                    onClick={() => openDrilldown('on_time', 'הושלמו בזמן')}
-                  >
-                    פרטים
-                  </button>
-                </div>
-              }
-            />
-          </div>
+          <KpiCard
+            title={breakdownView === 'late' ? 'הושלמו באיחור' : 'הושלמו בזמן'}
+            value={breakdownView === 'late' ? late : onTime}
+            percentage={getPct(
+              breakdownView === 'late' ? late : onTime,
+              completed
+            )}
+            percentageLabel="מסך שהושלמו"
+            variant="secondary"
+            loading={loading}
+            error={error}
+            actionArea={
+              <div className="flex items-center gap-2">
+                <Select
+                  value={breakdownView}
+                  onValueChange={(v) =>
+                    setBreakdownView(v as 'late' | 'on_time')
+                  }
+                >
+                  <SelectTrigger className="h-7 w-[100px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="late">באיחור</SelectItem>
+                    <SelectItem value="on_time">בזמן</SelectItem>
+                  </SelectContent>
+                </Select>
+                <button
+                  className="text-xs text-gray-600 hover:underline"
+                  onClick={() =>
+                    openDrilldown(
+                      breakdownView,
+                      breakdownView === 'late' ? 'הושלמו באיחור' : 'הושלמו בזמן'
+                    )
+                  }
+                >
+                  פרטים
+                </button>
+              </div>
+            }
+          />
         </div>
 
         {/* Row 2 */}
         <div className="grid grid-cols-2 gap-4 md:col-span-2 lg:col-span-2">
-            <KpiCard
-              title="ממתינות"
-              value={summary?.pendingTasks ?? 0}
-              percentage={getPct(summary?.pendingTasks ?? 0, scheduled)}
-              loading={loading}
-              error={error}
-              actionArea={
-                <div className="flex items-center gap-2">
-                  <button
-                    className="text-xs text-gray-600 hover:underline"
-                    onClick={() =>
-                      openDrilldown('pending', 'ממתינות')
-                    }
-                  >
-                    פרטים
-                  </button>
-                </div>
-              }
-            />
-            <KpiCard
-              title="בעבודה"
-              value={summary?.inProgressTasks ?? 0}
-              percentage={getPct(summary?.inProgressTasks ?? 0, scheduled)}
-              loading={loading}
-              error={error}
-              actionArea={
-                <div className="flex items-center gap-2">
-                  <button
-                    className="text-xs text-gray-600 hover:underline"
-                    onClick={() =>
-                      openDrilldown('in_progress', 'בעבודה')
-                    }
-                  >
-                    פרטים
-                  </button>
-                </div>
-              }
-            />
+          <KpiCard
+            title="ממתינות לביצוע"
+            value={summary?.pendingTasks ?? 0}
+            percentage={getPct(summary?.pendingTasks ?? 0, scheduled)}
+            loading={loading}
+            error={error}
+            actionArea={
+              <div className="flex items-center gap-2">
+                <button
+                  className="text-xs text-gray-600 hover:underline"
+                  onClick={() => openDrilldown('pending', 'ממתינות')}
+                >
+                  פרטים
+                </button>
+              </div>
+            }
+          />
+          <KpiCard
+            title="בביצוע"
+            value={summary?.inProgressTasks ?? 0}
+            percentage={getPct(summary?.inProgressTasks ?? 0, scheduled)}
+            loading={loading}
+            error={error}
+            actionArea={
+              <div className="flex items-center gap-2">
+                <button
+                  className="text-xs text-gray-600 hover:underline"
+                  onClick={() => openDrilldown('in_progress', 'בעבודה')}
+                >
+                  פרטים
+                </button>
+              </div>
+            }
+          />
         </div>
 
         <KpiCard
@@ -484,9 +429,7 @@ export function DashboardKPIs() {
             <div className="flex items-center gap-2">
               <button
                 className="text-xs text-gray-600 hover:underline"
-                onClick={() =>
-                  openDrilldown('cancelled', 'בוטלו/חסומות')
-                }
+                onClick={() => openDrilldown('cancelled', 'בוטלו/חסומות')}
               >
                 פרטים
               </button>

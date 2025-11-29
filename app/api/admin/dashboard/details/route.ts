@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     } else if (metric === 'in_progress') {
       q = q.eq('status', 'בעבודה').gte('estimated_start', from).lte('estimated_start', to);
     } else if (metric === 'cancelled') {
-      q = q.in('status', ['בוטלה', 'חסומה']).gte('estimated_start', from).lte('estimated_start', to);
+      q = q.eq('status', 'חסומה').gte('estimated_start', from).lte('estimated_start', to);
     } else {
       return NextResponse.json({ ok: false, error: 'Unknown metric' }, { status: 400 });
     }

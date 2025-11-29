@@ -26,11 +26,15 @@ const getSupabaseConfigServer = () => {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url) {
-    throw new Error(`Missing Supabase URL. Please set NEXT_PUBLIC_SUPABASE_URL_${env.toUpperCase()} in .env.local`);
+    throw new Error(
+      `Missing Supabase URL. Please set NEXT_PUBLIC_SUPABASE_URL_${env.toUpperCase()} in .env.local`
+    );
   }
 
   if (!key) {
-    throw new Error(`Missing Supabase Anon Key. Please set NEXT_PUBLIC_SUPABASE_ANON_KEY_${env.toUpperCase()} in .env.local`);
+    throw new Error(
+      `Missing Supabase Anon Key. Please set NEXT_PUBLIC_SUPABASE_ANON_KEY_${env.toUpperCase()} in .env.local`
+    );
   }
 
   return { url, key };
@@ -38,7 +42,9 @@ const getSupabaseConfigServer = () => {
 
 // Choose appropriate config getter based on runtime
 const getSupabaseConfig = () => {
-  return typeof window !== 'undefined' ? getSupabaseConfigBrowser() : getSupabaseConfigServer();
+  return typeof window !== 'undefined'
+    ? getSupabaseConfigBrowser()
+    : getSupabaseConfigServer();
 };
 
 // Session storage key for driver sessions (localStorage)
@@ -103,21 +109,29 @@ export const createServiceRoleClient = (): SupabaseClient => {
 };
 
 // Helper functions
-export const getSession = async (client: SupabaseClient): Promise<Session | null> => {
+export const getSession = async (
+  client: SupabaseClient
+): Promise<Session | null> => {
   const {
     data: { session },
   } = await client.auth.getSession();
   return session;
 };
 
-export const getCurrentUser = async (client: SupabaseClient): Promise<User | null> => {
+export const getCurrentUser = async (
+  client: SupabaseClient
+): Promise<User | null> => {
   const {
     data: { user },
   } = await client.auth.getUser();
   return user;
 };
 
-export const signIn = async (client: SupabaseClient, email: string, password: string) => {
+export const signIn = async (
+  client: SupabaseClient,
+  email: string,
+  password: string
+) => {
   return await client.auth.signInWithPassword({ email, password });
 };
 
@@ -125,7 +139,7 @@ export const signUp = async (
   client: SupabaseClient,
   email: string,
   password: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ) => {
   return await client.auth.signUp({
     email,
@@ -157,14 +171,18 @@ export const loginAsDriver = async (
     const trimmed = (employeeId || '').trim();
     const upper = trimmed.toUpperCase();
     const candidateIds: string[] = Array.from(
-      new Set<string>([
-        trimmed,
-        upper,
-        // If purely digits, also add D + zero-padded
-        /^\d{1,6}$/.test(trimmed) ? `D${trimmed.padStart(4, '0')}` : '',
-        // If D + digits (any pad), also add zero-padded D#### form
-        /^D\d{1,6}$/i.test(trimmed) ? `D${trimmed.replace(/^D/i, '').padStart(4, '0')}` : '',
-      ].filter(Boolean) as string[])
+      new Set<string>(
+        [
+          trimmed,
+          upper,
+          // If purely digits, also add D + zero-padded
+          /^\d{1,6}$/.test(trimmed) ? `D${trimmed.padStart(4, '0')}` : '',
+          // If D + digits (any pad), also add zero-padded D#### form
+          /^D\d{1,6}$/i.test(trimmed)
+            ? `D${trimmed.replace(/^D/i, '').padStart(4, '0')}`
+            : '',
+        ].filter(Boolean) as string[]
+      )
     );
 
     // Query profiles table for this employee
@@ -182,11 +200,20 @@ export const loginAsDriver = async (
       };
     }
 
-    const row = (data as any[])?.[0];
+    // Define shape of the expected row
+    interface ProfileRow {
+      id: string;
+      name: string;
+      role: string;
+      employee_id: string;
+      email: string | null;
+    }
+
+    const row = (data as unknown as ProfileRow[])?.[0];
     if (!row) {
       return {
         success: false,
-        error: 'Employee ID not found or not a driver',
+        error: 'לא נמצא נהג במערכת',
       };
     }
 
@@ -195,16 +222,21 @@ export const loginAsDriver = async (
     // Derive password from employeeId when possible (e.g., D0001 -> 01)
     if (row.email) {
       try {
-        const lastTwo = String(row.employee_id || '').replace(/\D/g, '').slice(-2) || '01';
+        const lastTwo =
+          String(row.employee_id || '')
+            .replace(/\D/g, '')
+            .slice(-2) || '01';
         const derivedPassword = `Driver@2025${lastTwo}`;
-        const { data: authData, error: authErr } = await client.auth.signInWithPassword({
+        const { error: authErr } = await client.auth.signInWithPassword({
           email: row.email,
           password: derivedPassword,
         });
         // If this fails (e.g., prod), we silently continue with local session fallback
         if (authErr) {
-          // eslint-disable-next-line no-console
-          console.warn('Driver password sign-in failed (fallback to local session):', authErr.message);
+          console.warn(
+            'Driver password sign-in failed (fallback to local session):',
+            authErr.message
+          );
         }
       } catch {
         // ignore
@@ -351,7 +383,9 @@ export const getAdminSession = async (
  * Get current session (either driver or admin)
  * Returns the first available session found
  */
-export const getCurrentSession = async (client: SupabaseClient): Promise<AuthSession> => {
+export const getCurrentSession = async (
+  client: SupabaseClient
+): Promise<AuthSession> => {
   // Check for driver session first (driver can't also be admin)
   const driverSession = getDriverSession();
   if (driverSession) return driverSession;
@@ -363,7 +397,9 @@ export const getCurrentSession = async (client: SupabaseClient): Promise<AuthSes
 /**
  * Get current user role
  */
-export const getCurrentRole = async (client: SupabaseClient): Promise<'driver' | 'admin' | 'manager' | 'viewer' | null> => {
+export const getCurrentRole = async (
+  client: SupabaseClient
+): Promise<'driver' | 'admin' | 'manager' | 'viewer' | null> => {
   const session = await getCurrentSession(client);
   return session?.role || null;
 };
@@ -385,10 +421,13 @@ export const logout = async (client: SupabaseClient): Promise<void> => {
 /**
  * Format auth error message
  */
-export const getAuthError = (error: any): string => {
+export const getAuthError = (error: unknown): string => {
   if (!error) return 'An unknown error occurred';
   if (typeof error === 'string') return error;
-  if (error.message) return error.message;
-  if (error.error_description) return error.error_description;
+  if (typeof error === 'object' && error !== null) {
+    const err = error as { message?: string; error_description?: string };
+    if (err.message) return err.message;
+    if (err.error_description) return err.error_description;
+  }
   return 'An error occurred during authentication';
 };
