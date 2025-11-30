@@ -20,8 +20,12 @@ export const adminSchema = z.object({
     .max(255, 'אימייל לא יכול להכיל יותר מ-255 תווים')
     .optional(),
   role: z.enum(['admin', 'manager', 'viewer'], {
-    required_error: 'יש לבחור תפקיד',
-    invalid_type_error: 'תפקיד לא תקין',
+    error: (issue: any) => {
+      if (issue.code === 'invalid_type' && issue.received === 'undefined') {
+        return { message: 'יש לבחור תפקיד' };
+      }
+      return { message: 'תפקיד לא תקין' };
+    },
   }),
 });
 
