@@ -67,22 +67,25 @@ export function DashboardCharts() {
     <section className="space-y-4">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Chart 1 - Weekly Task Trends (Line Chart) */}
-        <div className="rounded-xl border-2 border-primary bg-white p-4 shadow-md transition-all duration-200 hover:border-primary/50 hover:shadow-lg">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-lg">
           <h2 className="text-sm font-semibold text-gray-900">מגמת משימות</h2>
 
           <WeeklyTrendsChart />
           <ChartLegend
             items={[
-              { label: 'סה״כ משימות', color: '#3b82f6' },
-              { label: 'הושלמו', color: '#16a34a' },
-              { label: 'לא הושלמו', color: '#f97316' },
-              { label: 'באיחור', color: '#ef4444' },
+              {
+                label: 'סה״כ משימות',
+                color: 'hsl(221.2121 83.1933% 53.3333%)',
+              },
+              { label: 'הושלמו', color: 'hsl(213.1169 93.9024% 67.8431%)' },
+              { label: 'לא הושלמו', color: 'hsl(211.6981 96.3636% 78.4314%)' },
+              { label: 'באיחור', color: 'hsl(213.3333 96.9231% 87.2549%)' },
             ]}
           />
         </div>
 
         {/* Chart 2 - Driver Task Completion Comparison (Bar Chart) */}
-        <div className="rounded-xl border-2 border-primary bg-white p-4 shadow-md transition-all duration-200 hover:border-primary/50 hover:shadow-lg">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-lg">
           <h2 className="text-sm font-semibold text-gray-900">
             ביצוע משימות לפי נהגים
           </h2>
@@ -92,14 +95,14 @@ export function DashboardCharts() {
           <DriverCompletionChart />
           <ChartLegend
             items={[
-              { label: 'הושלמו', color: '#16a34a' },
+              { label: 'הושלמו', color: 'hsl(213.1169 93.9024% 67.8431%)' },
               { label: 'לא הושלמו', color: '#9ca3af' },
             ]}
           />
         </div>
 
         {/* Chart 3 - Driver Task Duration  Analysis */}
-        <div className="rounded-xl border-2 border-primary bg-white p-4 shadow-md transition-all duration-200 hover:border-primary/50 hover:shadow-lg">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-lg">
           <h2 className="text-sm font-semibold text-gray-900">
             ממוצע זמן טיפול במשימה לנהג{' '}
           </h2>
@@ -108,7 +111,12 @@ export function DashboardCharts() {
           </p>
           <DriverDurationChart />
           <ChartLegend
-            items={[{ label: 'משך משימה ממוצע', color: '#0ea5e9' }]}
+            items={[
+              {
+                label: 'משך משימה ממוצע',
+                color: 'hsl(211.6981 96.3636% 78.4314%)',
+              },
+            ]}
           />
         </div>
 

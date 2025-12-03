@@ -25,8 +25,8 @@ interface DriverCompletionPoint {
 type DriverSortBy = 'name' | 'rate' | 'total';
 
 const driverCompletionConfig = {
-  completed: { label: 'הושלמו', color: '#00ff55' },
-  incomplete: { label: 'לא הושלמו', color: '#9ca3af' }, // gray-400
+  completed: { label: 'הושלמו', color: 'hsl(213.1169 93.9024% 67.8431%)' }, // --chart-2 from globals.css
+  incomplete: { label: 'לא הושלמו', color: 'hsl(214.2857 31.8182% 91.3725%)' }, // --secondary from globals.css
 } as const;
 
 const DriverNameTick = ({

@@ -403,9 +403,9 @@ export async function getCreatedCompletedSeries(
   const [{ data: createdData }, { data: completedData }] = await Promise.all([
     supa
       .from('tasks')
-      .select('id, created_at')
-      .gte('created_at', range.start)
-      .lt('created_at', range.end)
+      .select('id, estimated_start')
+      .gte('estimated_start', range.start)
+      .lt('estimated_start', range.end)
       .limit(5000),
     supa
       .from('tasks')
@@ -417,7 +417,7 @@ export async function getCreatedCompletedSeries(
   ]);
   const byDate: Record<string, { created: number; completed: number }> = {};
   (createdData || []).forEach((r) => {
-    const d = toYMD(r.created_at);
+    const d = toYMD(r.estimated_start);
     byDate[d] = byDate[d] || { created: 0, completed: 0 };
     byDate[d].created++;
   });

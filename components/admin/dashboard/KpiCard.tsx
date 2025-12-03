@@ -26,7 +26,7 @@ export function KpiCard({
   if (loading) {
     return (
       <div
-        className={`rounded-xl border border-primary/20 bg-white shadow-md animate-pulse ${
+        className={`rounded-xl border border-gray-200 bg-white shadow-sm animate-pulse ${
           variant === 'secondary' ? 'p-3' : 'p-5'
         }`}
       >
@@ -53,10 +53,10 @@ export function KpiCard({
 
   return (
     <div
-      className={`group relative rounded-xl bg-white transition-all duration-200 hover:shadow-lg ${
+      className={`group relative rounded-xl bg-white transition-all duration-200 hover:shadow-xl ${
         isSecondary
-          ? 'border-r-4 border-blue-200 bg-gray-50 p-3'
-          : 'border-2 border-primary p-5 shadow-md hover:border-primary/50'
+          ? 'border-r-4 border-blue-200 bg-gray-50 p-3 shadow-sm'
+          : 'border border-gray-200 p-5 shadow-sm'
       }`}
     >
       <div

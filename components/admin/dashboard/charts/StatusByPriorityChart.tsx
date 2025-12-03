@@ -15,19 +15,19 @@ import { TaskStatus, TaskPriority } from '@/types/task';
 import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// Status colors
+// Status colors - using CSS chart colors
 const STATUS_COLORS: Record<TaskStatus, string> = {
-  בהמתנה: '#f59e0b', // amber-500
-  בעבודה: '#3b82f6', // blue-500
-  חסומה: '#ef4444', // red-500
-  הושלמה: '#16a34a', // green-600
+  בהמתנה: 'hsl(213.3333 96.9231% 87.2549%)', // --chart-4
+  בעבודה: 'hsl(221.2121 83.1933% 53.3333%)', // --chart-1
+  חסומה: 'hsl(0 84.2365% 60.1961%)', // --destructive
+  הושלמה: 'hsl(213.1169 93.9024% 67.8431%)', // --chart-2
 };
 
-// Priority colors matching TaskCard
+// Priority colors using CSS chart colors
 const PRIORITY_COLORS: Record<string, string> = {
-  גבוהה: '#dc2626', // red-600
-  בינונית: '#eab308', // yellow-500
-  נמוכה: '#6b7280', // gray-500
+  גבוהה: 'hsl(0 84.2365% 60.1961%)', // --destructive
+  בינונית: 'hsl(213.3333 96.9231% 87.2549%)', // --chart-4
+  נמוכה: 'hsl(215 20.2247% 65.098%)', // --muted-foreground
 };
 
 // Custom Tooltip Component
@@ -161,13 +161,13 @@ export function StatusByPriorityChart() {
 
   if (loading) {
     return (
-      <div className="h-80 animate-pulse rounded-xl border-2 border-primary bg-white p-4 shadow-md" />
+      <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-white p-4 shadow-sm" />
     );
   }
 
   if (error) {
     return (
-      <div className="h-80 rounded-xl border-2 border-red-200 bg-red-50 p-4 text-xs text-red-700 shadow-md">
+      <div className="h-80 rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700 shadow-sm">
         שגיאה בטעינת נתונים: {error}
       </div>
     );
@@ -178,7 +178,7 @@ export function StatusByPriorityChart() {
     : priorityDistributionData;
 
   return (
-    <div className="flex h-80 flex-col rounded-xl border-2 border-primary bg-white p-4 shadow-md transition-all duration-200 hover:border-primary/50 hover:shadow-lg">
+    <div className="flex h-80 flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-lg">
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {selectedDrillDown && (

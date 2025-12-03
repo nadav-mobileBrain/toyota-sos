@@ -24,7 +24,7 @@ interface DriverDurationPoint {
 const driverDurationConfig = {
   avgDurationMinutes: {
     label: 'משך משימה ממוצע (דקות)',
-    color: '#0ea5e9',
+    color: 'hsl(211.6981 96.3636% 78.4314%)', // --chart-3 from globals.css
   },
 } as const;
 
@@ -54,12 +54,19 @@ function useDriverDuration() {
         if (!json?.ok) throw new Error(json?.error || 'failed');
         if (!cancelled) {
           setData(
-            (json.drivers || []).map((d: any) => ({
-              driverId: d.driverId,
-              driverName: d.driverName || '—',
-              avgDurationMinutes: d.avgDurationMinutes ?? 0,
-              taskCount: d.taskCount ?? 0,
-            }))
+            (json.drivers || []).map(
+              (d: {
+                driverId: string;
+                driverName?: string;
+                avgDurationMinutes?: number;
+                taskCount?: number;
+              }) => ({
+                driverId: d.driverId,
+                driverName: d.driverName || '—',
+                avgDurationMinutes: d.avgDurationMinutes ?? 0,
+                taskCount: d.taskCount ?? 0,
+              })
+            )
           );
           setGlobalAverage(json.globalAverageMinutes ?? 0);
         }
@@ -83,9 +90,7 @@ export function DriverDurationChart() {
   const { data, globalAverage, loading, error } = useDriverDuration();
 
   if (loading) {
-    return (
-      <div className="mt-4 h-64 animate-pulse rounded-md bg-gray-100" />
-    );
+    return <div className="mt-4 h-64 animate-pulse rounded-md bg-gray-100" />;
   }
 
   if (error) {
@@ -106,10 +111,7 @@ export function DriverDurationChart() {
 
   return (
     <div className="mt-4 h-64">
-      <ChartContainer
-        config={driverDurationConfig}
-        className="h-full w-full"
-      >
+      <ChartContainer config={driverDurationConfig} className="h-full w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
@@ -123,7 +125,7 @@ export function DriverDurationChart() {
               interval={0}
               angle={-35}
               textAnchor="end"
-              height={40}
+              height={10}
               tick={{ fontSize: 10, fill: '#6b7280' }}
             />
             <YAxis
@@ -157,4 +159,3 @@ export function DriverDurationChart() {
     </div>
   );
 }
-

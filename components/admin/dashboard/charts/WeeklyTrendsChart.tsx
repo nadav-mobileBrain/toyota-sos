@@ -22,10 +22,10 @@ interface WeeklyPoint {
 }
 
 const weeklyChartConfig = {
-  completed: { label: 'הושלמו', color: '#16a34a' }, // green-600
-  notCompleted: { label: 'לא הושלמו', color: '#f97316' }, // orange-500
-  overdue: { label: 'באיחור', color: '#ef4444' }, // red-500
-  total: { label: 'סה״כ משימות', color: '#3b82f6' }, // blue-500
+  completed: { label: 'הושלמו', color: 'hsl(213.1169 93.9024% 67.8431%)' }, // --chart-2 from globals.css
+  notCompleted: { label: 'לא הושלמו', color: 'hsl(211.6981 96.3636% 78.4314%)' }, // --chart-3 from globals.css
+  overdue: { label: 'באיחור', color: 'hsl(213.3333 96.9231% 87.2549%)' }, // --chart-4 from globals.css
+  total: { label: 'סה״כ משימות', color: 'hsl(221.2121 83.1933% 53.3333%)' }, // --chart-1 from globals.css
 } as const;
 
 function useWeeklyTrends() {

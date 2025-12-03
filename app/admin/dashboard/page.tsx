@@ -19,7 +19,7 @@ export default function AdminDashboardPage() {
       <NavBar items={navItems} className="z-40" />
       <PeriodProvider>
         <div className="mx-auto mt-20 max-w-7xl space-y-4 sm:mt-24">
-          <h1 className="text-4xl font-bold text-primary underline">
+          <h1 className="text-4xl font-bold text-black text-center">
             דשבורד ניהול משימות{' '}
           </h1>
           <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
