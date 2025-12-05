@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/components/AuthProvider';
+import { CarFront, LogInIcon, UserIcon } from 'lucide-react';
 
 function LoginContent() {
   const router = useRouter();
@@ -33,7 +34,7 @@ function LoginContent() {
     try {
       const result = await loginDriver(employeeId);
       if (result.success) {
-        setSuccess('Login successful! Redirecting...');
+        setSuccess('הכניסה בוצעה בהצלחה! מעבר לדף הבית...');
         setTimeout(() => {
           router.push(redirectTo || '/driver');
         }, 500);
@@ -56,7 +57,7 @@ function LoginContent() {
     try {
       const result = await loginAdmin(username, password);
       if (result.success) {
-        setSuccess('Login successful! Redirecting...');
+        setSuccess('הכניסה בוצעה בהצלחה! מעבר לדף הבית...');
         setTimeout(() => {
           // If redirectTo is within /admin, normalize to /admin/dashboard as the landing page
           const target =
@@ -85,7 +86,7 @@ function LoginContent() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-primary">Toyota S.O.S</h1>
-          <p className="mt-2 text-gray-600">מערכת ניהול משימות שדה</p>
+          <p className="mt-2 text-gray-600">מערכת ניהול משימות נהגים</p>
         </div>
 
         {/* Login Type Selector */}
@@ -96,12 +97,13 @@ function LoginContent() {
               setError(null);
               setSuccess(null);
             }}
-            className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
+            className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors flex items-center justify-center ${
               loginType === 'driver'
-                ? 'bg-primary text-black'
+                ? 'toyota-bg-primary  text-black'
                 : 'text-gray-700 hover:bg-gray-200'
             }`}
           >
+            <CarFront className="w-4 h-4 ml-2" />
             נהג
           </button>
           <button
@@ -110,12 +112,13 @@ function LoginContent() {
               setError(null);
               setSuccess(null);
             }}
-            className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
+            className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors flex items-center justify-center ${
               loginType === 'admin'
-                ? 'bg-primary text-black'
+                ? 'toyota-bg-primary text-black'
                 : 'text-gray-700 hover:bg-gray-200'
             }`}
           >
+            <UserIcon className="w-4 h-4 ml-2" />
             מנהל / משרד
           </button>
         </div>
@@ -153,9 +156,10 @@ function LoginContent() {
             <Button
               type="submit"
               disabled={!employeeId || loading}
-              className="w-full bg-primary hover:bg-red-700 text-white"
+              className="w-full bg-blue-600 hover:bg-red-700 text-white"
             >
               {loading ? 'הכניסה...' : 'כניסה'}
+              <LogInIcon className="w-4 h-4 ml-2" />
             </Button>
           </form>
         )}
@@ -192,9 +196,10 @@ function LoginContent() {
             <Button
               type="submit"
               disabled={!username || !password || loading}
-              className="w-full bg-primary hover:bg-red-700 text-white"
+              className="w-full bg-blue-600 hover:bg-red-700 text-white"
             >
               {loading ? 'הכניסה...' : 'כניסה'}
+              <LogInIcon className="w-4 h-4 ml-2" />
             </Button>
           </form>
         )}

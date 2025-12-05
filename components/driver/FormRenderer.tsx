@@ -424,7 +424,7 @@ export function FormRenderer(props: FormRendererProps) {
             <div>
               <button
                 type="submit"
-                className="rounded-md bg-primary px-3 py-2 text-sm text-white hover:bg-red-700 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary/90 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 transition-colors"
               >
                 שמור
               </button>

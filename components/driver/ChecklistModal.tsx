@@ -471,7 +471,7 @@ export function ChecklistModal(props: ChecklistModalProps) {
           )}
           <button
             type="button"
-            className="rounded-md flex items-center justify-center gap-2 bg-primary px-4 py-3 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-primary min-h-[48px] flex-1 sm:flex-initial disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+            className="rounded-md flex items-center justify-center gap-2 bg-primary px-4 py-3 text-sm font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 min-h-[48px] flex-1 sm:flex-initial disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors"
             onClick={handleSubmit}
             disabled={persisting}
           >

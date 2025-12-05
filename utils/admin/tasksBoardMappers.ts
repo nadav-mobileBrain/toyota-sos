@@ -56,11 +56,20 @@ export function computeColumns(params: {
   if (groupBy === 'driver') {
     const driverIds = new Set<string>();
     assignees.forEach((ta) => driverIds.add(ta.driver_id));
-    return Array.from(driverIds).map((driverId) => ({
+    const columns = Array.from(driverIds).map((driverId) => ({
       id: driverId,
       label: driverMap.get(driverId)?.name || 'Unknown Driver',
       type: 'driver' as const,
     }));
+    
+    // Add unassigned column at the beginning
+    columns.unshift({
+      id: 'unassigned',
+      label: 'לא משוייך',
+      type: 'driver' as const,
+    });
+    
+    return columns;
   }
 
   const statuses: TaskStatus[] = ['בהמתנה', 'בעבודה', 'חסומה', 'הושלמה'];
@@ -166,6 +175,12 @@ export function getColumnTasks(params: {
   const { columnId, groupBy, assignees, filteredSortedTasks } = params;
 
   if (groupBy === 'driver') {
+    // Special handling for unassigned column
+    if (columnId === 'unassigned') {
+      const assignedTaskIds = new Set(assignees.map((ta) => ta.task_id));
+      return filteredSortedTasks.filter((t) => !assignedTaskIds.has(t.id));
+    }
+    
     const assignedTaskIds = assignees
       .filter((ta) => ta.driver_id === columnId)
       .map((ta) => ta.task_id);

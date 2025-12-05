@@ -116,7 +116,7 @@ export default async function AdminTasksPage() {
   try {
     const { data, error } = await admin
       .from('vehicles')
-      .select('id, license_plate, model, vin');
+      .select('id, license_plate, model');
 
     if (!error) {
       vehicles = data || [];

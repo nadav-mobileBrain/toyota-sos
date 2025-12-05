@@ -711,6 +711,37 @@ export function TasksBoard({
     [tasks]
   );
 
+  // Persist driver unassignment (remove all assignments)
+  const persistDriverUnassignment = useCallback(
+    async (taskId: string, prevSnapshot?: TaskAssignee[]) => {
+      try {
+        const response = await fetch(`/api/admin/tasks/${taskId}/unassign`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          console.error(
+            'Failed to unassign driver:',
+            response.statusText
+          );
+          if (prevSnapshot) {
+            setAssignees(prevSnapshot);
+          }
+          toastError('שגיאה בהסרת הקצאת נהג');
+        } else {
+          toastSuccess('הנהג הוסר מהמשימה');
+        }
+      } catch (error) {
+        console.error('Error persisting driver unassignment:', error);
+        if (prevSnapshot) {
+          setAssignees(prevSnapshot);
+        }
+        toastError('שגיאה בהסרת הקצאת נהג');
+      }
+    },
+    []
+  );
+
   // DnD: finalize drop and persist changes
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -732,6 +763,19 @@ export function TasksBoard({
         const currentAssignee = assignees.find(
           (ta) => ta.task_id === taskId && ta.is_lead
         );
+        
+        // Handle unassigning
+        if (targetDriverId === 'unassigned') {
+          if (!currentAssignee) return; // Already unassigned
+          const prevSnapshot = assignees;
+          // Remove all assignments for this task
+          setAssignees((prevAssignees) =>
+            prevAssignees.filter((ta) => ta.task_id !== taskId)
+          );
+          persistDriverUnassignment(taskId, prevSnapshot);
+          return;
+        }
+        
         if (currentAssignee?.driver_id === targetDriverId) return;
         const prevSnapshot = assignees;
         setAssignees((prevAssignees) => {
@@ -762,7 +806,7 @@ export function TasksBoard({
         persistTaskUpdate(taskId, { status: updatePayload.status });
       }
     },
-    [tasks, assignees, groupBy, persistDriverAssignment, persistTaskUpdate]
+    [tasks, assignees, groupBy, persistDriverAssignment, persistDriverUnassignment, persistTaskUpdate]
   );
 
   // Realtime updates (tasks, task_assignees)
@@ -889,7 +933,7 @@ export function TasksBoard({
 
           <button
             onClick={openCreateDialog}
-            className="rounded bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary/90 flex items-center gap-2"
+            className="rounded bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary/90 flex items-center gap-2"
           >
             <PlusIcon className="w-4 h-4" />
             משימה חדשה
@@ -898,12 +942,12 @@ export function TasksBoard({
 
         {/* Kanban board container */}
         <div
-          className="h-[calc(100vh-200px)] min-h-0 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"
+          className="h-[calc(100vh-200px)] min-h-0 flex flex-col rounded-lg border border-gray-200 bg-white shadow-sm"
           role="main"
           aria-label="לוח משימות"
         >
           {/* Filters & Search & Sort */}
-          <div className="relative z-50 flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-2 bg-white">
+          <div className="relative z-50 flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-2 bg-white flex-shrink-0">
             <input
               type="text"
               placeholder="חפש משימות (כותרת / לקוח / רכב)"
@@ -1113,7 +1157,7 @@ export function TasksBoard({
           ) : (
             <>
               {bulkEnabled && selectedIds.size > 0 && (
-                <div className="flex items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-2">
+                <div className="flex items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-2 flex-shrink-0">
                   <span className="text-sm text-gray-700">
                     נבחרו {selectedIds.size}
                   </span>
@@ -1166,7 +1210,13 @@ export function TasksBoard({
                 </div>
               )}
               {/* Kanban grid with horizontal scroll */}
-              <div className="flex h-full gap-6 overflow-x-auto p-4">
+              <div 
+                className="flex flex-1 min-h-0 gap-6 overflow-x-auto overflow-y-hidden p-4"
+                style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#9ca3af #f3f4f6'
+                }}
+              >
                 {columns.map((column) => {
                   const columnTasks = getColumnTasks(column.id);
                   const isOver = overId === column.id;

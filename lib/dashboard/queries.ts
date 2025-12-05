@@ -31,6 +31,13 @@ export interface FunnelStep {
   count: number;
 }
 
+export interface TrendData {
+  percentageChange: number;
+  direction: 'up' | 'down' | 'neutral';
+  previousValue: number;
+  currentValue: number;
+}
+
 export interface DashboardMetricsSummary {
   scheduledTasks: number;
   completedTasks: number;
@@ -41,6 +48,31 @@ export interface DashboardMetricsSummary {
   cancelledTasks: number;
   slaViolations: number;
   driverUtilizationPct: number;
+  activeDrivers: number;
+}
+
+export interface DashboardMetricsSummaryWithTrends {
+  scheduledTasks: number;
+  completedTasks: number;
+  completedLate: number;
+  completedOnTime: number;
+  pendingTasks: number;
+  inProgressTasks: number;
+  cancelledTasks: number;
+  slaViolations: number;
+  driverUtilizationPct: number;
+  activeDrivers: number;
+  trends: {
+    scheduledTasks: TrendData;
+    completedTasks: TrendData;
+    completedLate: TrendData;
+    completedOnTime: TrendData;
+    pendingTasks: TrendData;
+    inProgressTasks: TrendData;
+    cancelledTasks: TrendData;
+    driverUtilizationPct: TrendData;
+    activeDrivers: TrendData;
+  };
 }
 
 export interface DashboardDatasets {
@@ -52,6 +84,11 @@ export interface DashboardDatasets {
 
 export interface DashboardData {
   summary: DashboardMetricsSummary;
+  datasets: DashboardDatasets;
+}
+
+export interface DashboardDataWithTrends {
+  summary: DashboardMetricsSummaryWithTrends;
   datasets: DashboardDatasets;
 }
 
@@ -98,6 +135,7 @@ export function clearCacheForRange(range: DateRange) {
   }
   keysToDelete.forEach((key) => cache.delete(key));
 }
+
 
 function getClient(client?: SupabaseClient) {
   if (client) return client;
@@ -497,6 +535,74 @@ export async function getOverdueByDriver(
   return points;
 }
 
+// Active drivers count: drivers with at least one task assigned in the period
+export async function getActiveDriversCount(
+  range: DateRange,
+  client?: SupabaseClient
+): Promise<number> {
+  const key = makeKey('activeDrivers', range);
+  const cached = getCached<number>(key);
+  if (cached !== null) return cached;
+
+  const supa = getClient(client);
+
+  try {
+    // Get drivers who were assigned tasks during the time period
+    // Filter by assignment date (assigned_at), not task creation date (estimated_start)
+    const { data: assignments, error: assignError } = await supa
+      .from('task_assignees')
+      .select('driver_id, assigned_at')
+      .gte('assigned_at', range.start)
+      .lt('assigned_at', range.end);
+
+    if (!assignError) {
+      // Get unique driver IDs from assignments in the time range
+      const activeDriverIds = new Set<string>();
+      (assignments || []).forEach((assignment: any) => {
+        if (assignment.driver_id) {
+          activeDriverIds.add(assignment.driver_id);
+        }
+      });
+      const result = activeDriverIds.size;
+      const ttl = isRecentRange(range) ? THIRTY_SECONDS_MS : FIVE_MINUTES_MS;
+      setCached(key, result, ttl);
+      return result;
+    }
+
+    // Fallback: try the task estimated_start approach if assignment query fails
+    const { data: taskAssignments, error: taskError } = await supa
+      .from('task_assignees')
+      .select(`
+        driver_id,
+        tasks!inner(estimated_start)
+      `)
+      .gte('tasks.estimated_start', range.start)
+      .lt('tasks.estimated_start', range.end);
+
+    if (!taskError) {
+      const activeDriverIds = new Set<string>();
+      (taskAssignments || []).forEach((assignment: any) => {
+        if (assignment.driver_id) {
+          activeDriverIds.add(assignment.driver_id);
+        }
+      });
+      const result = activeDriverIds.size;
+      const ttl = isRecentRange(range) ? THIRTY_SECONDS_MS : FIVE_MINUTES_MS;
+      setCached(key, result, ttl);
+      return result;
+    }
+
+    const ttl = isRecentRange(range) ? THIRTY_SECONDS_MS : FIVE_MINUTES_MS;
+    setCached(key, 0, ttl);
+    return 0;
+
+  } catch (error) {
+    const ttl = isRecentRange(range) ? THIRTY_SECONDS_MS : FIVE_MINUTES_MS;
+    setCached(key, 0, ttl);
+    return 0;
+  }
+}
+
 export async function getOnTimeVsLate(
   range: DateRange,
   client?: SupabaseClient
@@ -588,6 +694,7 @@ export async function fetchDashboardData(
     cancelledTasks,
     slaViolations,
     driverUtilizationPct,
+    activeDrivers,
     createdCompletedSeries,
     overdueByDriver,
     onTimeVsLate,
@@ -602,6 +709,7 @@ export async function fetchDashboardData(
     getCancelledTasksCount(range, client),
     getSlaViolations(range, client),
     getDriverUtilization(range, client),
+    getActiveDriversCount(range, client),
     getCreatedCompletedSeries(range, client),
     getOverdueByDriver(range, client),
     getOnTimeVsLate(range, client),
@@ -619,6 +727,7 @@ export async function fetchDashboardData(
       cancelledTasks,
       slaViolations,
       driverUtilizationPct,
+      activeDrivers,
     },
     datasets: {
       createdCompletedSeries,
@@ -626,5 +735,53 @@ export async function fetchDashboardData(
       onTimeVsLate,
       funnel,
     },
+  };
+}
+
+export async function fetchDashboardDataWithTrends(
+  currentRange: DateRange,
+  previousRange: DateRange,
+  client?: SupabaseClient
+): Promise<DashboardDataWithTrends> {
+  const { calculatePercentageChange, getTrendDirection } = await import('./period-utils');
+
+  // Fetch current and previous period data in parallel
+  const [currentData, previousData] = await Promise.all([
+    fetchDashboardData(currentRange, client),
+    fetchDashboardData(previousRange, client),
+  ]);
+
+  const current = currentData.summary;
+  const previous = previousData.summary;
+
+  // Calculate trends for each metric
+  const createTrendData = (currentValue: number, previousValue: number): TrendData => {
+    const percentageChange = calculatePercentageChange(currentValue, previousValue);
+    return {
+      percentageChange,
+      direction: getTrendDirection(percentageChange),
+      previousValue,
+      currentValue,
+    };
+  };
+
+  const trends = {
+    scheduledTasks: createTrendData(current.scheduledTasks, previous.scheduledTasks),
+    completedTasks: createTrendData(current.completedTasks, previous.completedTasks),
+    completedLate: createTrendData(current.completedLate, previous.completedLate),
+    completedOnTime: createTrendData(current.completedOnTime, previous.completedOnTime),
+    pendingTasks: createTrendData(current.pendingTasks, previous.pendingTasks),
+    inProgressTasks: createTrendData(current.inProgressTasks, previous.inProgressTasks),
+    cancelledTasks: createTrendData(current.cancelledTasks, previous.cancelledTasks),
+    driverUtilizationPct: createTrendData(current.driverUtilizationPct, previous.driverUtilizationPct),
+    activeDrivers: createTrendData(current.activeDrivers, previous.activeDrivers),
+  };
+
+  return {
+    summary: {
+      ...current,
+      trends,
+    },
+    datasets: currentData.datasets,
   };
 }

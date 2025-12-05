@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { cookies } from 'next/headers';
+import { dashboardDetailsQuerySchema } from '@/lib/schemas/dashboard';
 
 /**
  * GET /api/admin/dashboard/details?metric=created|completed|overdue|on_time|late&from=YYYY-MM-DD&to=YYYY-MM-DD&tz=...
@@ -16,16 +17,29 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Validate query parameters
     const url = new URL(request.url);
-    const metric = (url.searchParams.get('metric') || '').toLowerCase();
-    const from = url.searchParams.get('from') || '';
-    const to = url.searchParams.get('to') || '';
-    if (!metric || !from || !to) {
+    const queryParams = {
+      metric: url.searchParams.get('metric'),
+      from: url.searchParams.get('from'),
+      to: url.searchParams.get('to'),
+      tz: url.searchParams.get('tz'),
+    };
+
+    const validation = dashboardDetailsQuerySchema.safeParse(queryParams);
+    if (!validation.success) {
       return NextResponse.json(
-        { ok: false, error: 'Missing query params' },
+        {
+          ok: false,
+          error: 'Invalid parameters',
+          details: validation.error.format()
+        },
         { status: 400 }
       );
     }
+
+    const { metric, from, to, tz } = validation.data;
     const admin = getSupabaseAdmin();
 
     // Base selection

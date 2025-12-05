@@ -90,12 +90,12 @@ export function DriverDurationChart() {
   const { data, globalAverage, loading, error } = useDriverDuration();
 
   if (loading) {
-    return <div className="mt-4 h-64 animate-pulse rounded-md bg-gray-100" />;
+    return <div className="h-full animate-pulse rounded-md bg-gray-100" />;
   }
 
   if (error) {
     return (
-      <div className="mt-4 h-64 rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+      <div className="h-full rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700 flex items-center justify-center">
         שגיאה בטעינת זמני משימות לפי נהג: {error}
       </div>
     );
@@ -103,19 +103,19 @@ export function DriverDurationChart() {
 
   if (!data || data.length === 0) {
     return (
-      <div className="mt-4 flex h-64 items-center justify-center rounded-md border border-dashed border-gray-200 text-xs text-gray-500">
+      <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 text-xs text-gray-500">
         אין נתונים להצגה עבור התקופה שנבחרה.
       </div>
     );
   }
 
   return (
-    <div className="mt-4 h-64">
+    <div className="h-full">
       <ChartContainer config={driverDurationConfig} className="h-full w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
-            margin={{ top: 10, right: 16, left: 0, bottom: 24 }}
+            margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
           >
             <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 4" />
             <XAxis
@@ -125,7 +125,6 @@ export function DriverDurationChart() {
               interval={0}
               angle={-35}
               textAnchor="end"
-              height={10}
               tick={{ fontSize: 10, fill: '#6b7280' }}
             />
             <YAxis

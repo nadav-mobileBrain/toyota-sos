@@ -125,9 +125,7 @@ export function TaskDialog(props: TaskDialogProps) {
   const [priority, setPriority] = useState<TaskPriority>(
     task?.priority ?? 'בינונית'
   );
-  const [status, setStatus] = useState<TaskStatus>(
-    task?.status ?? ('ממתינה לביצוע' as TaskStatus)
-  );
+  const [status, setStatus] = useState<TaskStatus>(task?.status ?? 'בהמתנה');
   const [details, setDetails] = useState(task?.details ?? '');
   const [estimatedDate, setEstimatedDate] = useState<Date>(
     task?.estimated_start ? new Date(task.estimated_start) : new Date()
@@ -169,8 +167,15 @@ export function TaskDialog(props: TaskDialogProps) {
     setVehiclesLocal(vehicles);
   }, [vehicles]);
 
+  // Track previous open state to detect when dialog opens
+  const prevOpenRef = React.useRef(open);
+
   useEffect(() => {
-    if (open) {
+    // Only reset when dialog is newly opened (transitions from false to true)
+    const isNewlyOpened = open && !prevOpenRef.current;
+    prevOpenRef.current = open;
+
+    if (isNewlyOpened) {
       // Reset on open to initial values
       setError(null);
       setTitle(task?.title ?? '');
@@ -223,13 +228,10 @@ export function TaskDialog(props: TaskDialogProps) {
         setLeadDriverId('');
         setCoDriverIds([]);
       }
-      setClientsLocal(clients);
-      setVehiclesLocal(vehicles);
       setShowAddClient(false);
       setShowAddVehicle(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, task, mode, assignees]);
+  }, [open, task, mode, assignees, clients, vehicles]);
 
   const clientSuggestions = useMemo(() => {
     const q = clientQuery.trim().toLowerCase();
@@ -869,12 +871,7 @@ export function TaskDialog(props: TaskDialogProps) {
                   value={newClientPhone}
                   onChange={(e) => setNewClientPhone(e.target.value)}
                 />
-                {/* <input
-                  className="rounded border border-gray-300 p-2 col-span-1"
-                  placeholder="אימייל"
-                  value={newClientEmail}
-                  onChange={(e) => setNewClientEmail(e.target.value)}
-                /> */}
+
                 <div className="col-span-3 flex justify-end gap-2">
                   <button
                     type="button"
@@ -885,7 +882,7 @@ export function TaskDialog(props: TaskDialogProps) {
                   </button>
                   <button
                     type="button"
-                    className="rounded bg-primary px-2 py-1 text-xs font-semibold text-white"
+                    className="rounded bg-blue-600 hover:bg-blue-700 px-2 py-1 text-xs font-semibold text-white transition-colors"
                     onClick={createClient}
                   >
                     צור
@@ -969,7 +966,7 @@ export function TaskDialog(props: TaskDialogProps) {
                   </button>
                   <button
                     type="button"
-                    className="rounded bg-primary px-2 py-1 text-xs font-semibold text-white"
+                    className="rounded bg-blue-600 hover:bg-blue-700 px-2 py-1 text-xs font-semibold text-white transition-colors"
                     onClick={createVehicle}
                   >
                     צור
@@ -1017,39 +1014,6 @@ export function TaskDialog(props: TaskDialogProps) {
           </div>
 
           <div className="col-span-1 md:col-span-2 mt-2 flex items-center justify-end gap-2">
-            {/* {pdfEnabled && (
-              <button
-                type="button"
-                className="rounded border border-gray-300 px-3 py-2 text-sm"
-                onClick={() => {
-                  const estimatedStartDatetime = dayjs(estimatedDate)
-                    .set('hour', parseInt(estimatedStartTime.split(':')[0]))
-                    .set('minute', parseInt(estimatedStartTime.split(':')[1]))
-                    .toISOString();
-                  const estimatedEndDatetime = dayjs(estimatedDate)
-                    .set('hour', parseInt(estimatedEndTime.split(':')[0]))
-                    .set('minute', parseInt(estimatedEndTime.split(':')[1]))
-                    .toISOString();
-
-                  const payload = {
-                    title,
-                    type,
-                    priority,
-                    status,
-                    details,
-                    estimated_start: estimatedStartDatetime,
-                    estimated_end: estimatedEndDatetime,
-                    address,
-                    client_id: clientId,
-                    vehicle_id: vehicleId,
-                  };
-                  const blob = generateTaskPdfLikeBlob(payload);
-                  downloadBlob(blob, `task-${task?.id || 'new'}.pdf`);
-                }}
-              >
-                ייצוא PDF
-              </button>
-            )} */}
             <button
               type="button"
               className="rounded flex items-center justify-center gap-2 border border-gray-300 px-3 py-2 text-sm"
@@ -1061,7 +1025,7 @@ export function TaskDialog(props: TaskDialogProps) {
             </button>
             <button
               type="submit"
-              className="rounded flex items-center justify-center gap-2 bg-primary px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="rounded flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 transition-colors"
               disabled={submitting}
             >
               <SaveIcon className="w-4 h-4 mr-2" />

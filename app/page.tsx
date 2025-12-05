@@ -103,7 +103,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-primary rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-500" />
           <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-[2.5rem] shadow-2xl overflow-hidden transition-transform duration-500 group-hover:scale-105">
             <Image
-              src="/icons/icon-192.png"
+              src="/icons/icon-fresh-192.jpg"
               alt="Toyota S.O.S App Icon"
               fill
               className="object-cover"
@@ -135,7 +135,7 @@ export default function Home() {
         <div className="animate-appear opacity-0 [animation-delay:600ms] pt-4 w-full max-w-xs sm:max-w-sm z-20">
           <Button
             size="lg"
-            className="w-full bg-primary hover:bg-primary/90 text-white h-14 text-lg font-medium rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0"
+            className="w-full bg-blue-600 hover:bg-primary/90 text-white h-14 text-lg font-medium rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0"
             onClick={() => router.push('/auth/login')}
           >
             התחברות

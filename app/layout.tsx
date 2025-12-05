@@ -13,19 +13,21 @@ import { Toaster } from '@/lib/toast';
 import './globals.css';
 
 const geistSans = Geist({
-  variable: '--font-geist-sans',
+  variable: '--font-sans',
   subsets: ['latin'],
+  display: 'swap',
 });
 
 const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+  variable: '--font-mono',
   subsets: ['latin'],
+  display: 'swap',
 });
 
 const heebo = Heebo({
-  variable: '--font-hebrew',
+  variable: '--font-serif',
   subsets: ['hebrew', 'latin'],
-  weight: ['400', '500', '700'],
+  weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
 });
 
@@ -55,7 +57,7 @@ export default function RootLayout({
         <meta name="theme-color" content="var(--primary)" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${heebo.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${heebo.variable} font-serif antialiased`}
       >
         <ServiceWorkerRegister />
         <ConnectivityProvider>
@@ -67,7 +69,7 @@ export default function RootLayout({
           {/* App Logo */}
           <div className="absolute top-4 right-4 z-50 w-40 h-40">
             <Image
-              src="/icons/newIcon-192.jpeg"
+              src="/icons/icon-fresh-192.jpg"
               alt="Toyota SOS"
               width={100}
               height={100}
@@ -89,7 +91,7 @@ export default function RootLayout({
               style: {
                 background: '#fff',
                 color: '#363636',
-                fontFamily: 'var(--font-hebrew)',
+                fontFamily: 'var(--font-serif)',
                 direction: 'rtl',
               },
               // Success toast

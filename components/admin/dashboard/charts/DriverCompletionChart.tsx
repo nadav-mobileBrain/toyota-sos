@@ -25,36 +25,10 @@ interface DriverCompletionPoint {
 type DriverSortBy = 'name' | 'rate' | 'total';
 
 const driverCompletionConfig = {
-  completed: { label: 'הושלמו', color: 'hsl(213.1169 93.9024% 67.8431%)' }, // --chart-2 from globals.css
-  incomplete: { label: 'לא הושלמו', color: 'hsl(214.2857 31.8182% 91.3725%)' }, // --secondary from globals.css
+  completed: { label: 'בוצעו', color: '#10b981' },
+  incomplete: { label: 'לא בוצעו', color: '#f59e0b' },
 } as const;
 
-const DriverNameTick = ({
-  x,
-  y,
-  payload,
-}: {
-  x: number;
-  y: number;
-  payload: { value: string };
-}) => {
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <text
-        x={-10}
-        y={-10}
-        dy={12} // ⬅️ move label down; tweak 10→12/14 as needed
-        textAnchor="end" // to keep the -35° angle aligned
-        fontSize={10}
-        fill="var(--primary)"
-        className="text-xs font-bold"
-        style={{ transform: 'rotate(-35deg)' }}
-      >
-        {payload.value}
-      </text>
-    </g>
-  );
-};
 
 function useDriverCompletion() {
   const { range } = usePeriod();
@@ -131,15 +105,15 @@ function useDriverCompletion() {
 }
 
 export function DriverCompletionChart() {
-  const { data, loading, error, sortBy, setSortBy } = useDriverCompletion();
+  const { data, loading, error } = useDriverCompletion();
 
   if (loading) {
-    return <div className="mt-4 h-64 animate-pulse rounded-md bg-gray-100" />;
+    return <div className="h-full animate-pulse rounded-md bg-gray-100" />;
   }
 
   if (error) {
     return (
-      <div className="mt-4 h-64 rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+      <div className="h-full rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700 flex items-center justify-center">
         שגיאה בטעינת נתוני השלמת משימות לפי נהג: {error}
       </div>
     );
@@ -147,100 +121,59 @@ export function DriverCompletionChart() {
 
   if (!data || data.length === 0) {
     return (
-      <div className="mt-4 flex h-64 items-center justify-center rounded-md border border-dashed border-gray-200 text-xs text-gray-500">
+      <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 text-xs text-gray-500">
         אין נתונים להצגה עבור התקופה שנבחרה.
       </div>
     );
   }
 
   return (
-    <div className="mt-4 flex h-64 flex-col gap-2">
-      <div className="flex justify-end gap-2 text-[11px]">
-        <button
-          type="button"
-          onClick={() => setSortBy('name')}
-          className={`rounded border px-2 py-1 ${
-            sortBy === 'name'
-              ? 'border-primary bg-primary text-white'
-              : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          שם
-        </button>
-        <button
-          type="button"
-          onClick={() => setSortBy('rate')}
-          className={`rounded border px-2 py-1 ${
-            sortBy === 'rate'
-              ? 'border-primary bg-primary text-white'
-              : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          % השלמה
-        </button>
-        <button
-          type="button"
-          onClick={() => setSortBy('total')}
-          className={`rounded border px-2 py-1 ${
-            sortBy === 'total'
-              ? 'border-primary bg-primary text-white'
-              : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          סה״כ
-        </button>
-      </div>
-      <div className="flex-1">
-        <ChartContainer
-          config={driverCompletionConfig}
-          className="h-full w-full"
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={data}
-              margin={{ top: 10, right: 16, left: 0, bottom: 24 }}
-            >
-              <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 4" />
-              <XAxis
-                dataKey="driverName"
-                tickLine={false}
-                axisLine={true}
-                interval={0}
-                angle={-35}
-                textAnchor="end"
-                height={10}
-                tick={<DriverNameTick x={0} y={0} payload={{ value: '' }} />}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                tick={{ fontSize: 10, fill: '#6b7280' }}
-                allowDecimals={false}
-              />
-              <Tooltip
-                cursor={{ fill: 'rgba(148, 163, 184, 0.15)' }}
-                wrapperStyle={{ outline: 'none' }}
-                content={<ChartTooltipContent />}
-              />
-              <Bar
-                dataKey="completed"
-                stackId="a"
-                name={driverCompletionConfig.completed.label}
-                fill={driverCompletionConfig.completed.color}
-                radius={[0, 0, 0, 0]}
-              />
-              <Bar
-                dataKey="incomplete"
-                stackId="a"
-                name={driverCompletionConfig.incomplete.label}
-                fill={driverCompletionConfig.incomplete.color}
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </div>
+    <div className="h-full">
+      <ChartContainer config={driverCompletionConfig} className="h-full w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={data}
+            margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+          >
+            <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 4" />
+            <XAxis
+              dataKey="driverName"
+              tickLine={false}
+              axisLine={true}
+              interval={0}
+              angle={-35}
+              textAnchor="end"
+              tick={{ fontSize: 10, fill: '#6b7280' }}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tick={{ fontSize: 10, fill: '#6b7280' }}
+              allowDecimals={false}
+            />
+            <Tooltip
+              cursor={{ fill: 'rgba(148, 163, 184, 0.15)' }}
+              wrapperStyle={{ outline: 'none' }}
+              content={<ChartTooltipContent />}
+            />
+            <Bar
+              dataKey="completed"
+              stackId="a"
+              name={driverCompletionConfig.completed.label}
+              fill={driverCompletionConfig.completed.color}
+              radius={[0, 0, 0, 0]}
+            />
+            <Bar
+              dataKey="incomplete"
+              stackId="a"
+              name={driverCompletionConfig.incomplete.label}
+              fill={driverCompletionConfig.incomplete.color}
+              radius={[4, 4, 0, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartContainer>
     </div>
   );
 }

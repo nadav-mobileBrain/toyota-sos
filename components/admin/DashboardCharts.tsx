@@ -1,13 +1,45 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+
+const DriverCompletionTimelineChart = dynamic(
+  () =>
+    import(
+      '@/components/admin/dashboard/charts/DriverCompletionTimelineChart'
+    ).then((mod) => ({ default: mod.DriverCompletionTimelineChart })),
+  { 
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-slate-100 rounded" />
+  }
+);
+
+const DriverCompletionTrendChart = dynamic(
+  () =>
+    import(
+      '@/components/admin/dashboard/charts/DriverCompletionTrendChart'
+    ).then((mod) => ({ default: mod.DriverCompletionTrendChart })),
+  { 
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-slate-100 rounded" />
+  }
+);
 
 const WeeklyTrendsChart = dynamic(
   () =>
     import('@/components/admin/dashboard/charts/WeeklyTrendsChart').then(
       (mod) => ({ default: mod.WeeklyTrendsChart })
     ),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-slate-100 rounded" />
+  }
 );
 
 const DriverCompletionChart = dynamic(
@@ -15,7 +47,10 @@ const DriverCompletionChart = dynamic(
     import('@/components/admin/dashboard/charts/DriverCompletionChart').then(
       (mod) => ({ default: mod.DriverCompletionChart })
     ),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-slate-100 rounded" />
+  }
 );
 
 const DriverDurationChart = dynamic(
@@ -23,7 +58,10 @@ const DriverDurationChart = dynamic(
     import('@/components/admin/dashboard/charts/DriverDurationChart').then(
       (mod) => ({ default: mod.DriverDurationChart })
     ),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-slate-100 rounded" />
+  }
 );
 
 const StatusByPriorityChart = dynamic(
@@ -31,7 +69,10 @@ const StatusByPriorityChart = dynamic(
     import('@/components/admin/dashboard/charts/StatusByPriorityChart').then(
       (mod) => ({ default: mod.StatusByPriorityChart })
     ),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-slate-100 rounded" />
+  }
 );
 
 const StatusByTypeChart = dynamic(
@@ -39,7 +80,10 @@ const StatusByTypeChart = dynamic(
     import('@/components/admin/dashboard/charts/StatusByTypeChart').then(
       (mod) => ({ default: mod.StatusByTypeChart })
     ),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-slate-100 rounded" />
+  }
 );
 
 function ChartLegend({
@@ -48,14 +92,26 @@ function ChartLegend({
   items: Array<{ label: string; color: string }>;
 }) {
   return (
-    <div className="mt-2 flex flex-wrap items-center justify-center gap-3 text-xs">
+    <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-xs border-t border-gradient-to-r from-transparent via-slate-200 to-transparent pt-4 relative">
+      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-8 h-px bg-gradient-to-r from-toyota-red/30 to-toyota-blue/30" />
       {items.map((item, idx) => (
-        <div key={idx} className="flex items-center gap-1.5">
-          <div
-            className="h-2.5 w-2.5 rounded-full border border-gray-300"
-            style={{ backgroundColor: item.color }}
-          />
-          <span className="text-gray-600">{item.label}</span>
+        <div
+          key={idx}
+          className="group flex items-center gap-2 hover:scale-105 transition-all duration-200 cursor-pointer"
+        >
+          <div className="relative">
+            <div
+              className="h-3 w-3 rounded-full border-2 border-white shadow-md group-hover:shadow-lg transition-all duration-200 group-hover:scale-110"
+              style={{ backgroundColor: item.color }}
+            />
+            <div
+              className="absolute inset-0 h-3 w-3 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-200 blur-sm"
+              style={{ backgroundColor: item.color }}
+            />
+          </div>
+          <span className="text-slate-600 font-semibold group-hover:text-slate-800 transition-colors duration-200">
+            {item.label}
+          </span>
         </div>
       ))}
     </div>
@@ -64,66 +120,132 @@ function ChartLegend({
 
 export function DashboardCharts() {
   return (
-    <section className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Chart 1 - Weekly Task Trends (Line Chart) */}
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-lg">
-          <h2 className="text-sm font-semibold text-gray-900">מגמת משימות</h2>
+    <section className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {/* Chart 1 - Driver Completion Timeline (Area Chart) - PRIMARY - Full Width */}
+        <Card className="group h-[450px] border-0 shadow-lg shadow-slate-900/5 bg-gradient-to-br from-white/98 via-white/95 to-purple-50/20 backdrop-blur-md transition-all duration-300 hover:shadow-xl hover:shadow-slate-900/10 hover:scale-[1.01] transform-gpu border-l-4 border-l-transparent hover:border-l-purple-400/60 overflow-hidden relative md:col-span-2 xl:col-span-3 flex flex-col">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-50/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-radial from-purple-100/20 to-transparent rounded-full transform translate-x-16 -translate-y-16" />
+          <CardHeader className="pb-4 relative z-10">
+            <CardTitle className="text-lg font-bold text-slate-800 group-hover:text-slate-900 transition-colors duration-200 flex items-center gap-2">
+              <div className="w-2 h-2 bg-purple-500 rounded-full group-hover:scale-125 transition-transform duration-200" />
+              השלמת משימות לפי נהג לאורך זמן
+            </CardTitle>
+            <CardDescription className="text-slate-600 group-hover:text-slate-700 transition-colors duration-200 font-medium">
+              מעקב אחר מספר המשימות שהושלמו על ידי כל נהג במהלך התקופה הנבחרה
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 relative z-10 flex flex-col flex-1 min-h-0">
+            <DriverCompletionTimelineChart />
+          </CardContent>
+        </Card>
 
-          <WeeklyTrendsChart />
-          <ChartLegend
-            items={[
-              {
-                label: 'סה״כ משימות',
-                color: 'hsl(221.2121 83.1933% 53.3333%)',
-              },
-              { label: 'הושלמו', color: 'hsl(213.1169 93.9024% 67.8431%)' },
-              { label: 'לא הושלמו', color: 'hsl(211.6981 96.3636% 78.4314%)' },
-              { label: 'באיחור', color: 'hsl(213.3333 96.9231% 87.2549%)' },
-            ]}
-          />
-        </div>
+        {/* Chart 2 - Driver Completion Trends (Line Chart) - SECONDARY - Full Width */}
+        <Card className="group h-[450px] border-0 shadow-lg shadow-slate-900/5 bg-gradient-to-br from-white/98 via-white/95 to-indigo-50/20 backdrop-blur-md transition-all duration-300 hover:shadow-xl hover:shadow-slate-900/10 hover:scale-[1.01] transform-gpu border-l-4 border-l-transparent hover:border-l-indigo-400/60 overflow-hidden relative md:col-span-2 xl:col-span-3 flex flex-col">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-radial from-indigo-100/20 to-transparent rounded-full transform translate-x-16 -translate-y-16" />
+          <CardHeader className="pb-4 relative z-10">
+            <CardTitle className="text-lg font-bold text-slate-800 group-hover:text-slate-900 transition-colors duration-200 flex items-center gap-2">
+              <div className="w-2 h-2 bg-indigo-500 rounded-full group-hover:scale-125 transition-transform duration-200" />
+              מגמות השלמת משימות (השוואתי)
+            </CardTitle>
+            <CardDescription className="text-slate-600 group-hover:text-slate-700 transition-colors duration-200 font-medium">
+              השוואת קצב ביצוע המשימות בין הנהגים השונים לאורך ציר הזמן
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 relative z-10 flex flex-col flex-1 min-h-0">
+            <DriverCompletionTrendChart />
+          </CardContent>
+        </Card>
 
-        {/* Chart 2 - Driver Task Completion Comparison (Bar Chart) */}
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-lg">
-          <h2 className="text-sm font-semibold text-gray-900">
-            ביצוע משימות לפי נהגים
-          </h2>
-          <p className="mt-1 text-xs text-gray-500">
-            השלמת משימות מול סך הכל משימות שהוקצו לנהג.
-          </p>
-          <DriverCompletionChart />
-          <ChartLegend
-            items={[
-              { label: 'הושלמו', color: 'hsl(213.1169 93.9024% 67.8431%)' },
-              { label: 'לא הושלמו', color: '#9ca3af' },
-            ]}
-          />
-        </div>
+        {/* Chart 3 - Weekly Task Trends (Line Chart) */}
+        <Card className="group h-[450px] border-0 shadow-lg shadow-slate-900/5 bg-gradient-to-br from-white/98 via-white/95 to-blue-50/20 backdrop-blur-md transition-all duration-300 hover:shadow-xl hover:shadow-slate-900/10 hover:scale-[1.01] transform-gpu border-l-4 border-l-transparent hover:border-l-blue-400/60 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-radial from-blue-100/20 to-transparent rounded-full transform translate-x-16 -translate-y-16" />
+          <CardHeader className="pb-4 relative z-10">
+            <CardTitle className="text-lg font-bold text-slate-800 group-hover:text-slate-900 transition-colors duration-200 flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full group-hover:scale-125 transition-transform duration-200" />
+              סטטוס ביצוע משימות{' '}
+            </CardTitle>
+            <CardDescription className="text-slate-600 group-hover:text-slate-700 transition-colors duration-200 font-medium">
+              מעקב אחר מגמות יצירה והשלמה של משימות לאורך זמן בתקופה שנבחרה
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 relative z-10 flex flex-col">
+            <div className="h-[280px] mb-2">
+              <WeeklyTrendsChart />
+            </div>
+            <ChartLegend
+              items={[
+                {
+                  label: 'סה״כ משימות',
+                  color: '#3b82f6',
+                },
+                { label: 'בוצעו', color: '#10b981' },
+                { label: 'לא בוצעו', color: '#f59e0b' },
+              ]}
+            />
+          </CardContent>
+        </Card>
 
-        {/* Chart 3 - Driver Task Duration  Analysis */}
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-lg">
-          <h2 className="text-sm font-semibold text-gray-900">
-            ממוצע זמן טיפול במשימה לנהג{' '}
-          </h2>
-          <p className="mt-1 text-xs text-gray-500">
-            משך משימה ממוצע בדקות לכל נהג, עם אפשרות לפירוק לפי סוג משימה.
-          </p>
-          <DriverDurationChart />
-          <ChartLegend
-            items={[
-              {
-                label: 'משך משימה ממוצע',
-                color: 'hsl(211.6981 96.3636% 78.4314%)',
-              },
-            ]}
-          />
-        </div>
+        {/* Chart 4 - Driver Task Completion Comparison (Bar Chart) */}
+        <Card className="group h-[450px] border-0 shadow-lg shadow-slate-900/5 bg-gradient-to-br from-white/98 via-white/95 to-green-50/20 backdrop-blur-md transition-all duration-300 hover:shadow-xl hover:shadow-slate-900/10 hover:scale-[1.01] transform-gpu border-l-4 border-l-transparent hover:border-l-green-400/60 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-50/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-radial from-green-100/20 to-transparent rounded-full transform translate-x-16 -translate-y-16" />
+          <CardHeader className="pb-4 relative z-10">
+            <CardTitle className="text-lg font-bold text-slate-800 group-hover:text-slate-900 transition-colors duration-200 flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full group-hover:scale-125 transition-transform duration-200" />
+              ביצוע משימות לפי נהגים
+            </CardTitle>
+            <CardDescription className="text-slate-600 group-hover:text-slate-700 transition-colors duration-200 font-medium">
+              השלמת משימות מול סך הכל משימות שהוקצו לנהג במהלך התקופה הנבחרה
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 relative z-10 flex flex-col">
+            <div className="h-[280px] mb-2">
+              <DriverCompletionChart />
+            </div>
+            <ChartLegend
+              items={[
+                { label: 'בוצעו', color: '#10b981' },
+                { label: 'לא בוצעו', color: '#f59e0b' },
+              ]}
+            />
+          </CardContent>
+        </Card>
 
-        {/* Chart 4 - Status by Priority */}
+        {/* Chart 5 - Driver Task Duration Analysis */}
+        <Card className="group h-[450px] border-0 shadow-lg shadow-slate-900/5 bg-gradient-to-br from-white/98 via-white/95 to-orange-50/20 backdrop-blur-md transition-all duration-300 hover:shadow-xl hover:shadow-slate-900/10 hover:scale-[1.01] transform-gpu border-l-4 border-l-transparent hover:border-l-orange-400/60 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-50/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-radial from-orange-100/20 to-transparent rounded-full transform translate-x-16 -translate-y-16" />
+          <CardHeader className="pb-4 relative z-10">
+            <CardTitle className="text-lg font-bold text-slate-800 group-hover:text-slate-900 transition-colors duration-200 flex items-center gap-2">
+              <div className="w-2 h-2 bg-orange-500 rounded-full group-hover:scale-125 transition-transform duration-200" />
+              ממוצע זמן טיפול במשימה
+            </CardTitle>
+            <CardDescription className="text-slate-600 group-hover:text-slate-700 transition-colors duration-200 font-medium">
+              משך משימה ממוצע בדקות לכל נהג, עם אפשרות לפירוק לפי סוג משימה
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 relative z-10 flex flex-col">
+            <div className="h-[280px] mb-2">
+              <DriverDurationChart />
+            </div>
+            <ChartLegend
+              items={[
+                {
+                  label: 'משך משימה ממוצע',
+                  color: '#f97316',
+                },
+              ]}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Chart 6 - Status by Priority */}
         <StatusByPriorityChart />
 
-        {/* Chart 5 - Status by Type */}
+        {/* Chart 7 - Status by Type */}
         <StatusByTypeChart />
       </div>
     </section>
