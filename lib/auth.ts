@@ -410,11 +410,19 @@ export const getCurrentRole = async (
 export const logout = async (client: SupabaseClient): Promise<void> => {
   // Always clear local driver session (noop if none)
   logoutDriver();
+  
   // Always sign out Supabase (noop if no admin session)
+  // Add timeout to prevent hanging
   try {
-    await logoutAdmin(client);
-  } catch {
-    // ignore; best-effort
+    const signOutPromise = logoutAdmin(client);
+    const timeoutPromise = new Promise<void>((_, reject) =>
+      setTimeout(() => reject(new Error('SignOut timeout')), 2000)
+    );
+    
+    await Promise.race([signOutPromise, timeoutPromise]);
+  } catch (err) {
+    // Ignore errors - local state is already cleared
+    console.warn('Supabase signOut failed or timed out:', err);
   }
 };
 
