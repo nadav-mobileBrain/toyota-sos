@@ -1,7 +1,11 @@
 'use client';
 
 import React from 'react';
-import type { FieldErrors, UseFormRegister, UseFormSetValue } from 'react-hook-form';
+import type {
+  FieldErrors,
+  UseFormRegister,
+  UseFormSetValue,
+} from 'react-hook-form';
 import { z } from 'zod';
 import { adminSchema } from '@/lib/schemas/admin';
 import { Button } from '@/components/ui/button';
@@ -24,23 +28,20 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import dayjs from '@/lib/dayjs';
+import { PlusIcon } from 'lucide-react';
 
 // ---- Form schema & types ----
 
-export const AdminFormSchema = adminSchema.extend({
-  // Accept empty string or undefined for email and coerce to optional
-  // Required in form (to match defaultValues), but transforms to undefined if empty
-  email: z
-    .union([
-      z.string().email('אימייל לא תקין').max(255, 'אימייל לא יכול להכיל יותר מ-255 תווים'),
-      z.literal(''),
-      z.undefined(),
-    ])
-    .transform((val) => {
-      if (!val || val.trim().length === 0) return undefined;
-      return val.trim();
-    }),
-});
+export const AdminFormSchema = adminSchema.refine(
+  () => {
+    // Password is required only in create mode (we'll handle this at form level)
+    return true;
+  },
+  {
+    message: 'סיסמה היא שדה חובה',
+    path: ['password'],
+  }
+);
 
 export type AdminFormValues = z.infer<typeof AdminFormSchema>;
 
@@ -82,18 +83,19 @@ export function AdminEditDialog({
 }: AdminEditDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent key={`${mode}-${open}`}>
         <AlertDialogHeader>
           <AlertDialogTitle>
             {mode === 'create' ? 'יצירת מנהל חדש' : 'עריכת מנהל'}
           </AlertDialogTitle>
         </AlertDialogHeader>
-        <form className="mt-3 space-y-4" onSubmit={onSubmit}>
+        <form className="mt-3 space-y-4" onSubmit={onSubmit} autoComplete="off">
           <div className="space-y-1.5">
             <Label htmlFor="admin-name">שם מלא</Label>
             <Input
               id="admin-name"
               placeholder="שם מלא"
+              autoComplete="off"
               {...register('name')}
             />
             {errors.name ? (
@@ -101,10 +103,43 @@ export function AdminEditDialog({
             ) : null}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="admin-employee-id">מספר עובד</Label>
+            <Label htmlFor="admin-email">אימייל *</Label>
+            <Input
+              id="admin-email"
+              type="email"
+              placeholder="example@toyota.co.il"
+              autoComplete="off"
+              {...register('email')}
+              required
+            />
+            {errors.email ? (
+              <p className="text-xs text-red-600">{errors.email.message}</p>
+            ) : null}
+          </div>
+          {mode === 'create' && (
+            <div className="space-y-1.5">
+              <Label htmlFor="admin-password">סיסמה *</Label>
+              <Input
+                id="admin-password"
+                type="password"
+                placeholder="לפחות 6 תווים"
+                autoComplete="new-password"
+                {...register('password')}
+                required
+              />
+              {errors.password ? (
+                <p className="text-xs text-red-600">
+                  {errors.password.message}
+                </p>
+              ) : null}
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label htmlFor="admin-employee-id">מספר עובד (אופציונלי)</Label>
             <Input
               id="admin-employee-id"
               placeholder="לדוגמה: 1234"
+              autoComplete="off"
               {...register('employeeId')}
             />
             {errors.employeeId ? (
@@ -116,15 +151,20 @@ export function AdminEditDialog({
           <div className="space-y-1.5">
             <Label htmlFor="admin-role">תפקיד</Label>
             <Select
+              key={`${mode}-${defaultRole}`}
               onValueChange={(val) =>
                 setValue('role', val as 'admin' | 'manager' | 'viewer')
               }
-              defaultValue={defaultRole}
+              value={defaultRole}
             >
               <SelectTrigger>
                 <SelectValue placeholder="בחר תפקיד" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent
+                position="popper"
+                sideOffset={4}
+                className="bg-white"
+              >
                 <SelectItem value="viewer">צופה (Viewer)</SelectItem>
                 <SelectItem value="manager">מנהל משימות (Manager)</SelectItem>
                 <SelectItem value="admin">מנהל מערכת (Admin)</SelectItem>
@@ -134,26 +174,13 @@ export function AdminEditDialog({
               <p className="text-xs text-red-600">{errors.role.message}</p>
             ) : null}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="admin-email">
-              אימייל (אופציונלי - אם ריק יווצר אוטומטית)
-            </Label>
-            <Input
-              id="admin-email"
-              type="email"
-              placeholder="example@toyota.co.il"
-              {...register('email')}
-            />
-            {errors.email ? (
-              <p className="text-xs text-red-600">{errors.email.message}</p>
-            ) : null}
-          </div>
           <AlertDialogFooter>
             <Button
               type="submit"
-              className="bg-primary hover:bg-primary/90"
+              className="bg-primary hover:bg-primary/90 text-white"
               disabled={submitting}
             >
+              <PlusIcon className="w-4 h-4" />
               {mode === 'create'
                 ? submitting
                   ? 'יוצר...'
@@ -216,4 +243,3 @@ export function DeleteAdminDialog({
     </AlertDialog>
   );
 }
-

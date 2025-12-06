@@ -26,9 +26,10 @@ export async function PATCH(
     const body = await request.json().catch(() => ({}));
     const payload = {
       name: body?.name,
-      employeeId: body?.employeeId,
-      email: body?.email ? String(body.email).trim() || undefined : undefined,
+      employeeId: body?.employeeId ? String(body.employeeId).trim() || undefined : undefined,
+      email: body?.email,
       role: body?.role,
+      password: undefined, // Password updates not supported in PATCH
     };
 
     const result = adminSchema.safeParse(payload);
@@ -46,39 +47,62 @@ export async function PATCH(
     const { name, employeeId, email, role } = result.data;
     const admin = getSupabaseAdmin();
 
-    // Ensure employee_id stays unique across profiles (excluding this admin)
-    const { data: existingByEmployeeId, error: existingErr } = await admin
+    // Check if email is already used by another user
+    const { data: existingByEmail, error: emailCheckErr } = await admin
       .from('profiles')
       .select('id')
-      .eq('employee_id', employeeId)
+      .eq('email', email)
       .neq('id', id)
       .maybeSingle();
 
-    if (existingErr && existingErr.code !== 'PGRST116') {
+    if (emailCheckErr && emailCheckErr.code !== 'PGRST116') {
       return NextResponse.json(
-        { error: existingErr.message },
+        { error: emailCheckErr.message },
         { status: 400 },
       );
     }
 
-    if (existingByEmployeeId?.id) {
+    if (existingByEmail?.id) {
       return NextResponse.json(
         {
-          error: 'מספר עובד כבר קיים במערכת',
-          code: 'EMPLOYEE_ID_EXISTS',
+          error: 'אימייל כבר קיים במערכת',
+          code: 'EMAIL_EXISTS',
         },
         { status: 409 },
       );
     }
 
-    const finalEmail =
-      email ||
-      `admin+${employeeId.replace(/[^0-9]/g, '')}@toyota.local`;
+    // Check employee_id uniqueness if provided
+    if (employeeId) {
+      const { data: existingByEmployeeId, error: existingErr } = await admin
+        .from('profiles')
+        .select('id')
+        .eq('employee_id', employeeId)
+        .neq('id', id)
+        .maybeSingle();
 
-    // Update auth user email + metadata (best-effort)
+      if (existingErr && existingErr.code !== 'PGRST116') {
+        return NextResponse.json(
+          { error: existingErr.message },
+          { status: 400 },
+        );
+      }
+
+      if (existingByEmployeeId?.id) {
+        return NextResponse.json(
+          {
+            error: 'מספר עובד כבר קיים במערכת',
+            code: 'EMPLOYEE_ID_EXISTS',
+          },
+          { status: 409 },
+        );
+      }
+    }
+
+    // Update auth user email + metadata
     try {
       await admin.auth.admin.updateUserById(id, {
-        email: finalEmail,
+        email,
         user_metadata: {
           name,
         },
@@ -90,14 +114,21 @@ export async function PATCH(
       // If this fails, we still proceed with profile update
     }
 
+    // Build update object
+    const updateData: any = {
+      name,
+      email,
+      role,
+    };
+
+    // Only include employee_id if provided
+    if (employeeId !== undefined) {
+      updateData.employee_id = employeeId;
+    }
+
     const { data: profile, error: upErr } = await admin
       .from('profiles')
-      .update({
-        name,
-        employee_id: employeeId,
-        email: finalEmail,
-        role,
-      })
+      .update(updateData)
       .eq('id', id)
       .select('id, name, email, employee_id, role, created_at, updated_at')
       .single();

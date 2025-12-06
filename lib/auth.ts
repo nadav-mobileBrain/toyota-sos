@@ -317,20 +317,20 @@ export const loginAsAdmin = async (
       };
     }
 
-    // Get user role from metadata
-    const role = (data.user?.user_metadata?.role as string) || 'viewer';
-    if (role !== 'admin' && role !== 'viewer') {
+    // Get user role from app_metadata (where it's stored during user creation)
+    const role = (data.user?.app_metadata?.role as string) || 'viewer';
+    if (role !== 'admin' && role !== 'manager' && role !== 'viewer') {
       await client.auth.signOut();
       return {
         success: false,
-        error: 'User does not have admin or viewer access',
+        error: 'User does not have admin, manager, or viewer access',
       };
     }
 
     const session: AdminSession = {
       userId: data.user.id,
       username: username,
-      role: role as 'admin' | 'viewer',
+      role: role as 'admin' | 'manager' | 'viewer',
       email: data.user.email,
     };
 
@@ -363,11 +363,12 @@ export const getAdminSession = async (
 
     if (!user) return null;
 
-    const role = (user.user_metadata?.role as string) || 'viewer';
+    // Get role from app_metadata (where it's stored during user creation)
+    const role = (user.app_metadata?.role as string) || 'viewer';
     return {
       userId: user.id,
       username: user.email || '',
-      role: role as 'admin' | 'viewer',
+      role: role as 'admin' | 'manager' | 'viewer',
       email: user.email,
     };
   } catch {

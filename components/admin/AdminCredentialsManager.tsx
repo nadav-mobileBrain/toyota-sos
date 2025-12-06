@@ -11,7 +11,7 @@ import {
   type AdminFormValues,
   DeleteAdminDialog,
 } from '@/utils/admin/admins/dialogs';
-import type { AdminRow, AdminRole } from '@/utils/admin/admins/types';
+import type { AdminRow } from '@/utils/admin/admins/types';
 import { AdminListView } from '@/utils/admin/admins/view';
 
 type Props = {
@@ -43,6 +43,7 @@ export function AdminCredentialsManager({ initialAdmins = [] }: Props) {
       name: '',
       employeeId: '',
       email: '',
+      password: '',
       role: 'viewer',
     },
   });
@@ -96,13 +97,27 @@ export function AdminCredentialsManager({ initialAdmins = [] }: Props) {
   const openCreateDialog = () => {
     setDialogMode('create');
     setEditingAdmin(null);
-    reset({
-      name: '',
-      employeeId: '',
-      email: '',
-      role: 'viewer',
-    });
     setError(null);
+    // Reset immediately before opening
+    reset(
+      {
+        name: '',
+        employeeId: '',
+        email: '',
+        password: '',
+        role: 'viewer',
+      },
+      {
+        keepErrors: false,
+        keepDirty: false,
+        keepValues: false,
+        keepDefaultValues: false,
+        keepIsSubmitted: false,
+        keepTouched: false,
+        keepIsValid: false,
+        keepSubmitCount: false,
+      }
+    );
     setDialogOpen(true);
   };
 
@@ -113,6 +128,7 @@ export function AdminCredentialsManager({ initialAdmins = [] }: Props) {
       name: admin.name ?? '',
       employeeId: admin.employee_id ?? '',
       email: admin.email ?? '',
+      password: '', // Don't populate password on edit
       role: admin.role,
     });
     setError(null);
@@ -125,8 +141,9 @@ export function AdminCredentialsManager({ initialAdmins = [] }: Props) {
     try {
       const payload: AdminInput = {
         name: values.name.trim(),
-        employeeId: values.employeeId.trim(),
+        employeeId: values.employeeId?.trim() || undefined,
         email: values.email,
+        password: values.password,
         role: values.role,
       };
 
@@ -179,7 +196,9 @@ export function AdminCredentialsManager({ initialAdmins = [] }: Props) {
         const txt = await res.text().catch(() => '');
         throw new Error(
           txt ||
-            (dialogMode === 'create' ? 'שגיאה ביצירת מנהל' : 'שגיאה בעדכון מנהל')
+            (dialogMode === 'create'
+              ? 'שגיאה ביצירת מנהל'
+              : 'שגיאה בעדכון מנהל')
         );
       }
 
@@ -191,6 +210,7 @@ export function AdminCredentialsManager({ initialAdmins = [] }: Props) {
         name: '',
         employeeId: '',
         email: '',
+        password: '',
         role: 'viewer',
       });
       setDialogOpen(false);
@@ -260,17 +280,41 @@ export function AdminCredentialsManager({ initialAdmins = [] }: Props) {
         onStartDelete={setDeletingId}
       />
 
-      <AdminEditDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        mode={dialogMode}
-        submitting={submitting}
-        register={register}
-        setValue={setValue}
-        errors={errors}
-        onSubmit={handleSubmit(onSubmit)}
-        defaultRole={currentRole}
-      />
+      {dialogOpen && (
+        <AdminEditDialog
+          open={dialogOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              // Reset form when dialog closes
+              reset(
+                {
+                  name: '',
+                  employeeId: '',
+                  email: '',
+                  password: '',
+                  role: 'viewer',
+                },
+                {
+                  keepErrors: false,
+                  keepDirty: false,
+                  keepValues: false,
+                  keepDefaultValues: false,
+                }
+              );
+              setEditingAdmin(null);
+              setError(null);
+            }
+            setDialogOpen(open);
+          }}
+          mode={dialogMode}
+          submitting={submitting}
+          register={register}
+          setValue={setValue}
+          errors={errors}
+          onSubmit={handleSubmit(onSubmit)}
+          defaultRole={currentRole}
+        />
+      )}
 
       <DeleteAdminDialog
         deletingId={deletingId}
@@ -281,4 +325,3 @@ export function AdminCredentialsManager({ initialAdmins = [] }: Props) {
     </>
   );
 }
-

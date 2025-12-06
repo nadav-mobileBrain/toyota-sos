@@ -59,10 +59,8 @@ export default function Home() {
     if (!loading && session) {
       if (session.role === 'driver') {
         router.replace('/driver');
-      } else if (session.role === 'admin' || session.role === 'manager') {
+      } else if (session.role === 'admin' || session.role === 'manager' || session.role === 'viewer') {
         router.replace('/admin/dashboard');
-      } else if (session.role === 'viewer') {
-        router.replace('/viewer');
       }
     }
   }, [session, loading, router]);

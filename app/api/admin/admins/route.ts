@@ -3,17 +3,11 @@ import { cookies } from 'next/headers';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { adminSchema } from '@/lib/schemas/admin';
 
-// Normalize employeeId for synthetic email + password derivation
+// Normalize employeeId for consistency
 function normalizeEmployeeId(raw: string): string {
   const trimmed = (raw || '').trim();
   if (!trimmed) return 'UNKNOWN';
   return trimmed.toUpperCase();
-}
-
-function derivePassword(employeeId: string): string {
-  const digits = employeeId.replace(/\D/g, '');
-  const lastTwo = digits.slice(-2) || '01';
-  return `Admin@2025${lastTwo}`;
 }
 
 export async function GET() {
@@ -59,11 +53,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    // Allow empty-string email on the wire → treat as undefined
     const payload = {
       name: body?.name,
-      employeeId: body?.employeeId,
-      email: body?.email ? String(body.email).trim() || undefined : undefined,
+      employeeId: body?.employeeId ? String(body.employeeId).trim() || undefined : undefined,
+      email: body?.email,
+      password: body?.password,
       role: body?.role,
     };
 
@@ -79,48 +73,75 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, employeeId, email, role } = result.data;
-    const normalizedEmployeeId = normalizeEmployeeId(employeeId);
+    const { name, employeeId, email, password, role } = result.data;
 
-    const admin = getSupabaseAdmin();
-
-    // Enforce uniqueness at app level (DB has unique constraint as well)
-    const { data: existingByEmployeeId, error: existingErr } = await admin
-      .from('profiles')
-      .select('id')
-      .eq('employee_id', normalizedEmployeeId)
-      .maybeSingle();
-
-    if (existingErr && existingErr.code !== 'PGRST116') {
-      // Non "no rows" error
+    if (!password) {
       return NextResponse.json(
-        { error: existingErr.message },
+        { error: 'סיסמה היא שדה חובה' },
         { status: 400 },
       );
     }
 
-    if (existingByEmployeeId?.id) {
+    const admin = getSupabaseAdmin();
+
+    // Check if email already exists
+    const { data: existingByEmail, error: emailCheckErr } = await admin
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (emailCheckErr && emailCheckErr.code !== 'PGRST116') {
+      return NextResponse.json(
+        { error: emailCheckErr.message },
+        { status: 400 },
+      );
+    }
+
+    if (existingByEmail?.id) {
       return NextResponse.json(
         {
-          error: 'מספר עובד כבר קיים במערכת',
-          code: 'EMPLOYEE_ID_EXISTS',
+          error: 'אימייל כבר קיים במערכת',
+          code: 'EMAIL_EXISTS',
         },
         { status: 409 },
       );
     }
 
-    const finalEmail =
-      email ||
-      `admin+${normalizedEmployeeId.replace(/[^A-Z0-9]/g, '')}@toyota.local`;
-    const password = derivePassword(normalizedEmployeeId);
+    // Check if employeeId exists (if provided)
+    if (employeeId) {
+      const normalizedEmployeeId = normalizeEmployeeId(employeeId);
+      const { data: existingByEmployeeId, error: existingErr } = await admin
+        .from('profiles')
+        .select('id')
+        .eq('employee_id', normalizedEmployeeId)
+        .maybeSingle();
 
-    // Create auth user
+      if (existingErr && existingErr.code !== 'PGRST116') {
+        return NextResponse.json(
+          { error: existingErr.message },
+          { status: 400 },
+        );
+      }
+
+      if (existingByEmployeeId?.id) {
+        return NextResponse.json(
+          {
+            error: 'מספר עובד כבר קיים במערכת',
+            code: 'EMPLOYEE_ID_EXISTS',
+          },
+          { status: 409 },
+        );
+      }
+    }
+
+    // Create auth user with provided email and password
     const { data: createdUser, error: createErr } =
       await admin.auth.admin.createUser({
-        email: finalEmail,
+        email,
         password,
         email_confirm: true,
-        user_metadata: { username: finalEmail.split('@')[0], name },
+        user_metadata: { username: email.split('@')[0], name },
         app_metadata: { role },
       });
 
@@ -133,19 +154,21 @@ export async function POST(request: NextRequest) {
 
     const userId = createdUser.user.id;
 
-    // Upsert profile with role + employee_id
+    // Create profile with role and optional employee_id
+    const profileData: any = {
+      id: userId,
+      email,
+      role,
+      name,
+    };
+
+    if (employeeId) {
+      profileData.employee_id = normalizeEmployeeId(employeeId);
+    }
+
     const { data: profile, error: upErr } = await admin
       .from('profiles')
-      .upsert(
-        {
-          id: userId,
-          email: finalEmail,
-          role,
-          name,
-          employee_id: normalizedEmployeeId,
-        },
-        { onConflict: 'id' },
-      )
+      .upsert(profileData, { onConflict: 'id' })
       .select('id, name, email, employee_id, role, created_at, updated_at')
       .single();
 
