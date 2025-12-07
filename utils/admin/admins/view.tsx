@@ -82,6 +82,7 @@ export function AdminListView({
               <tr className="text-xs font-semibold text-gray-600">
                 <th className="px-3 py-2 text-right">שם</th>
                 <th className="px-3 py-2 text-right">מספר עובד</th>
+                <th className="px-3 py-2 text-right">אימייל</th>
                 <th className="px-3 py-2 text-right">תפקיד</th>
                 <th className="px-3 py-2 text-right">נוצר</th>
                 <th className="px-3 py-2 text-right">פעולות</th>
@@ -91,7 +92,7 @@ export function AdminListView({
               {pagedAdmins.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-3 py-4 text-center text-xs text-gray-500"
                   >
                     אין מנהלים להצגה.
@@ -104,6 +105,7 @@ export function AdminListView({
                     <td className="px-3 py-2 font-mono">
                       {d.employee_id || '—'}
                     </td>
+                    <td className="px-3 py-2">{d.email || '—'}</td>
                     <td className="px-3 py-2">
                       <Badge
                         variant="outline"
