@@ -71,15 +71,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const supabaseClient = createBrowserClient();
         setClient(supabaseClient);
 
-        const currentSession = await getCurrentSession(supabaseClient);
-        const currentRole = await getCurrentRole(supabaseClient);
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise<AuthSession>((_, reject) =>
+          setTimeout(() => reject(new Error('Auth initialization timeout')), 5000)
+        );
+
+        const authPromise = getCurrentSession(supabaseClient);
+
+        const currentSession = await Promise.race([
+          authPromise,
+          timeoutPromise,
+        ]);
+
+        const currentRole = currentSession?.role || null;
 
         setSession(currentSession);
         setRole(currentRole);
         writeAuthCookies(currentRole, currentSession?.userId || null);
         setError(null);
       } catch (err: any) {
-        setError(err.message || 'Failed to initialize auth');
+        // On timeout or error, clear session and allow user to login again
+        console.warn('Auth initialization failed:', err.message || 'Unknown error');
+        setError(null); // Don't show error to user, just clear session
         setSession(null);
         setRole(null);
         writeAuthCookies(null, null);

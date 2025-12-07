@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 // Basic app shell + API caching with versioning
-const VERSION = 'v1';
+const VERSION = 'v2'; // Bumped version to force cache refresh
 const APP_SHELL_CACHE = `app-shell-${VERSION}`;
 const RUNTIME_CACHE = `runtime-${VERSION}`;
 
@@ -12,7 +12,10 @@ const APP_SHELL_URLS = [
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(APP_SHELL_CACHE).then((cache) => cache.addAll(APP_SHELL_URLS)).catch(() => {})
+    caches
+      .open(APP_SHELL_CACHE)
+      .then((cache) => cache.addAll(APP_SHELL_URLS))
+      .catch(() => {})
   );
 });
 
@@ -30,26 +33,52 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Cache-first for app shell/static; network-first for JSON/API
+// Strategy: Network First for navigation (HTML), Cache First for static assets
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
-  if (req.method !== 'GET') return; // only GET
 
-  // Same-origin navigation or static
+  if (req.method !== 'GET') return;
+
+  // Same-origin requests
   if (url.origin === self.location.origin) {
-    if (req.mode === 'navigate' || APP_SHELL_URLS.includes(url.pathname)) {
+    // 1. Navigation requests (HTML): Network First, falling back to cache
+    if (req.mode === 'navigate') {
+      event.respondWith(
+        fetch(req)
+          .then((resp) => {
+            // Update cache with fresh version
+            const copy = resp.clone();
+            caches.open(APP_SHELL_CACHE).then((cache) => cache.put(req, copy));
+            return resp;
+          })
+          .catch(() => {
+            // Fallback to cache if offline
+            return caches
+              .match(req)
+              .then((cached) => cached || caches.match('/'));
+          })
+      );
+      return;
+    }
+
+    // 2. Static assets (JS, CSS, Images): Cache First, falling back to network
+    // We assume hashed filenames (Next.js default), so cache is safe
+    if (
+      url.pathname.startsWith('/_next/static/') ||
+      APP_SHELL_URLS.includes(url.pathname)
+    ) {
       event.respondWith(
         caches.match(req).then((cached) => {
           return (
             cached ||
-            fetch(req)
-              .then((resp) => {
-                const copy = resp.clone();
-                caches.open(APP_SHELL_CACHE).then((cache) => cache.put(req, copy));
-                return resp;
-              })
-              .catch(() => cached || caches.match('/'))
+            fetch(req).then((resp) => {
+              const copy = resp.clone();
+              caches
+                .open(APP_SHELL_CACHE)
+                .then((cache) => cache.put(req, copy));
+              return resp;
+            })
           );
         })
       );
@@ -58,7 +87,8 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Network-first for JSON/API responses
-  const isApi = url.pathname.startsWith('/api/') || url.hostname.endsWith('supabase.co');
+  const isApi =
+    url.pathname.startsWith('/api/') || url.hostname.endsWith('supabase.co');
   if (isApi) {
     event.respondWith(
       (async () => {
@@ -141,7 +171,12 @@ async function processStore(db, store, sender, now, maxRetries = 5) {
         it.retryCount = retry;
         it.nextAttemptAt = now + computeBackoffMs(retry);
         await idbUpdate(db, store, it);
-        broadcast({ type: 'sync:rescheduled', store, id: it.id, retryCount: retry });
+        broadcast({
+          type: 'sync:rescheduled',
+          store,
+          id: it.id,
+          retryCount: retry,
+        });
       }
     }
   }
@@ -162,7 +197,11 @@ async function runSyncAll() {
   const now = Date.now();
   // Sender stubs – replace with real endpoints in production
   const sendForm = async (it) => {
-    const resp = await fetch('/api/offline/forms', { method: 'POST', body: JSON.stringify(it.payload || {}), headers: { 'Content-Type': 'application/json' } });
+    const resp = await fetch('/api/offline/forms', {
+      method: 'POST',
+      body: JSON.stringify(it.payload || {}),
+      headers: { 'Content-Type': 'application/json' },
+    });
     try {
       const json = await resp.json();
       if (json && json.type === 'task' && json.data && json.data.id) {
@@ -177,14 +216,21 @@ async function runSyncAll() {
         });
         const local = getReq.result || null;
         const server = json.data;
-        const localTs = local && local.modifiedAt ? new Date(local.modifiedAt).getTime() : 0;
-        const serverTs = server && server.updatedAt ? new Date(server.updatedAt).getTime() : 0;
+        const localTs =
+          local && local.modifiedAt ? new Date(local.modifiedAt).getTime() : 0;
+        const serverTs =
+          server && server.updatedAt ? new Date(server.updatedAt).getTime() : 0;
         let merged = server;
         if (localTs > serverTs) {
           merged = local;
         } else if (serverTs > localTs) {
           // notify ribbon
-          broadcast({ type: 'conflict:server-wins', id: server.id, updatedBy: server.updatedBy || null, updatedAt: server.updatedAt || null });
+          broadcast({
+            type: 'conflict:server-wins',
+            id: server.id,
+            updatedBy: server.updatedBy || null,
+            updatedAt: server.updatedAt || null,
+          });
         }
         const putReq = store.put(merged);
         await new Promise((res, rej) => {
@@ -200,7 +246,11 @@ async function runSyncAll() {
   const sendBlob = async (it) => {
     // Example upload placeholder; adjust per real endpoint
     const formData = new FormData();
-    formData.append('file', it.blob || new Blob([]), (it.metadata && it.metadata.name) || 'upload.bin');
+    formData.append(
+      'file',
+      it.blob || new Blob([]),
+      (it.metadata && it.metadata.name) || 'upload.bin'
+    );
     await fetch('/api/offline/upload', { method: 'POST', body: formData });
   };
   await processStore(db, 'forms', sendForm, now);
@@ -290,7 +340,8 @@ self.addEventListener('notificationclick', (event) => {
   notification.close();
 
   const url =
-    (notification.data && (notification.data.url || notification.data.route)) || '/';
+    (notification.data && (notification.data.url || notification.data.route)) ||
+    '/';
 
   event.waitUntil(
     (async () => {
@@ -321,5 +372,3 @@ self.addEventListener('notificationclick', (event) => {
     })()
   );
 });
-
-

@@ -372,18 +372,34 @@ export const getAdminSession = async (
   client: SupabaseClient
 ): Promise<AdminSession | null> => {
   try {
+    // Add timeout to prevent hanging on getUser()
+    const getUserPromise = client.auth.getUser();
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('getUser timeout')), 3000)
+    );
+
     const {
       data: { user },
-    } = await client.auth.getUser();
+    } = await Promise.race([getUserPromise, timeoutPromise]);
 
     if (!user) return null;
 
     // Get role from profiles table (source of truth)
-    const { data: profile, error: profileError } = await client
+    // Add timeout for profile query too
+    const profileQueryPromise = client
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single();
+    
+    const profileTimeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Profile query timeout')), 3000)
+    );
+
+    const { data: profile, error: profileError } = await Promise.race([
+      profileQueryPromise,
+      profileTimeoutPromise,
+    ]);
 
     if (profileError || !profile) {
       return null;
