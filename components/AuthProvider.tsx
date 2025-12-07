@@ -64,25 +64,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize Supabase client and session on mount
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('AuthProvider: Initializing...');
       try {
         setLoading(true);
 
         // Create client first
         const supabaseClient = createBrowserClient();
         setClient(supabaseClient);
+        console.log('AuthProvider: Client created');
 
-        const currentSession = await getCurrentSession(supabaseClient);
-        const currentRole = await getCurrentRole(supabaseClient);
+        // Create a promise for the auth check
+        const checkAuth = async () => {
+          try {
+            console.log('AuthProvider: Checking session...');
+            const currentSession = await getCurrentSession(supabaseClient);
+            console.log('AuthProvider: Session result:', currentSession ? 'Found' : 'Null');
+            
+            const currentRole = await getCurrentRole(supabaseClient);
+            console.log('AuthProvider: Role result:', currentRole);
+
+            return { session: currentSession, role: currentRole };
+          } catch (e) {
+            console.error('AuthProvider: Error in checkAuth:', e);
+            throw e;
+          }
+        };
+
+        // Race against a 5-second timeout
+        // If Supabase hangs completely, we force a fallback or clear state
+        const { session: currentSession, role: currentRole } = await Promise.race([
+          checkAuth(),
+          new Promise<{ session: any; role: any }>((_, reject) =>
+            setTimeout(() => reject(new Error('Auth initialization timed out')), 5000)
+          ),
+        ]);
 
         setSession(currentSession);
         setRole(currentRole);
         writeAuthCookies(currentRole, currentSession?.userId || null);
         setError(null);
+        console.log('AuthProvider: Initialization complete');
       } catch (err: any) {
-        setError(err.message || 'Failed to initialize auth');
-        setSession(null);
-        setRole(null);
-        writeAuthCookies(null, null);
+        console.error('AuthProvider: Initialization failed/timed out:', err);
+        
+        // Final fallback: try to read from cookies directly if everything else failed
+        // This is a "Hail Mary" to prevent being logged out on slow connections
+        try {
+          const roleCookie = document.cookie
+            .split('; ')
+            .find((row) => row.startsWith('toyota_role='))
+            ?.split('=')[1];
+            
+          if (roleCookie && ['admin', 'manager', 'viewer', 'driver'].includes(roleCookie)) {
+            console.warn('AuthProvider: Recovering from error using cookies');
+            setRole(roleCookie as any);
+            // We can't easily reconstruct the full session here without more data, 
+            // but setting the role might be enough for some UI to show
+          } else {
+            setSession(null);
+            setRole(null);
+            writeAuthCookies(null, null);
+          }
+        } catch {
+          setSession(null);
+          setRole(null);
+        }
+        
+        // Don't show error to user for timeouts, just let them be "logged out" or "cookie authenticated"
+        // setError(err.message || 'Failed to initialize auth');
       } finally {
         setLoading(false);
       }

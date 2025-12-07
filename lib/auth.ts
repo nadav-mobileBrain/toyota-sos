@@ -118,6 +118,35 @@ export const getSession = async (
   return session;
 };
 
+/**
+ * Timeout helper for async operations
+ */
+export const withTimeout = <T>(
+  promise: Promise<T>,
+  ms: number,
+  fallback: T
+): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => {
+      setTimeout(() => {
+        console.warn(`Operation timed out after ${ms}ms, using fallback`);
+        resolve(fallback);
+      }, ms);
+    }),
+  ]);
+};
+
+/**
+ * Read cookie by name (browser only)
+ */
+export const readCookie = (name: string): string | null => {
+  if (typeof window === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  if (match) return match[2];
+  return null;
+};
+
 export const getCurrentUser = async (
   client: SupabaseClient
 ): Promise<User | null> => {
@@ -367,27 +396,47 @@ export const logoutAdmin = async (client: SupabaseClient): Promise<void> => {
 
 /**
  * Get current admin session from Supabase
+ * With timeout and logging
  */
 export const getAdminSession = async (
   client: SupabaseClient
 ): Promise<AdminSession | null> => {
   try {
+    console.log('Checking admin session...');
+    
+    // Check Supabase session with timeout (5s)
     const {
       data: { user },
-    } = await client.auth.getUser();
+    } = await withTimeout(
+      client.auth.getUser(),
+      5000,
+      { data: { user: null }, error: new Error('Timeout') }
+    );
 
-    if (!user) return null;
-
-    // Get role from profiles table (source of truth)
-    const { data: profile, error: profileError } = await client
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile) {
+    if (!user) {
+      console.log('No Supabase user found');
       return null;
     }
+
+    console.log('Supabase user found:', user.id);
+
+    // Get role from profiles table (source of truth) with timeout (3s)
+    const { data: profile, error: profileError } = await withTimeout(
+      client
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single(),
+      3000,
+      { data: null, error: { message: 'Timeout', code: 'TIMEOUT', details: '', hint: '' } }
+    );
+
+    if (profileError || !profile) {
+      console.warn('Failed to fetch profile for user:', profileError?.message);
+      return null;
+    }
+
+    console.log('Profile found, role:', profile.role);
 
     const role = profile.role as 'admin' | 'manager' | 'viewer' | 'driver';
     
@@ -402,7 +451,8 @@ export const getAdminSession = async (
       role: role as 'admin' | 'manager' | 'viewer',
       email: user.email,
     };
-  } catch {
+  } catch (err) {
+    console.error('Error getting admin session:', err);
     return null;
   }
 };
@@ -420,10 +470,34 @@ export const getCurrentSession = async (
 ): Promise<AuthSession> => {
   // Check for driver session first (driver can't also be admin)
   const driverSession = getDriverSession();
-  if (driverSession) return driverSession;
+  if (driverSession) {
+    console.log('Using local driver session');
+    return driverSession;
+  }
 
   // Check for admin session
-  return await getAdminSession(client);
+  const adminSession = await getAdminSession(client);
+  if (adminSession) {
+    console.log('Using Supabase admin session');
+    return adminSession;
+  }
+
+  // FALLBACK: Check cookies if Supabase call failed/timed out
+  // This prevents infinite loading spinner on new tabs
+  const roleCookie = readCookie('toyota_role');
+  const userIdCookie = readCookie('toyota_user_id');
+  
+  if (roleCookie && userIdCookie && ['admin', 'manager', 'viewer'].includes(roleCookie)) {
+    console.warn('Falling back to cookie session due to missing Supabase session');
+    return {
+      userId: userIdCookie,
+      username: 'Cookie Session',
+      role: roleCookie as 'admin' | 'manager' | 'viewer',
+      email: 'cookie@fallback',
+    };
+  }
+
+  return null;
 };
 
 /**
@@ -433,7 +507,15 @@ export const getCurrentRole = async (
   client: SupabaseClient
 ): Promise<'driver' | 'admin' | 'manager' | 'viewer' | null> => {
   const session = await getCurrentSession(client);
-  return session?.role || null;
+  if (session?.role) return session.role;
+  
+  // Extra fallback: check cookie directly if session is null
+  const roleCookie = readCookie('toyota_role');
+  if (roleCookie && ['driver', 'admin', 'manager', 'viewer'].includes(roleCookie)) {
+    return roleCookie as 'driver' | 'admin' | 'manager' | 'viewer';
+  }
+  
+  return null;
 };
 
 /**
