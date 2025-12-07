@@ -53,10 +53,12 @@ Glow.displayName = 'Glow';
 export default function Home() {
   const router = useRouter();
   const { session, loading } = useAuth();
+  const [isRedirecting, setIsRedirecting] = React.useState(false);
 
   // Auto-redirect if already logged in
   useEffect(() => {
     if (!loading && session) {
+      setIsRedirecting(true);
       if (session.role === 'driver') {
         router.replace('/driver');
       } else if (session.role === 'admin' || session.role === 'manager' || session.role === 'viewer') {
@@ -65,7 +67,7 @@ export default function Home() {
     }
   }, [session, loading, router]);
 
-  if (loading) {
+  if (loading || isRedirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />

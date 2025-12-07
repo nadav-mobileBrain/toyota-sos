@@ -65,8 +65,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       console.log('AuthProvider: Initializing...');
+      
+      // OPTIMISTIC CHECK: Check cookies immediately to unblock UI
       try {
-        setLoading(true);
+        const roleCookie = document.cookie
+          .split('; ')
+          .find((row) => row.startsWith('toyota_role='))
+          ?.split('=')[1];
+          
+        const userIdCookie = document.cookie
+          .split('; ')
+          .find((row) => row.startsWith('toyota_user_id='))
+          ?.split('=')[1];
+          
+        if (roleCookie && userIdCookie && ['admin', 'manager', 'viewer', 'driver'].includes(roleCookie)) {
+           console.log('AuthProvider: Optimistic cookie found, unblocking UI');
+           setRole(roleCookie as any);
+           setSession({
+             userId: userIdCookie,
+             username: 'Optimistic Session', 
+             role: roleCookie as any,
+             email: 'optimistic@loading',
+           });
+           // We keep loading=true for a split second to let the real auth finish, 
+           // BUT if we want "super fast", we can set loading=false here.
+           // However, let's keep it true but rely on the 2s timeout to be a fallback,
+           // OR we can trust this cookie and set loading=false immediately.
+           // Given the user wants "super fast", let's trust the cookie for UI rendering.
+           // The real auth will overwrite this shortly if it succeeds, or correct it if it fails.
+           setLoading(false); 
+        }
+      } catch (e) {
+        console.warn('Optimistic check failed:', e);
+      }
+
+      try {
+        if (!client) { // Only if not already set by optimistic render (though it won't be in useEffect)
+             setLoading(true); 
+        }
 
         // Create client first
         const supabaseClient = createBrowserClient();
@@ -90,12 +126,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         };
 
-        // Race against a 5-second timeout
+        // Race against a 2-second timeout (reduced from 5s for better UX)
         // If Supabase hangs completely, we force a fallback or clear state
         const { session: currentSession, role: currentRole } = await Promise.race([
           checkAuth(),
           new Promise<{ session: any; role: any }>((_, reject) =>
-            setTimeout(() => reject(new Error('Auth initialization timed out')), 5000)
+            setTimeout(() => reject(new Error('Auth initialization timed out')), 2000)
           ),
         ]);
 
