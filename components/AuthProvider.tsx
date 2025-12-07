@@ -85,13 +85,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ['admin', 'manager', 'viewer', 'driver'].includes(roleCookie)
         ) {
           console.log('AuthProvider: Optimistic cookie found, unblocking UI');
-          setRole(roleCookie as 'driver' | 'admin' | 'manager' | 'viewer');
-          setSession({
-            userId: userIdCookie,
-            username: 'Optimistic Session',
-            role: roleCookie as 'driver' | 'admin' | 'manager' | 'viewer',
-            email: 'optimistic@loading',
-          });
+          const typedRole = roleCookie as
+            | 'driver'
+            | 'admin'
+            | 'manager'
+            | 'viewer';
+          setRole(typedRole);
+
+          if (typedRole === 'driver') {
+            setSession({
+              userId: userIdCookie,
+              employeeId: 'optimistic',
+              role: 'driver',
+              createdAt: Date.now(),
+              name: 'Optimistic Driver',
+            });
+          } else {
+            setSession({
+              userId: userIdCookie,
+              username: 'Optimistic Session',
+              role: typedRole,
+              email: 'optimistic@loading',
+            });
+          }
           // We keep loading=true for a split second to let the real auth finish,
           // BUT if we want "super fast", we can set loading=false here.
           // However, let's keep it true but rely on the 2s timeout to be a fallback,
