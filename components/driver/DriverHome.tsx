@@ -43,6 +43,16 @@ function getChecklistInfo(type: string) {
 }
 
 export type DriverTask = TaskCardProps;
+const multiStopAliases = [
+  'הסעת לקוח הביתה',
+  'הסעת לקוח למוסך',
+  'drive_client_home',
+  'drive_client_to_dealership',
+];
+const isMultiStopTaskType = (val: string | null | undefined) => {
+  const normalized = (val || '').trim();
+  return multiStopAliases.includes(normalized);
+};
 
 function intersectsToday(
   start?: string | Date | null,
@@ -215,6 +225,46 @@ export function DriverHome() {
             }
           : null,
       }));
+
+      const taskIds = mapped.map((t) => t.id);
+
+      if (client && taskIds.length > 0) {
+        type StopRow = {
+          task_id: string;
+          address: string | null;
+          advisor_name: string | null;
+          sort_order: number | null;
+          client: { id: string; name: string | null } | null;
+        };
+        const { data: stopRows, error: stopsError } = await client
+          .from('task_stops')
+          .select(
+            'task_id, address, advisor_name, sort_order, client:clients(id,name)'
+          )
+          .in('task_id', taskIds)
+          .order('sort_order', { ascending: true });
+
+        if (!stopsError && Array.isArray(stopRows)) {
+          const grouped = new Map<string, DriverTask['stops']>();
+          for (const row of stopRows as StopRow[]) {
+            const entry = grouped.get(row.task_id) || [];
+            entry.push({
+              address: row.address || '',
+              clientName: row.client?.name || null,
+              advisorName: row.advisor_name || null,
+            });
+            grouped.set(row.task_id, entry);
+          }
+          for (const task of mapped) {
+            if (!grouped.has(task.id)) continue;
+            task.stops = grouped.get(task.id) || [];
+            if (task.stops.length > 0) {
+              task.address = task.stops[0].address;
+              task.clientName = task.stops[0].clientName || task.clientName;
+            }
+          }
+        }
+      }
       setRemoteTasks((prev) => (reset ? mapped : mergeById(prev, mapped)));
       setHasMore((mapped?.length ?? 0) === 10);
       const last = mapped?.[mapped.length - 1];

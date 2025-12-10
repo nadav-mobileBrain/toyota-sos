@@ -61,7 +61,11 @@ export default function Home() {
       setIsRedirecting(true);
       if (session.role === 'driver') {
         router.replace('/driver');
-      } else if (session.role === 'admin' || session.role === 'manager' || session.role === 'viewer') {
+      } else if (
+        session.role === 'admin' ||
+        session.role === 'manager' ||
+        session.role === 'viewer'
+      ) {
         router.replace('/admin/dashboard');
       }
     }
@@ -149,7 +153,7 @@ export default function Home() {
         <p>
           &copy; {new Date().getFullYear()} Toyota S.O.S. All rights reserved.
         </p>
-        <p>Version 1.0.0</p>
+        <p>Version 1.0.1</p>
         <p>Developed By Nadav Galili</p>
       </div>
 

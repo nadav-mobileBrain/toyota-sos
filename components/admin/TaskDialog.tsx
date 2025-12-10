@@ -95,9 +95,13 @@ const types: TaskType[] = [
 const priorities: TaskPriority[] = ['נמוכה', 'בינונית', 'גבוהה'];
 const statuses: TaskStatus[] = ['בהמתנה', 'בעבודה', 'חסומה', 'הושלמה'];
 const multiStopTypes: TaskType[] = ['הסעת לקוח הביתה', 'הסעת לקוח למוסך'];
+const multiStopAliases = ['drive_client_home', 'drive_client_to_dealership'];
 const isMultiStopTaskType = (val: string | null | undefined) => {
   const normalized = (val || '').trim();
-  return multiStopTypes.includes(normalized as TaskType);
+  return (
+    multiStopTypes.includes(normalized as TaskType) ||
+    multiStopAliases.includes(normalized)
+  );
 };
 
 const statusLabels: Record<TaskStatus, string> = {

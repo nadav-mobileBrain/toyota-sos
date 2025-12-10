@@ -4,9 +4,10 @@ import { cookies } from 'next/headers';
 import { notify } from '@/lib/notify';
 
 const multiStopTypes = new Set(['הסעת לקוח הביתה', 'הסעת לקוח למוסך']);
+const multiStopAliases = new Set(['drive_client_home', 'drive_client_to_dealership']);
 const isMultiStopType = (val: string | null | undefined) => {
   const normalized = (val || '').trim();
-  return multiStopTypes.has(normalized);
+  return multiStopTypes.has(normalized) || multiStopAliases.has(normalized);
 };
 
 type StopPayload = {
@@ -139,7 +140,8 @@ export async function PATCH(
     const effectiveType =
       (updatePayload.type as string | undefined) ??
       (currentTask?.type as string | undefined);
-    const isMulti = isMultiStopType(effectiveType);
+    const isMulti =
+      isMultiStopType(effectiveType) || normalizedStops.length > 0;
 
     if (normalizedStops.length > 0) {
       if (!isMulti) {

@@ -5,9 +5,10 @@ import type { TaskAssignee } from '@/types/task';
 import { notify } from '@/lib/notify';
 
 const multiStopTypes = new Set(['הסעת לקוח הביתה', 'הסעת לקוח למוסך']);
+const multiStopAliases = new Set(['drive_client_home', 'drive_client_to_dealership']);
 const isMultiStopType = (val: string | null | undefined) => {
   const normalized = (val || '').trim();
-  return multiStopTypes.has(normalized);
+  return multiStopTypes.has(normalized) || multiStopAliases.has(normalized);
 };
 
 /**
@@ -53,7 +54,8 @@ export async function POST(request: NextRequest) {
 
     const admin = getSupabaseAdmin();
 
-    const isMulti = isMultiStopType(type);
+    const isMulti =
+      isMultiStopType(type) || (Array.isArray(stops) && stops.length > 0);
 
     // Normalize stops if provided
     let normalizedStops: {

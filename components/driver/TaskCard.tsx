@@ -15,6 +15,11 @@ export type TaskCardProps = {
   estimatedEnd?: string | Date | null;
   address?: string | null;
   clientName?: string | null;
+  stops?: {
+    address: string;
+    clientName?: string | null;
+    advisorName?: string | null;
+  }[];
   vehicle?: { licensePlate?: string | null; model?: string | null } | null;
   onStatusChange?: (next: TaskCardProps['status']) => void;
 };
@@ -29,6 +34,7 @@ export function TaskCard(props: TaskCardProps) {
     estimatedEnd,
     address,
     clientName,
+    stops,
     vehicle,
     onStatusChange,
   } = props;
@@ -75,8 +81,11 @@ export function TaskCard(props: TaskCardProps) {
       ? `עד ${dayjs(estimatedEnd).format('HH:mm')}`
       : 'ללא זמן יעד';
 
-  const wazeHref = address
-    ? `waze://?navigate=yes&q=${encodeURIComponent(address)}`
+  const primaryAddress =
+    stops && stops.length > 0 ? stops[0].address : address || undefined;
+
+  const wazeHref = primaryAddress
+    ? `waze://?navigate=yes&q=${encodeURIComponent(primaryAddress)}`
     : undefined;
 
   return (
@@ -136,10 +145,27 @@ export function TaskCard(props: TaskCardProps) {
       <h3 className="mt-2 text-lg font-semibold">{title}</h3>
       <p className="text-sm text-gray-600">{type}</p>
 
-      <div className="mt-3 space-y-1 text-sm text-gray-700">
+      <div className="mt-3 space-y-2 text-sm text-gray-700">
         <div>חלון זמן: {timeWindow}</div>
-        {address ? <div>כתובת: {address}</div> : null}
-        {clientName ? <div>לקוח: {clientName}</div> : null}
+        {stops && stops.length > 0 ? (
+          <div className="space-y-1 rounded border border-gray-200 bg-gray-50 p-2">
+            {stops.map((s, idx) => (
+              <div key={`${s.address}-${idx}`} className="space-y-0.5">
+                <div className="text-xs font-semibold text-gray-600">
+                  עצירה {idx + 1}
+                </div>
+                {s.address ? <div>כתובת: {s.address}</div> : null}
+                {s.clientName ? <div>לקוח: {s.clientName}</div> : null}
+                {s.advisorName ? <div>יועץ: {s.advisorName}</div> : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            {address ? <div>כתובת: {address}</div> : null}
+            {clientName ? <div>לקוח: {clientName}</div> : null}
+          </>
+        )}
         {vehicle?.licensePlate ? (
           <div>
             רכב: {vehicle.licensePlate}

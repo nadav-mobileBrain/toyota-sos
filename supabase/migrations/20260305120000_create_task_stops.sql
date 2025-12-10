@@ -37,3 +37,9 @@ on public.task_stops for all
 using (app_user_role() = 'admin'::role or app_user_role() = 'manager'::role)
 with check (app_user_role() = 'admin'::role or app_user_role() = 'manager'::role);
 
+-- Grants (required alongside RLS policies)
+grant select on public.task_stops to authenticated;
+grant select on public.task_stops to anon;
+grant insert on public.task_stops to service_role;
+grant update on public.task_stops to service_role;
+grant delete on public.task_stops to service_role;
