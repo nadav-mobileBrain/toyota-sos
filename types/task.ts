@@ -31,6 +31,7 @@ export interface Task {
   advisor_name?: string | null;
   created_at: string;
   updated_at: string;
+  stops?: TaskStop[];
 }
 
 export interface TaskAssignee {
@@ -39,4 +40,15 @@ export interface TaskAssignee {
   driver_id: string;
   is_lead: boolean;
   assigned_at: string;
+}
+
+export interface TaskStop {
+  id: string;
+  task_id: string;
+  client_id: string | null;
+  address: string;
+  advisor_name: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }

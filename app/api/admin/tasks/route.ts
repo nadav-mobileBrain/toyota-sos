@@ -4,6 +4,12 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import type { TaskAssignee } from '@/types/task';
 import { notify } from '@/lib/notify';
 
+const multiStopTypes = new Set(['הסעת לקוח הביתה', 'הסעת לקוח למוסך']);
+const isMultiStopType = (val: string | null | undefined) => {
+  const normalized = (val || '').trim();
+  return multiStopTypes.has(normalized);
+};
+
 /**
  * POST /api/admin/tasks
  * Create a new task and optional driver assignments
@@ -35,6 +41,7 @@ export async function POST(request: NextRequest) {
       vehicle_id,
       lead_driver_id,
       co_driver_ids,
+      stops,
     } = body || {};
 
     if (!type || !priority || !status) {
@@ -45,6 +52,69 @@ export async function POST(request: NextRequest) {
     }
 
     const admin = getSupabaseAdmin();
+
+    const isMulti = isMultiStopType(type);
+
+    // Normalize stops if provided
+    let normalizedStops: {
+      client_id: string;
+      address: string;
+      advisor_name: string | null;
+      sort_order: number;
+    }[] = [];
+
+    if (isMulti) {
+      if (!Array.isArray(stops) || stops.length === 0) {
+        return NextResponse.json(
+          { error: 'חובה לציין לפחות לקוח אחד עבור סוג משימה זה' },
+          { status: 400 }
+        );
+      }
+
+      normalizedStops = stops.map((s: any, idx: number) => ({
+        client_id: typeof s?.client_id === 'string' ? s.client_id : '',
+        address: typeof s?.address === 'string' ? s.address.trim() : '',
+        advisor_name:
+          typeof s?.advisor_name === 'string' && s.advisor_name.trim()
+            ? s.advisor_name.trim()
+            : null,
+        sort_order:
+          typeof s?.sort_order === 'number' && Number.isFinite(s.sort_order)
+            ? s.sort_order
+            : idx,
+      }));
+
+      for (const stop of normalizedStops) {
+        if (!stop.client_id) {
+          return NextResponse.json(
+            { error: 'חובה לבחור לקוח עבור כל עצירה' },
+            { status: 400 }
+          );
+        }
+        if (!stop.address) {
+          return NextResponse.json(
+            { error: 'חובה להזין כתובת עבור כל עצירה' },
+            { status: 400 }
+          );
+        }
+        if (!stop.advisor_name) {
+          return NextResponse.json(
+            { error: 'חובה להזין שם יועץ עבור כל עצירה' },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    // Align legacy fields with first stop (for compatibility with existing flows)
+    const firstStop = normalizedStops[0];
+    const effectiveClientId = isMulti
+      ? firstStop?.client_id
+      : client_id ?? null;
+    const effectiveAddress = isMulti ? firstStop?.address ?? '' : address ?? '';
+    const effectiveAdvisorName = isMulti
+      ? firstStop?.advisor_name ?? null
+      : advisor_name ?? null;
     // Insert task
     const { data: created, error } = await admin
       .from('tasks')
@@ -54,11 +124,11 @@ export async function POST(request: NextRequest) {
         priority,
         status,
         details: details ?? null,
-        advisor_name: advisor_name ?? null,
+        advisor_name: effectiveAdvisorName,
         estimated_start: estimated_start ?? null,
         estimated_end: estimated_end ?? null,
-        address: address ?? '',
-        client_id: client_id ?? null,
+        address: effectiveAddress ?? '',
+        client_id: effectiveClientId ?? null,
         vehicle_id: vehicle_id ?? null,
       })
       .select('*')
@@ -66,6 +136,30 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    // Insert stops when applicable
+    let createdStops = [];
+    if (isMulti && normalizedStops.length > 0) {
+      const { data: stopsInserted, error: stopsError } = await admin
+        .from('task_stops')
+        .insert(
+          normalizedStops.map((s) => ({
+            ...s,
+            task_id: created.id,
+          }))
+        )
+        .select('*');
+
+      if (stopsError) {
+        // Best-effort cleanup to avoid orphaned task without stops
+        await admin.from('tasks').delete().eq('id', created.id);
+        return NextResponse.json(
+          { error: stopsError.message },
+          { status: 400 }
+        );
+      }
+      createdStops = stopsInserted || [];
     }
 
     // Insert assignments if provided
@@ -123,7 +217,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, data: created }, { status: 200 });
+    const responseTask = isMultiStopType
+      ? { ...created, stops: createdStops }
+      : created;
+
+    return NextResponse.json({ ok: true, data: responseTask }, { status: 200 });
   } catch (err: unknown) {
     const error = err as Error;
     return NextResponse.json(

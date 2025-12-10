@@ -29,6 +29,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RtlSelectDropdown } from './RtlSelectDropdown';
 type Mode = 'create' | 'edit';
+type StopForm = {
+  clientId: string;
+  clientQuery: string;
+  address: string;
+  advisorName: string;
+};
 
 // Validation schema for estimated date (no past dates allowed)
 const estimatedDateSchema = z.date().refine((date) => {
@@ -88,6 +94,11 @@ const types: TaskType[] = [
 ];
 const priorities: TaskPriority[] = ['נמוכה', 'בינונית', 'גבוהה'];
 const statuses: TaskStatus[] = ['בהמתנה', 'בעבודה', 'חסומה', 'הושלמה'];
+const multiStopTypes: TaskType[] = ['הסעת לקוח הביתה', 'הסעת לקוח למוסך'];
+const isMultiStopTaskType = (val: string | null | undefined) => {
+  const normalized = (val || '').trim();
+  return multiStopTypes.includes(normalized as TaskType);
+};
 
 const statusLabels: Record<TaskStatus, string> = {
   בהמתנה: 'ממתינה לביצוע',
@@ -158,6 +169,8 @@ export function TaskDialog(props: TaskDialogProps) {
   const [newVehiclePlate, setNewVehiclePlate] = useState('');
   const [newVehicleModel, setNewVehicleModel] = useState('');
   const [advisorName, setAdvisorName] = useState(task?.advisor_name ?? '');
+  const [stops, setStops] = useState<StopForm[]>([]);
+  const [activeStopIndex, setActiveStopIndex] = useState(0);
 
   useEffect(() => {
     setClientsLocal(clients);
@@ -200,11 +213,34 @@ export function TaskDialog(props: TaskDialogProps) {
       setAddress(task?.address ?? '');
       setAddressQuery(task?.address ?? '');
       setClientId(task?.client_id ?? '');
+      setActiveStopIndex(0);
+      const taskType = task?.type ?? '';
+      const isMulti = isMultiStopTaskType(taskType);
       if (task?.client_id) {
         const existing = clients.find((c) => c.id === task.client_id);
         setClientQuery(existing?.name ?? '');
+        if (isMulti) {
+          setStops([
+            {
+              clientId: task.client_id,
+              clientQuery: existing?.name ?? '',
+              address: task.address ?? '',
+              advisorName: task.advisor_name ?? '',
+            },
+          ]);
+        }
       } else {
         setClientQuery('');
+        if (isMulti) {
+          setStops([
+            {
+              clientId: '',
+              clientQuery: '',
+              address: task?.address ?? '',
+              advisorName: task?.advisor_name ?? '',
+            },
+          ]);
+        }
       }
       setVehicleId(task?.vehicle_id ?? '');
       if (task?.vehicle_id) {
@@ -230,8 +266,89 @@ export function TaskDialog(props: TaskDialogProps) {
       }
       setShowAddClient(false);
       setShowAddVehicle(false);
+      if (!isMulti) {
+        setStops([]);
+      }
     }
   }, [open, task, mode, assignees, clients, vehicles]);
+
+  const isMultiStopType = useMemo(
+    () => isMultiStopTaskType(type),
+    [type]
+  );
+
+  useEffect(() => {
+    if (isMultiStopType) {
+      if (stops.length === 0) {
+        setStops([
+          {
+            clientId: clientId || '',
+            clientQuery: clientQuery || '',
+            address: addressQuery || '',
+            advisorName: advisorName || '',
+          },
+        ]);
+      }
+    } else if (stops.length > 0) {
+      const first = stops[0];
+      setClientId(first.clientId);
+      setClientQuery(first.clientQuery);
+      setAddress(first.address);
+      setAddressQuery(first.address);
+      setAdvisorName(first.advisorName);
+      setStops([]);
+    }
+  }, [
+    isMultiStopType,
+    stops.length,
+    clientId,
+    clientQuery,
+    addressQuery,
+    advisorName,
+  ]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!open || mode !== 'edit' || !task?.id || !isMultiStopType) return;
+
+    const fetchStops = async () => {
+      try {
+        const res = await fetch(`/api/admin/tasks/${task.id}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const taskStops = json?.data?.task_stops || json?.data?.stops || [];
+        if (!Array.isArray(taskStops) || taskStops.length === 0) return;
+        const mapped: StopForm[] = taskStops
+          .slice()
+          .sort(
+            (a: any, b: any) =>
+              (a?.sort_order ?? 0) - (b?.sort_order ?? 0)
+          )
+          .map((s: any) => {
+            const clientName =
+              clientsLocal.find((c) => c.id === s?.client_id)?.name || '';
+            return {
+              clientId: s?.client_id || '',
+              clientQuery: clientName,
+              address: s?.address || '',
+              advisorName: s?.advisor_name || '',
+            };
+          });
+        if (!cancelled) {
+          setStops(mapped);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Failed to load task stops', err);
+        }
+      }
+    };
+    fetchStops();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, mode, task?.id, isMultiStopType, clientsLocal]);
 
   const clientSuggestions = useMemo(() => {
     const q = clientQuery.trim().toLowerCase();
@@ -253,6 +370,17 @@ export function TaskDialog(props: TaskDialogProps) {
       .slice(0, 8);
   }, [vehiclesLocal, vehicleQuery]);
 
+  const getClientSuggestions = React.useCallback(
+    (query: string) => {
+      const q = query.trim().toLowerCase();
+      if (!q) return [];
+      return clientsLocal
+        .filter((c) => c.name.toLowerCase().includes(q))
+        .slice(0, 8);
+    },
+    [clientsLocal]
+  );
+
   const validate = (): string | null => {
     // Validate date
     const dateValidation = estimatedDateSchema.safeParse(estimatedDate);
@@ -272,6 +400,23 @@ export function TaskDialog(props: TaskDialogProps) {
     });
     if (!driverValidation.success) {
       return driverValidation.error.issues[0].message;
+    }
+
+    if (isMultiStopType) {
+      if (stops.length === 0) {
+        return 'חובה להוסיף לפחות לקוח אחד עבור סוג משימה זה';
+      }
+      for (const stop of stops) {
+        if (!(stop.clientId || stop.clientQuery.trim())) {
+          return 'חובה לבחור לקוח עבור כל עצירה';
+        }
+        if (!stop.address.trim()) {
+          return 'חובה להזין כתובת עבור כל עצירה';
+        }
+        if (!stop.advisorName.trim()) {
+          return 'חובה להזין שם יועץ עבור כל עצירה';
+        }
+      }
     }
 
     return null;
@@ -355,8 +500,36 @@ export function TaskDialog(props: TaskDialogProps) {
       const created: Client = json.data;
       setClientsLocal((prev) => [...prev, created]);
       onClientCreated?.(created);
-      setClientId(created.id);
-      setClientQuery(created.name || '');
+      if (isMultiStopType) {
+        setStops((prev) => {
+          if (prev.length === 0) {
+            return [
+              {
+                clientId: created.id,
+                clientQuery: created.name || '',
+                address: '',
+                advisorName: '',
+              },
+            ];
+          }
+          const idx =
+            activeStopIndex >= 0 && activeStopIndex < prev.length
+              ? activeStopIndex
+              : 0;
+          return prev.map((stop, i) =>
+            i === idx
+              ? {
+                  ...stop,
+                  clientId: created.id,
+                  clientQuery: created.name || '',
+                }
+              : stop
+          );
+        });
+      } else {
+        setClientId(created.id);
+        setClientQuery(created.name || '');
+      }
       setShowAddClient(false);
       setNewClientName('');
       setNewClientPhone('');
@@ -417,6 +590,16 @@ export function TaskDialog(props: TaskDialogProps) {
     setSubmitting(true);
     setError(null);
     try {
+      const resolveClientId = (id: string, query: string) => {
+        if (id) return id;
+        const normalizedQuery = query.trim().toLowerCase();
+        if (!normalizedQuery) return '';
+        const match = clientsLocal.find(
+          (c) => c.name.toLowerCase() === normalizedQuery
+        );
+        return match?.id || '';
+      };
+
       // Resolve vehicleId from query if not set but query exists (exact match on license plate)
       let finalVehicleId = vehicleId;
       if (!finalVehicleId && vehicleQuery.trim()) {
@@ -434,16 +617,52 @@ export function TaskDialog(props: TaskDialogProps) {
         }
       }
 
-      // Resolve clientId from query if not set (exact match on name)
       let finalClientId = clientId;
-      if (!finalClientId && clientQuery.trim()) {
-        const normalizedQuery = clientQuery.trim().toLowerCase();
-        const match = clientsLocal.find(
-          (c) => c.name.toLowerCase() === normalizedQuery
-        );
-        if (match) {
-          finalClientId = match.id;
+      let finalAdvisorForTask = advisorName.trim();
+      let addressForTask = addressQuery || '';
+      let stopsPayload: {
+        client_id: string;
+        address: string;
+        advisor_name: string;
+        sort_order: number;
+      }[] = [];
+
+      if (isMultiStopType) {
+        stopsPayload = stops.map((stop, idx) => {
+          const resolvedClientId = resolveClientId(
+            stop.clientId,
+            stop.clientQuery
+          );
+          if (!resolvedClientId) {
+            throw new Error('חובה לבחור לקוח עבור כל עצירה');
+          }
+          const addressValue = stop.address.trim();
+          if (!addressValue) {
+            throw new Error('חובה להזין כתובת עבור כל עצירה');
+          }
+          const advisorValue = stop.advisorName.trim();
+          if (!advisorValue) {
+            throw new Error('חובה להזין שם יועץ עבור כל עצירה');
+          }
+
+          return {
+            client_id: resolvedClientId,
+            address: addressValue,
+            advisor_name: advisorValue,
+            sort_order: idx,
+          };
+        });
+
+        if (stopsPayload.length > 0) {
+          finalClientId = stopsPayload[0].client_id;
+          addressForTask = stopsPayload[0].address;
+          finalAdvisorForTask = stopsPayload[0].advisor_name;
+          setAddressQuery(stopsPayload[0].address);
         }
+      } else {
+        finalClientId = resolveClientId(clientId, clientQuery);
+        finalAdvisorForTask = advisorName.trim();
+        addressForTask = addressQuery || '';
       }
 
       // Validation for "Replacement Car Delivery" - must have client and vehicle
@@ -464,7 +683,11 @@ export function TaskDialog(props: TaskDialogProps) {
         if (!finalVehicleId) {
           throw new Error('חובה לבחור רכב עבור משימת הסעת לקוח הביתה');
         }
-        if (!advisorName.trim()) {
+        if (isMultiStopType) {
+          if (stopsPayload.some((s) => !s.advisor_name?.trim())) {
+            throw new Error('חובה להזין שם יועץ עבור כל עצירה');
+          }
+        } else if (!advisorName.trim()) {
           throw new Error('חובה להזין שם יועץ עבור משימת הסעת לקוח הביתה');
         }
       }
@@ -484,7 +707,7 @@ export function TaskDialog(props: TaskDialogProps) {
             'ללקוח הנבחר אין מספר טלפון (חובה עבור משימת החזרת רכב/שינוע)'
           );
         }
-        if (!addressQuery.trim()) {
+        if (!addressForTask.trim()) {
           throw new Error('חובה להזין כתובת עבור משימת החזרת רכב/שינוע');
         }
       }
@@ -505,14 +728,15 @@ export function TaskDialog(props: TaskDialogProps) {
           priority,
           status,
           details: details || null,
-          advisor_name: advisorName.trim() || null,
+          advisor_name: finalAdvisorForTask || null,
           estimated_start: estimatedStartDatetime || null,
           estimated_end: estimatedEndDatetime || null,
-          address: addressQuery || '',
+          address: addressForTask || '',
           client_id: finalClientId || null,
           vehicle_id: finalVehicleId || null,
           lead_driver_id: leadDriverId || null,
           co_driver_ids: coDriverIds,
+          stops: stopsPayload.length > 0 ? stopsPayload : undefined,
         };
         const res = await fetch('/api/admin/tasks', {
           method: 'POST',
@@ -558,14 +782,15 @@ export function TaskDialog(props: TaskDialogProps) {
           priority,
           status,
           details: details || null,
-          advisor_name: advisorName.trim() || null,
+          advisor_name: finalAdvisorForTask || null,
           estimated_start: estimatedStartDatetime || undefined,
           estimated_end: estimatedEndDatetime || undefined,
-          address: addressQuery || '',
+          address: addressForTask || '',
           client_id: finalClientId || null,
           vehicle_id: finalVehicleId || null,
           lead_driver_id: leadDriverId || null,
           co_driver_ids: coDriverIds,
+          stops: stopsPayload.length > 0 ? stopsPayload : undefined,
         };
         const res = await fetch(`/api/admin/tasks/${task.id}`, {
           method: 'PATCH',
@@ -618,7 +843,7 @@ export function TaskDialog(props: TaskDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div
-        className="w-full max-w-2xl rounded-lg bg-white p-4 shadow-xl"
+        className="w-full max-w-2xl rounded-lg bg-white p-4 shadow-xl max-h-[90vh] flex flex-col"
         role="dialog"
         aria-modal="true"
       >
@@ -635,16 +860,17 @@ export function TaskDialog(props: TaskDialogProps) {
           </button>
         </div>
 
-        {error && (
-          <div className="mb-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto pr-1">
+          {error && (
+            <div className="mb-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 gap-3 md:grid-cols-2"
-        >
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 gap-3 md:grid-cols-2"
+          >
           {/* Title field removed per request, but logic kept if needed back. */}
           {/* <label className="flex flex-col gap-1">
             <span className="text-md underline font-medium text-blue-500">
@@ -706,20 +932,22 @@ export function TaskDialog(props: TaskDialogProps) {
             />
           </label>
 
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-primary">
-              שם יועץ{' '}
-              {type === 'הסעת לקוח הביתה' && (
-                <span className="text-red-500">*</span>
-              )}
-            </span>
-            <input
-              className="rounded border border-gray-300 p-2"
-              value={advisorName}
-              onChange={(e) => setAdvisorName(e.target.value)}
-              placeholder="הזן שם יועץ"
-            />
-          </label>
+          {!isMultiStopType && (
+            <label className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-primary">
+                שם יועץ{' '}
+                {type === 'הסעת לקוח הביתה' && (
+                  <span className="text-red-500">*</span>
+                )}
+              </span>
+              <input
+                className="rounded border border-gray-300 p-2"
+                value={advisorName}
+                onChange={(e) => setAdvisorName(e.target.value)}
+                placeholder="הזן שם יועץ"
+              />
+            </label>
+          )}
 
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-primary">תאריך</span>
@@ -785,112 +1013,319 @@ export function TaskDialog(props: TaskDialogProps) {
             />
           </label>
 
-          <label className="col-span-1 md:col-span-2 flex flex-col gap-1">
-            <span className="text-sm font-medium text-primary">כתובת</span>
-            <input
-              className="rounded border border-gray-300 p-2"
-              value={addressQuery}
-              onChange={(e) => setAddressQuery(e.target.value)}
-              placeholder="הקלד כתובת..."
-            />
-            {addressSuggestions.length > 0 && (
-              <div className="mt-1 rounded border border-gray-200 bg-white shadow-sm">
-                {addressSuggestions.map((s) => (
+          {!isMultiStopType && (
+            <label className="col-span-1 md:col-span-2 flex flex-col gap-1">
+              <span className="text-sm font-medium text-primary">כתובת</span>
+              <input
+                className="rounded border border-gray-300 p-2"
+                value={addressQuery}
+                onChange={(e) => setAddressQuery(e.target.value)}
+                placeholder="הקלד כתובת..."
+              />
+              {addressSuggestions.length > 0 && (
+                <div className="mt-1 rounded border border-gray-200 bg-white shadow-sm">
+                  {addressSuggestions.map((s) => (
+                    <button
+                      type="button"
+                      key={s}
+                      className="block w-full text-right px-3 py-2 text-sm hover:bg-gray-50"
+                      onClick={() => pickSuggestion(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </label>
+          )}
+
+          {isMultiStopType ? (
+            <div className="col-span-1 md:col-span-2 space-y-3 rounded border border-gray-200 bg-gray-50 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-primary">
+                    לקוחות / כתובות / יועצים
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    קבע התאמה בין לקוח, כתובת ויועץ לכל עצירה.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    key={s}
-                    className="block w-full text-right px-3 py-2 text-sm hover:bg-gray-50"
-                    onClick={() => pickSuggestion(s)}
+                    className="rounded border border-gray-300 px-2 text-xs h-9 bg-blue-500 text-white flex items-center justify-center"
+                    onClick={() =>
+                      setStops((prev) => [
+                        ...prev,
+                        {
+                          clientId: '',
+                          clientQuery: '',
+                          address: '',
+                          advisorName: '',
+                        },
+                      ])
+                    }
                   >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-          </label>
-
-          <label className="flex flex-col gap-1">
-            <div className="flex gap-2">
-              <div className="grid w-full max-w-sm items-center gap-1">
-                <Label htmlFor="client" className="text-primary">
-                  לקוח
-                </Label>
-                <Input
-                  type="text"
-                  id="client"
-                  placeholder="לקוח"
-                  value={clientQuery}
-                  onChange={(e) => {
-                    setClientQuery(e.target.value);
-                    setClientId('');
-                  }}
-                />
-                {clientSuggestions.length > 0 && !clientId && (
-                  <div className="mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-300 bg-white text-sm shadow-sm">
-                    {clientSuggestions.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        className="flex w-full items-center justify-between px-2 py-1 text-right hover:bg-blue-50"
-                        onClick={() => {
-                          setClientId(c.id);
-                          setClientQuery(c.name);
-                        }}
-                      >
-                        <span>{c.name}</span>
-                        {c.phone && (
-                          <span className="text-xs text-gray-500">
-                            {c.phone}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                className="rounded border border-gray-300 px-2 text-xs h-9 self-end bg-blue-500 text-white flex items-center justify-center"
-                onClick={() => setShowAddClient((v) => !v)}
-              >
-                <PlusIcon className="w-4 h-4" />
-                חדש
-              </button>
-            </div>
-            {showAddClient && (
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                <input
-                  className="rounded border border-gray-300 p-2 col-span-1"
-                  placeholder="שם"
-                  value={newClientName}
-                  onChange={(e) => setNewClientName(e.target.value)}
-                />
-                <input
-                  className="rounded border border-gray-300 p-2 col-span-1"
-                  placeholder="טלפון"
-                  value={newClientPhone}
-                  onChange={(e) => setNewClientPhone(e.target.value)}
-                />
-
-                <div className="col-span-3 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    className="rounded border border-gray-300 px-2 text-xs"
-                    onClick={() => setShowAddClient(false)}
-                  >
-                    בטל
+                    <PlusIcon className="w-4 h-4" />
+                    הוסף לקוח
                   </button>
                   <button
                     type="button"
-                    className="rounded bg-blue-600 hover:bg-blue-700 px-2 py-1 text-xs font-semibold text-white transition-colors"
-                    onClick={createClient}
+                    className="rounded border border-gray-300 px-2 text-xs h-9 bg-white text-primary flex items-center justify-center"
+                    onClick={() => setShowAddClient((v) => !v)}
                   >
-                    צור
+                    <PlusIcon className="w-4 h-4" />
+                    לקוח חדש
                   </button>
                 </div>
               </div>
-            )}
-          </label>
+
+              {stops.map((stop, idx) => {
+                const suggestions = getClientSuggestions(stop.clientQuery);
+                return (
+                  <div
+                    key={`stop-${idx}`}
+                    className="space-y-3 rounded border border-gray-200 bg-white p-3 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between text-sm font-semibold text-primary">
+                      <span>עצירה {idx + 1}</span>
+                      {stops.length > 1 && (
+                        <button
+                          type="button"
+                          className="text-xs text-red-600 hover:underline flex items-center gap-1"
+                          onClick={() =>
+                            setStops((prev) =>
+                              prev.length > 1
+                                ? prev.filter((_, i) => i !== idx)
+                                : prev
+                            )
+                          }
+                        >
+                          <XIcon className="w-4 h-4" />
+                          הסר
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-primary">לקוח</Label>
+                        <Input
+                          type="text"
+                          placeholder="שם לקוח"
+                          value={stop.clientQuery}
+                          onFocus={() => setActiveStopIndex(idx)}
+                          onChange={(e) =>
+                            setStops((prev) =>
+                              prev.map((s, i) =>
+                                i === idx
+                                  ? {
+                                      ...s,
+                                      clientQuery: e.target.value,
+                                      clientId: '',
+                                    }
+                                  : s
+                              )
+                            )
+                          }
+                        />
+                        {suggestions.length > 0 && !stop.clientId && (
+                          <div className="mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-300 bg-white text-sm shadow-sm">
+                            {suggestions.map((c) => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                className="flex w-full items-center justify-between px-2 py-1 text-right hover:bg-blue-50"
+                                onClick={() =>
+                                  setStops((prev) =>
+                                    prev.map((s, i) =>
+                                      i === idx
+                                        ? {
+                                            ...s,
+                                            clientId: c.id,
+                                            clientQuery: c.name,
+                                          }
+                                        : s
+                                    )
+                                  )
+                                }
+                              >
+                                <span>{c.name}</span>
+                                {c.phone && (
+                                  <span className="text-xs text-gray-500">
+                                    {c.phone}
+                                  </span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-primary">כתובת</Label>
+                        <Input
+                          type="text"
+                          placeholder="כתובת"
+                          value={stop.address}
+                          onChange={(e) =>
+                            setStops((prev) =>
+                              prev.map((s, i) =>
+                                i === idx ? { ...s, address: e.target.value } : s
+                              )
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-primary">שם יועץ</Label>
+                        <Input
+                          type="text"
+                          placeholder="שם יועץ"
+                          value={stop.advisorName}
+                          onChange={(e) =>
+                            setStops((prev) =>
+                              prev.map((s, i) =>
+                                i === idx
+                                  ? { ...s, advisorName: e.target.value }
+                                  : s
+                              )
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {showAddClient && (
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  <input
+                    className="rounded border border-gray-300 p-2 col-span-1"
+                    placeholder="שם"
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                  />
+                  <input
+                    className="rounded border border-gray-300 p-2 col-span-1"
+                    placeholder="טלפון"
+                    value={newClientPhone}
+                    onChange={(e) => setNewClientPhone(e.target.value)}
+                  />
+                  <input
+                    className="rounded border border-gray-300 p-2 col-span-1"
+                    placeholder="אימייל (אופציונלי)"
+                    value={newClientEmail}
+                    onChange={(e) => setNewClientEmail(e.target.value)}
+                  />
+                  <div className="col-span-3 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      className="rounded border border-gray-300 px-2 text-xs"
+                      onClick={() => setShowAddClient(false)}
+                    >
+                      בטל
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded bg-blue-600 hover:bg-blue-700 px-2 py-1 text-xs font-semibold text-white transition-colors"
+                      onClick={createClient}
+                    >
+                      צור ושייך לעצירה {activeStopIndex + 1}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <label className="flex flex-col gap-1">
+              <div className="flex gap-2">
+                <div className="grid w-full max-w-sm items-center gap-1">
+                  <Label htmlFor="client" className="text-primary">
+                    לקוח
+                  </Label>
+                  <Input
+                    type="text"
+                    id="client"
+                    placeholder="לקוח"
+                    value={clientQuery}
+                    onChange={(e) => {
+                      setClientQuery(e.target.value);
+                      setClientId('');
+                    }}
+                  />
+                  {clientSuggestions.length > 0 && !clientId && (
+                    <div className="mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-300 bg-white text-sm shadow-sm">
+                      {clientSuggestions.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className="flex w-full items-center justify-between px-2 py-1 text-right hover:bg-blue-50"
+                          onClick={() => {
+                            setClientId(c.id);
+                            setClientQuery(c.name);
+                          }}
+                        >
+                          <span>{c.name}</span>
+                          {c.phone && (
+                            <span className="text-xs text-gray-500">
+                              {c.phone}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="rounded border border-gray-300 px-2 text-xs h-9 self-end bg-blue-500 text-white flex items-center justify-center"
+                  onClick={() => setShowAddClient((v) => !v)}
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  חדש
+                </button>
+              </div>
+              {showAddClient && (
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  <input
+                    className="rounded border border-gray-300 p-2 col-span-1"
+                    placeholder="שם"
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                  />
+                  <input
+                    className="rounded border border-gray-300 p-2 col-span-1"
+                    placeholder="טלפון"
+                    value={newClientPhone}
+                    onChange={(e) => setNewClientPhone(e.target.value)}
+                  />
+                  <input
+                    className="rounded border border-gray-300 p-2 col-span-1"
+                    placeholder="אימייל (אופציונלי)"
+                    value={newClientEmail}
+                    onChange={(e) => setNewClientEmail(e.target.value)}
+                  />
+
+                  <div className="col-span-3 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      className="rounded border border-gray-300 px-2 text-xs"
+                      onClick={() => setShowAddClient(false)}
+                    >
+                      בטל
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded bg-blue-600 hover:bg-blue-700 px-2 py-1 text-xs font-semibold text-white transition-colors"
+                      onClick={createClient}
+                    >
+                      צור
+                    </button>
+                  </div>
+                </div>
+              )}
+            </label>
+          )}
 
           <label className="flex flex-col gap-1">
             <div className="flex gap-2">
@@ -1033,6 +1468,7 @@ export function TaskDialog(props: TaskDialogProps) {
             </button>
           </div>
         </form>
+      </div>
       </div>
     </div>
   );
