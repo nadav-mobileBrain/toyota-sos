@@ -50,29 +50,18 @@ export function getStartChecklistForTaskType(
   }
 
   if (taskType === 'איסוף רכב/שינוע') {
+    // Phase 1: When moving from 'בהמתנה' to 'בעבודה'
     return [
+      {
+        id: 'client_quote',
+        type: 'boolean',
+        title: 'האם יש הצעת מחיר מהלקוח?',
+        required: true,
+      },
       {
         id: 'transport_form',
         type: 'boolean',
         title: 'האם יש טופס שינוע מהמערכת?',
-        required: true,
-      },
-      {
-        id: 'signed_quote',
-        type: 'boolean',
-        title: 'האם יש הצעת מחיר חתומה ע״י הלקוח?',
-        required: true,
-      },
-      {
-        id: 'vehicle_insurance',
-        type: 'boolean',
-        title: 'האם יש ביטוח לרכב?',
-        required: true,
-      },
-      {
-        id: 'vehicle_photo_nesher',
-        type: 'boolean',
-        title: 'האם יש צילום רכב בנשר?',
         required: true,
       },
     ];
@@ -96,6 +85,40 @@ export function getStartChecklistForTaskType(
         id: 'postcard_gift',
         type: 'boolean',
         title: 'האם יש גלויה ומתנה?',
+        required: true,
+      },
+    ];
+  }
+
+  return null;
+}
+
+/**
+ * Return the checklist schema a driver must complete when moving a task
+ * to 'הושלמה' status for specific task types.
+ */
+export function getCompletionChecklistForTaskType(
+  taskType: string | null | undefined
+): ChecklistSchema | null {
+  if (taskType === 'איסוף רכב/שינוע') {
+    // Phase 2: When moving from 'בעבודה' to 'הושלמה'
+    return [
+      {
+        id: 'signed_quote',
+        type: 'boolean',
+        title: 'האם יש הצעת מחיר חתומה ע״י הלקוח?',
+        required: true,
+      },
+      {
+        id: 'vehicle_insurance',
+        type: 'boolean',
+        title: 'האם יש ביטוח לרכב?',
+        required: true,
+      },
+      {
+        id: 'vehicle_photo_nesher',
+        type: 'boolean',
+        title: 'האם יש צילום רכב בנשר?',
         required: true,
       },
     ];

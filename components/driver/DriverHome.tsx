@@ -11,6 +11,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { ChecklistModal } from '@/components/driver/ChecklistModal';
 import {
   getStartChecklistForTaskType,
+  getCompletionChecklistForTaskType,
   getCompletionFlowForTaskType,
 } from '@/components/driver/checklists';
 import { ReplacementCarDeliveryForm } from '@/components/driver/ReplacementCarDeliveryForm';
@@ -43,16 +44,6 @@ function getChecklistInfo(type: string) {
 }
 
 export type DriverTask = TaskCardProps;
-const multiStopAliases = [
-  'הסעת לקוח הביתה',
-  'הסעת לקוח למוסך',
-  'drive_client_home',
-  'drive_client_to_dealership',
-];
-const isMultiStopTaskType = (val: string | null | undefined) => {
-  const normalized = (val || '').trim();
-  return multiStopAliases.includes(normalized);
-};
 
 function intersectsToday(
   start?: string | Date | null,
@@ -124,6 +115,12 @@ export function DriverHome() {
 
   // Checklist flow state: when a status change requires a start checklist
   const [checklistState, setChecklistState] = useState<{
+    task: DriverTask;
+    nextStatus: DriverTask['status'];
+  } | null>(null);
+
+  // Completion checklist state: when moving to 'הושלמה' requires a completion checklist
+  const [completionChecklistState, setCompletionChecklistState] = useState<{
     task: DriverTask;
     nextStatus: DriverTask['status'];
   } | null>(null);
@@ -229,13 +226,6 @@ export function DriverHome() {
       const taskIds = mapped.map((t) => t.id);
 
       if (client && taskIds.length > 0) {
-        type StopRow = {
-          task_id: string;
-          address: string | null;
-          advisor_name: string | null;
-          sort_order: number | null;
-          client: { id: string; name: string | null } | null;
-        };
         const { data: stopRows, error: stopsError } = await client
           .from('task_stops')
           .select(
@@ -246,11 +236,16 @@ export function DriverHome() {
 
         if (!stopsError && Array.isArray(stopRows)) {
           const grouped = new Map<string, DriverTask['stops']>();
-          for (const row of stopRows as StopRow[]) {
+          for (const row of stopRows) {
+            // Handle client as either single object or array (Supabase may return array for relationships)
+            const clientData = Array.isArray(row.client)
+              ? row.client[0] || null
+              : row.client;
+
             const entry = grouped.get(row.task_id) || [];
             entry.push({
               address: row.address || '',
-              clientName: row.client?.name || null,
+              clientName: clientData?.name || null,
               advisorName: row.advisor_name || null,
             });
             grouped.set(row.task_id, entry);
@@ -481,6 +476,18 @@ export function DriverHome() {
                     // If moving into "הושלמה" and this task type has a completion flow,
                     // open the completion form instead of immediately updating status.
                     if (next === 'הושלמה') {
+                      // First check for completion checklist
+                      const completionChecklist =
+                        getCompletionChecklistForTaskType(task.type);
+                      if (
+                        completionChecklist &&
+                        completionChecklist.length > 0
+                      ) {
+                        setCompletionChecklistState({ task, nextStatus: next });
+                        return;
+                      }
+
+                      // Then check for special completion flows
                       const completionFlow = getCompletionFlowForTaskType(
                         task.type
                       );
@@ -506,7 +513,10 @@ export function DriverHome() {
                       // Check if this is the specific validation error for skipping status flow
                       const errorMessage = upErr.message || '';
                       if (errorMessage.includes('INVALID_STATUS_FLOW')) {
-                        toastError('המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה', 5000);
+                        toastError(
+                          'המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה',
+                          5000
+                        );
                       } else {
                         toastError('שגיאה בעדכון סטטוס המשימה');
                       }
@@ -573,7 +583,10 @@ export function DriverHome() {
             if (upErr) {
               const errorMessage = upErr.message || '';
               if (errorMessage.includes('INVALID_STATUS_FLOW')) {
-                toastError('המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה', 5000);
+                toastError(
+                  'המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה',
+                  5000
+                );
               } else {
                 toastError('שגיאה בעדכון סטטוס המשימה');
               }
@@ -586,6 +599,57 @@ export function DriverHome() {
                   : t
               )
             );
+            toastSuccess('המשימה עודכנה בהצלחה');
+          }}
+        />
+      ) : null}
+
+      {/* Completion checklist for specific task types (e.g. איסוף רכב/שינוע) */}
+      {completionChecklistState ? (
+        <ChecklistModal
+          open={!!completionChecklistState}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCompletionChecklistState(null);
+            }
+          }}
+          schema={
+            getCompletionChecklistForTaskType(
+              completionChecklistState.task.type
+            ) ?? []
+          }
+          title="צ׳ק-ליסט השלמת איסוף רכב"
+          description="אנא וודא שביצעת את כל הפעולות הנדרשות לפני השלמת המשימה."
+          persist
+          taskId={completionChecklistState.task.id}
+          driverId={driverId || undefined}
+          onSubmit={async () => {
+            if (!client || !completionChecklistState) return;
+            const { error: upErr } = await client.rpc('update_task_status', {
+              p_task_id: completionChecklistState.task.id,
+              p_status: completionChecklistState.nextStatus,
+              p_driver_id: driverId || undefined,
+            });
+            if (upErr) {
+              const errorMessage = upErr.message || '';
+              if (errorMessage.includes('INVALID_STATUS_FLOW')) {
+                toastError(
+                  'המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה',
+                  5000
+                );
+              } else {
+                toastError('שגיאה בעדכון סטטוס המשימה');
+              }
+              return;
+            }
+            setRemoteTasks((prev) =>
+              prev.map((t) =>
+                t.id === completionChecklistState.task.id
+                  ? { ...t, status: completionChecklistState.nextStatus }
+                  : t
+              )
+            );
+            setCompletionChecklistState(null);
             toastSuccess('המשימה עודכנה בהצלחה');
           }}
         />
@@ -611,7 +675,10 @@ export function DriverHome() {
             if (upErr) {
               const errorMessage = upErr.message || '';
               if (errorMessage.includes('INVALID_STATUS_FLOW')) {
-                toastError('המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה', 5000);
+                toastError(
+                  'המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה',
+                  5000
+                );
               } else {
                 toastError('שגיאה בעדכון סטטוס המשימה');
               }
@@ -650,7 +717,10 @@ export function DriverHome() {
               console.error(upErr);
               const errorMessage = upErr.message || '';
               if (errorMessage.includes('INVALID_STATUS_FLOW')) {
-                toastError('המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה', 5000);
+                toastError(
+                  'המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה',
+                  5000
+                );
               } else {
                 toastError('שגיאה בעדכון סטטוס המשימה');
               }
@@ -677,7 +747,10 @@ export function DriverHome() {
             if (upErr) {
               const errorMessage = upErr.message || '';
               if (errorMessage.includes('INVALID_STATUS_FLOW')) {
-                toastError('המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה', 5000);
+                toastError(
+                  'המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה',
+                  5000
+                );
               } else {
                 toastError('שגיאה בעדכון סטטוס המשימה');
               }

@@ -9,7 +9,7 @@ import React, {
   startTransition,
 } from 'react';
 import { createBrowserClient } from '@/lib/auth';
-import { SaveIcon } from 'lucide-react';
+import { SaveIcon, X } from 'lucide-react';
 
 export type ChecklistField =
   | {
@@ -461,9 +461,10 @@ export function ChecklistModal(props: ChecklistModalProps) {
           {canDismiss ? (
             <button
               type="button"
-              className="rounded-md px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary min-h-[48px] flex-1 sm:flex-initial touch-manipulation"
+              className="rounded-md flex items-center justify-center gap-2 bg-gray-100 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-primary min-h-[48px] flex-1 sm:flex-initial touch-manipulation transition-colors"
               onClick={() => onOpenChange(false)}
             >
+              <X className="w-4 h-4" />
               ביטול
             </button>
           ) : (
