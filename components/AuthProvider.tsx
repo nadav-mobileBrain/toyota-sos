@@ -10,7 +10,6 @@ import {
   loginAsDriver,
   loginAsAdmin,
   AuthSession,
-  readCookie,
 } from '@/lib/auth';
 
 interface AuthContextType {
@@ -218,7 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!client) return;
 
     const { data: authListener } = client.auth.onAuthStateChange(
-      async (event, supabaseSession) => {
+      async (event) => {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           const currentRole = await getCurrentRole(client);
           const currentSession = await getCurrentSession(client);
