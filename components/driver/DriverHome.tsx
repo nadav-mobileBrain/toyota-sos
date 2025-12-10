@@ -636,54 +636,6 @@ export function DriverHome() {
             if (upErr) {
               const errorMessage = upErr.message || '';
               if (errorMessage.includes('INVALID_STATUS_FLOW')) {
-                toastError('המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה', 5000);
-              } else {
-                toastError('שגיאה בעדכון סטטוס המשימה');
-              }
-              return;
-            }
-            setRemoteTasks((prev) =>
-              prev.map((t) =>
-                t.id === completionChecklistState.task.id
-                  ? { ...t, status: completionChecklistState.nextStatus }
-                  : t
-              )
-            );
-            toastSuccess('המשימה הושלמה בהצלחה');
-            setCompletionChecklistState(null);
-          }}
-        />
-      ) : null}
-
-      {/* Completion checklist for specific task types (e.g. איסוף רכב/שינוע) */}
-      {completionChecklistState ? (
-        <ChecklistModal
-          open={!!completionChecklistState}
-          onOpenChange={(open) => {
-            if (!open) {
-              setCompletionChecklistState(null);
-            }
-          }}
-          schema={
-            getCompletionChecklistForTaskType(
-              completionChecklistState.task.type
-            ) ?? []
-          }
-          title="צ׳ק-ליסט השלמת איסוף רכב"
-          description="אנא וודא שביצעת את כל הפעולות הנדרשות לפני השלמת המשימה."
-          persist
-          taskId={completionChecklistState.task.id}
-          driverId={driverId || undefined}
-          onSubmit={async () => {
-            if (!client || !completionChecklistState) return;
-            const { error: upErr } = await client.rpc('update_task_status', {
-              p_task_id: completionChecklistState.task.id,
-              p_status: completionChecklistState.nextStatus,
-              p_driver_id: driverId || undefined,
-            });
-            if (upErr) {
-              const errorMessage = upErr.message || '';
-              if (errorMessage.includes('INVALID_STATUS_FLOW')) {
                 toastError(
                   'המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה',
                   5000
@@ -700,8 +652,8 @@ export function DriverHome() {
                   : t
               )
             );
+            toastSuccess('המשימה הושלמה בהצלחה');
             setCompletionChecklistState(null);
-            toastSuccess('המשימה עודכנה בהצלחה');
           }}
         />
       ) : null}
