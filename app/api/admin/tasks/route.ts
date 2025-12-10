@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const responseTask = isMultiStopType
+    const responseTask = isMulti
       ? { ...created, stops: createdStops }
       : created;
 

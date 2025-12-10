@@ -777,9 +777,15 @@ export function TaskDialog(props: TaskDialogProps) {
           .set('minute', parseInt(estimatedEndTime.split(':')[1]))
           .toISOString();
 
-        const update: Partial<Task> & {
+        const update: Omit<Partial<Task>, 'stops'> & {
           lead_driver_id?: string | null;
           co_driver_ids?: string[];
+          stops?: {
+            client_id: string;
+            address: string;
+            advisor_name: string;
+            sort_order: number;
+          }[];
         } = {
           title: title.trim() || 'משימה ללא כותרת',
           type,
