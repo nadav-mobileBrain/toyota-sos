@@ -12,12 +12,14 @@ import type { DriverTask } from '@/components/driver/DriverHome';
 import SignaturePad from 'signature_pad';
 import { Loader2 } from 'lucide-react';
 import { trackSignatureCaptured } from '@/lib/events';
+import type { ExistingAttachments } from '@/lib/taskAttachments';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   task: DriverTask;
   onSubmit: () => Promise<void>;
+  hasExistingAttachments?: ExistingAttachments;
 }
 
 export function ReplacementCarDeliveryForm({
@@ -25,6 +27,7 @@ export function ReplacementCarDeliveryForm({
   onOpenChange,
   task,
   onSubmit,
+  hasExistingAttachments,
 }: Props) {
   const [step, setStep] = useState(0); // 0: car photos, 1: license, 2: summary & signature
   const [carPhotos, setCarPhotos] = useState<UploadedImageMeta[]>([]);
@@ -78,15 +81,35 @@ export function ReplacementCarDeliveryForm({
   if (!open) return null;
 
   const handleNext = () => {
-    if (step === 0 && carPhotos.length === 0) {
-      alert('יש להעלות לפחות תמונה אחת של הרכב');
-      return;
+    // Allow skipping if existing attachments are present
+    if (step === 0) {
+      if (carPhotos.length === 0 && !hasExistingAttachments?.hasCarImages) {
+        alert('יש להעלות לפחות תמונה אחת של הרכב');
+        return;
+      }
     }
-    if (step === 1 && !licensePhoto) {
-      alert('יש להעלות צילום רישיון נהיגה');
-      return;
+    if (step === 1) {
+      if (!licensePhoto && !hasExistingAttachments?.hasLicense) {
+        alert('יש להעלות צילום רישיון נהיגה');
+        return;
+      }
     }
     setStep((s) => s + 1);
+  };
+
+  const handleSkipToCompletion = async () => {
+    // If all attachments exist, allow skipping directly to completion
+    if (
+      hasExistingAttachments?.hasAllRequired &&
+      (hasExistingAttachments.hasCarImages ||
+        carPhotos.length > 0) &&
+      (hasExistingAttachments.hasLicense || licensePhoto) &&
+      hasExistingAttachments.hasSignature
+    ) {
+      await onSubmit();
+      toastSuccess('משימת מסירת רכב הושלמה בהצלחה');
+      onOpenChange(false);
+    }
   };
 
   const handleBack = () => {
@@ -98,95 +121,76 @@ export function ReplacementCarDeliveryForm({
   };
 
   const handleSubmit = async () => {
-    if (signaturePadRef.current?.isEmpty()) {
+    // If signature already exists and user didn't add a new one, skip signature upload
+    const hasNewSignature = !signaturePadRef.current?.isEmpty();
+    const hasExistingSignature = hasExistingAttachments?.hasSignature;
+
+    if (!hasNewSignature && !hasExistingSignature) {
       setSignatureError('יש לחתום כדי להמשיך');
       return;
     }
+
     setSubmitting(true);
     setSignatureError(null);
 
     try {
-      // 1. Upload signature
-      const dataUrl = signaturePadRef.current?.toDataURL('image/png');
-      if (!dataUrl) throw new Error('Failed to get signature');
+      // 1. Upload signature only if user provided a new one
+      if (hasNewSignature) {
+        const dataUrl = signaturePadRef.current?.toDataURL('image/png');
+        if (!dataUrl) throw new Error('Failed to get signature');
 
-      const blob = await (await fetch(dataUrl)).blob();
-      const supa = createBrowserClient();
-      const filename = `signature-${Date.now()}.png`;
-      const path = `${task.id}/signatures/${filename}`;
+        const blob = await (await fetch(dataUrl)).blob();
+        const supa = createBrowserClient();
+        const filename = `signature-${Date.now()}.png`;
+        const path = `${task.id}/signatures/${filename}`;
 
-      const { error: uploadError } = await supa.storage
-        .from('task-attachments')
-        .upload(path, blob, {
-          contentType: 'image/png',
-          upsert: true,
-        });
+        const { error: uploadError } = await supa.storage
+          .from('task-attachments')
+          .upload(path, blob, {
+            contentType: 'image/png',
+            upsert: true,
+          });
 
-      if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
 
-      // 2. Save signature metadata to DB (signatures table)
-      // We can do this or rely on the storage. But typical pattern in this codebase involves DB records.
-      // The instructions said "Store in signatures table".
-      // Let's create a public signed URL or just store the path if the system uses private buckets.
-      // Since RLS allows authenticated users, we can store the path.
+        const storagePath = `task-attachments/${path}`;
 
-      // We need signature_url. Let's get a public URL or signed URL.
-      // Assuming we store the path or a long-lived signed URL.
-      // The `signatures` table has `signature_url`.
+        // For local session drivers, get ID from session
+        const driverSession = getDriverSession();
+        const userId =
+          driverSession?.userId || (await supa.auth.getUser()).data.user?.id;
 
-      // Let's store the path for now, or generates a signed url.
-      // Since bucket is private-ish (authenticated only), we might need signed URL.
-      // But typically we store the path and generate signed URL on read.
-      // However, `signatures` table expects `signature_url` (text).
+        if (!userId) {
+          throw new Error('User not identified');
+        }
 
-      // NOTE: Bucket is private, publicUrl won't work for unauthenticated.
-      // But if we need it for admin panel, storing the path and resolving later is better.
-      // For this implementation, I will store the path prefixed with `storage://` or just the path,
-      // or if the table is used for display directly, maybe I should insert a signed URL?
-      // Signed URLs expire. Best practice: store path.
-      // But `signatures` table definition says `signature_url`.
-      // Let's store the full storage path: `task-attachments/path`.
-
-      const storagePath = `task-attachments/${path}`;
-
-      // For local session drivers, get ID from session
-      const driverSession = getDriverSession();
-      const userId =
-        driverSession?.userId || (await supa.auth.getUser()).data.user?.id;
-
-      if (!userId) {
-        throw new Error('User not identified');
-      }
-
-      const { error: dbError } = await supa.from('signatures').insert({
-        task_id: task.id,
-        driver_id: userId,
-        signature_url: storagePath,
-        signed_by_name: task.clientName || 'Client',
-        signed_at: new Date().toISOString(),
-      });
-
-      if (dbError) {
-        console.error('Failed to save signature to DB', dbError);
-        // Continue anyway? The file is in storage.
-        // Let's warn but continue or fail?
-        // User said "Store in signatures table". So we should fail if this fails.
-        throw new Error('שמירת החתימה נכשלה');
-      }
-
-      // Analytics
-      try {
-        trackSignatureCaptured({
+        const { error: dbError } = await supa.from('signatures').insert({
           task_id: task.id,
-          method: 'upload',
-          bytes: blob.size,
-          storage_path: storagePath,
-          width: canvasRef.current?.width || 0,
-          height: canvasRef.current?.height || 0,
+          driver_id: userId,
+          signature_url: storagePath,
+          signed_by_name: task.clientName || 'Client',
+          signed_at: new Date().toISOString(),
         });
-      } catch {}
 
-      // 3. Call parent submit (update status)
+        if (dbError) {
+          console.error('Failed to save signature to DB', dbError);
+          throw new Error('שמירת החתימה נכשלה');
+        }
+
+        // Analytics
+        try {
+          trackSignatureCaptured({
+            task_id: task.id,
+            method: 'upload',
+            bytes: blob.size,
+            storage_path: storagePath,
+            width: canvasRef.current?.width || 0,
+            height: canvasRef.current?.height || 0,
+          });
+        } catch {}
+      }
+
+      // 2. Call parent submit (update status)
       await onSubmit();
       toastSuccess('משימת מסירת רכב הושלמה בהצלחה');
       onOpenChange(false);
@@ -338,6 +342,11 @@ export function ReplacementCarDeliveryForm({
 
               <div className="space-y-2">
                 <h3 className="font-semibold text-gray-900">חתימת לקוח</h3>
+                {hasExistingAttachments?.hasSignature && (
+                  <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800 mb-2">
+                    נמצאה חתימה קיימת. ניתן לחתום חתימה חדשה או להמשיך עם הקיימת.
+                  </div>
+                )}
                 <p className="text-sm text-gray-600">
                   אני מאשר קבלת הרכב החלופי המפורט לעיל.
                 </p>
@@ -370,25 +379,43 @@ export function ReplacementCarDeliveryForm({
             {step === 0 ? 'ביטול' : 'חזור'}
           </button>
 
-          {step < 2 ? (
-            <button
-              type="button"
-              onClick={handleNext}
-              className="bg-primary text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-primary/90"
-            >
-              המשך
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="bg-green-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
-            >
-              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              סיים ומסור רכב
-            </button>
-          )}
+          <div className="flex gap-2">
+            {step === 0 &&
+              hasExistingAttachments?.hasAllRequired &&
+              (hasExistingAttachments.hasCarImages ||
+                carPhotos.length > 0) &&
+              (hasExistingAttachments.hasLicense || licensePhoto) &&
+              hasExistingAttachments.hasSignature && (
+                <button
+                  type="button"
+                  onClick={handleSkipToCompletion}
+                  disabled={submitting}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+                >
+                  דלג והשתמש בתמונות קיימות
+                </button>
+              )}
+
+            {step < 2 ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="bg-primary text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-primary/90"
+              >
+                המשך
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
+              >
+                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                סיים ומסור רכב
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

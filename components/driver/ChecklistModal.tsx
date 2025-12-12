@@ -52,6 +52,10 @@ export type ChecklistModalProps = {
    * Used for mandatory checklists on status changes.
    */
   forceCompletion?: boolean;
+  /**
+   * Optional callback for skipping the checklist (when allowSkip is enabled)
+   */
+  onSkip?: () => void;
 };
 
 export function ChecklistModal(props: ChecklistModalProps) {
@@ -60,12 +64,13 @@ export function ChecklistModal(props: ChecklistModalProps) {
     onOpenChange,
     schema,
     onSubmit,
-    title = 'צ’ק-ליסט',
+    title = "צ'ק-ליסט",
     description,
     persist = false,
     taskId,
     driverId,
     forceCompletion = false,
+    onSkip,
   } = props;
 
   // Focus management / trap
@@ -466,6 +471,15 @@ export function ChecklistModal(props: ChecklistModalProps) {
             <X className="w-4 h-4" />
             ביטול
           </button>
+          {onSkip && (
+            <button
+              type="button"
+              className="rounded-md flex items-center justify-center gap-2 bg-blue-100 px-4 py-3 text-sm font-medium text-blue-700 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[48px] flex-1 sm:flex-initial touch-manipulation transition-colors"
+              onClick={onSkip}
+            >
+              דלג והשתמש בתמונות קיימות
+            </button>
+          )}
           <button
             type="button"
             className="rounded-md flex items-center justify-center gap-2 bg-primary px-4 py-3 text-sm font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 min-h-[48px] flex-1 sm:flex-initial disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors"

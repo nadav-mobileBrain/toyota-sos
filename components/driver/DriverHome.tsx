@@ -17,6 +17,7 @@ import {
 import { ReplacementCarDeliveryForm } from '@/components/driver/ReplacementCarDeliveryForm';
 import { TestCompletionPopup } from '@/components/driver/TestCompletionPopup';
 import { toastSuccess, toastError } from '@/lib/toast';
+import { checkExistingAttachments } from '@/lib/taskAttachments';
 
 function getChecklistInfo(type: string) {
   switch (type) {
@@ -128,12 +129,14 @@ export function DriverHome() {
   const [completionChecklistState, setCompletionChecklistState] = useState<{
     task: DriverTask;
     nextStatus: DriverTask['status'];
+    allowSkip?: boolean;
   } | null>(null);
 
   // Completion form state
   const [completionFormState, setCompletionFormState] = useState<{
     task: DriverTask;
     nextStatus: DriverTask['status'];
+    hasExistingAttachments?: import('@/lib/taskAttachments').ExistingAttachments;
   } | null>(null);
 
   // Test completion popup state
@@ -486,7 +489,28 @@ export function DriverHome() {
                         completionChecklist &&
                         completionChecklist.length > 0
                       ) {
-                        setCompletionChecklistState({ task, nextStatus: next });
+                        // For "הסעת רכב חלופי", check if attachments already exist
+                        if (task.type === 'הסעת רכב חלופי') {
+                          const existingAttachments =
+                            await checkExistingAttachments(task.id);
+                          if (existingAttachments.hasAllRequired) {
+                            // All attachments exist, allow skipping checklist
+                            setCompletionChecklistState({
+                              task,
+                              nextStatus: next,
+                              allowSkip: true,
+                            });
+                          } else {
+                            // Missing attachments, require checklist
+                            setCompletionChecklistState({
+                              task,
+                              nextStatus: next,
+                              allowSkip: false,
+                            });
+                          }
+                        } else {
+                          setCompletionChecklistState({ task, nextStatus: next });
+                        }
                         return;
                       }
 
@@ -495,7 +519,14 @@ export function DriverHome() {
                         task.type
                       );
                       if (completionFlow === 'replacement_car_delivery') {
-                        setCompletionFormState({ task, nextStatus: next });
+                        // Check if attachments already exist
+                        const existingAttachments =
+                          await checkExistingAttachments(task.id);
+                        setCompletionFormState({
+                          task,
+                          nextStatus: next,
+                          hasExistingAttachments: existingAttachments,
+                        });
                         return;
                       }
                       if (completionFlow === 'test_completion') {
@@ -630,13 +661,32 @@ export function DriverHome() {
           }
           description={
             completionChecklistState.task.type === 'הסעת רכב חלופי'
-              ? 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני המשך למסירת הרכב.'
+              ? completionChecklistState.allowSkip
+                ? 'נמצאו תמונות וחתימה קיימות. ניתן לדלג על הצ׳ק-ליסט ולהשתמש בתמונות הקיימות, או להעלות תמונות נוספות.'
+                : 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני המשך למסירת הרכב.'
               : 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני השלמת המשימה.'
           }
           persist
           taskId={completionChecklistState.task.id}
           driverId={driverId || undefined}
-          forceCompletion
+          forceCompletion={!completionChecklistState.allowSkip}
+          onSkip={
+            completionChecklistState.allowSkip &&
+            completionChecklistState.task.type === 'הסעת רכב חלופי'
+              ? async () => {
+                  if (!completionChecklistState) return;
+                  setCompletionChecklistState(null);
+                  const existingAttachments = await checkExistingAttachments(
+                    completionChecklistState.task.id
+                  );
+                  setCompletionFormState({
+                    task: completionChecklistState.task,
+                    nextStatus: completionChecklistState.nextStatus,
+                    hasExistingAttachments: existingAttachments,
+                  });
+                }
+              : undefined
+          }
           onSubmit={async () => {
             if (!completionChecklistState) return;
             
@@ -646,9 +696,13 @@ export function DriverHome() {
             );
             if (completionFlow === 'replacement_car_delivery') {
               setCompletionChecklistState(null);
+              const existingAttachments = await checkExistingAttachments(
+                completionChecklistState.task.id
+              );
               setCompletionFormState({
                 task: completionChecklistState.task,
                 nextStatus: completionChecklistState.nextStatus,
+                hasExistingAttachments: existingAttachments,
               });
               return;
             }
@@ -695,6 +749,7 @@ export function DriverHome() {
             }
           }}
           task={completionFormState.task}
+          hasExistingAttachments={completionFormState.hasExistingAttachments}
           onSubmit={async () => {
             if (!client || !completionFormState) return;
             const { error: upErr } = await client.rpc('update_task_status', {
