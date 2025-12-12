@@ -89,31 +89,31 @@ function useTasksByDriverType() {
 }
 
 // Prepare data for stacked bar chart
-function prepareChartData(drivers: DriverData[]): Array<Record<string, any>> {
-  // Get all unique task types across all drivers
-  const allTaskTypes = new Set<string>();
-  drivers.forEach((driver) => {
-    driver.taskTypes.forEach((tt) => allTaskTypes.add(tt.taskType));
-  });
-
-  const taskTypesArray = Array.from(allTaskTypes);
-
+function prepareChartData(
+  drivers: DriverData[],
+  taskTypesToShow: string[]
+): Array<Record<string, any>> {
   // Create chart data: one entry per driver
   return drivers.map((driver) => {
     const entry: Record<string, any> = {
       driverName: driver.driverName,
       driverId: driver.driverId,
-      total: driver.total,
+      total: 0, // Will recalculate based on filtered types
     };
 
     // Add count for each task type (0 if driver doesn't have that type)
-    taskTypesArray.forEach((taskType) => {
+    let filteredTotal = 0;
+    taskTypesToShow.forEach((taskType) => {
       const typeData = driver.taskTypes.find((tt) => tt.taskType === taskType);
-      entry[taskType] = typeData ? typeData.count : 0;
+      const count = typeData ? typeData.count : 0;
+      entry[taskType] = count;
+      filteredTotal += count;
     });
 
+    entry.total = filteredTotal;
+
     return entry;
-  });
+  }).filter((entry) => entry.total > 0); // Only show drivers with tasks in selected types
 }
 
 // Create chart config for each task type
@@ -130,27 +130,59 @@ function createChartConfig(taskTypes: string[]) {
 
 export function TasksByDriverTypeChart() {
   const { data, loading, error } = useTasksByDriverType();
+  const [selectedTaskTypes, setSelectedTaskTypes] = useState<Set<string>>(
+    new Set()
+  );
 
-  const { chartData, taskTypes, chartConfig } = useMemo(() => {
+  const { chartData, taskTypes, chartConfig, allTaskTypes } = useMemo(() => {
     if (!data || data.length === 0) {
-      return { chartData: [], taskTypes: [], chartConfig: {} };
+      return { chartData: [], taskTypes: [], chartConfig: {}, allTaskTypes: [] };
     }
 
-    const allTaskTypes = new Set<string>();
+    const allTaskTypesSet = new Set<string>();
     data.forEach((driver) => {
-      driver.taskTypes.forEach((tt) => allTaskTypes.add(tt.taskType));
+      driver.taskTypes.forEach((tt) => allTaskTypesSet.add(tt.taskType));
     });
 
-    const taskTypesArray = Array.from(allTaskTypes).sort();
-    const preparedData = prepareChartData(data);
+    const taskTypesArray = Array.from(allTaskTypesSet).sort();
+    
+    // Filter task types if selection is active
+    const filteredTaskTypes =
+      selectedTaskTypes.size > 0
+        ? taskTypesArray.filter((tt) => selectedTaskTypes.has(tt))
+        : taskTypesArray;
+    
+    const preparedData = prepareChartData(data, filteredTaskTypes);
     const config = createChartConfig(taskTypesArray);
 
     return {
       chartData: preparedData,
-      taskTypes: taskTypesArray,
+      taskTypes: filteredTaskTypes,
       chartConfig: config,
+      allTaskTypes: taskTypesArray,
     };
-  }, [data]);
+  }, [data, selectedTaskTypes]);
+
+  const handleLegendClick = (taskType: string) => {
+    setSelectedTaskTypes((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskType)) {
+        newSet.delete(taskType);
+      } else {
+        newSet.add(taskType);
+      }
+      // If all types are selected or none are selected, clear selection to show all
+      if (!data) return new Set();
+      const allTaskTypesSet = new Set<string>();
+      data.forEach((driver) => {
+        driver.taskTypes.forEach((tt) => allTaskTypesSet.add(tt.taskType));
+      });
+      if (newSet.size === 0 || newSet.size === allTaskTypesSet.size) {
+        return new Set();
+      }
+      return newSet;
+    });
+  };
 
   if (loading) {
     return <div className="h-full animate-pulse rounded-md bg-gray-100" />;
@@ -171,6 +203,11 @@ export function TasksByDriverTypeChart() {
       </div>
     );
   }
+
+  // Get all task types for legend (not filtered)
+  const allTaskTypesForLegend = allTaskTypes.length > 0 
+    ? allTaskTypes 
+    : Object.keys(chartConfig);
 
   return (
     <Card className="group h-[450px] border-0 shadow-lg shadow-slate-900/5 bg-linear-to-br from-white/98 via-white/95 to-purple-50/20 backdrop-blur-md transition-all duration-300 hover:shadow-xl hover:shadow-slate-900/10 hover:scale-[1.01] transform-gpu border-l-4 border-l-transparent hover:border-l-purple-400/60 overflow-hidden relative flex flex-col">
@@ -291,16 +328,63 @@ export function TasksByDriverTypeChart() {
                   iconType="circle"
                   formatter={(value) => value}
                   iconSize={8}
+                  content={(props) => {
+                    const { payload } = props;
+                    if (!payload) return null;
+                    return (
+                      <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 px-2">
+                        {allTaskTypesForLegend.map((taskType, index) => {
+                          const isSelected =
+                            selectedTaskTypes.size === 0 ||
+                            selectedTaskTypes.has(taskType);
+                          return (
+                            <div
+                              key={`legend-${index}`}
+                              className="flex items-center gap-1.5 text-xs cursor-pointer hover:opacity-70 transition-opacity"
+                              onClick={() => handleLegendClick(taskType)}
+                              style={{
+                                opacity: isSelected ? 1 : 0.4,
+                                fontWeight: isSelected ? 600 : 400,
+                              }}
+                            >
+                              <div
+                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                style={{
+                                  backgroundColor:
+                                    chartConfig[taskType]?.color ||
+                                    TYPE_COLORS['אחר'],
+                                }}
+                              />
+                              <span className="text-gray-700 whitespace-nowrap">
+                                {taskType}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  }}
                 />
-                {taskTypes.map((taskType) => (
-                  <Bar
-                    key={taskType}
-                    dataKey={taskType}
-                    stackId="a"
-                    fill={chartConfig[taskType]?.color || TYPE_COLORS['אחר']}
-                    radius={[0, 4, 4, 0]}
-                  />
-                ))}
+                {allTaskTypes.map((taskType) => {
+                  const isSelected =
+                    selectedTaskTypes.size === 0 ||
+                    selectedTaskTypes.has(taskType);
+                  return (
+                    <Bar
+                      key={taskType}
+                      dataKey={taskType}
+                      stackId="a"
+                      fill={
+                        isSelected
+                          ? chartConfig[taskType]?.color || TYPE_COLORS['אחר']
+                          : '#e5e7eb'
+                      }
+                      radius={[0, 4, 4, 0]}
+                      opacity={isSelected ? 1 : 0.2}
+                      hide={!isSelected && selectedTaskTypes.size > 0}
+                    />
+                  );
+                })}
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
