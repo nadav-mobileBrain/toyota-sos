@@ -87,6 +87,12 @@ export function getStartChecklistForTaskType(
         title: 'האם יש גלויה ומתנה?',
         required: true,
       },
+      {
+        id: 'vehicle_clean',
+        type: 'boolean',
+        title: 'האם הרכב שטוף ונקי?',
+        required: true,
+      },
     ];
   }
 
