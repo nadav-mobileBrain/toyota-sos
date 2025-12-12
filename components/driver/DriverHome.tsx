@@ -623,14 +623,38 @@ export function DriverHome() {
               completionChecklistState.task.type
             ) ?? []
           }
-          title="צ׳ק-ליסט השלמת איסוף רכב"
-          description="אנא וודא שביצעת את כל הפעולות הנדרשות לפני השלמת המשימה."
+          title={
+            completionChecklistState.task.type === 'הסעת רכב חלופי'
+              ? 'צ׳ק-ליסט לפני מסירת רכב חלופי'
+              : 'צ׳ק-ליסט השלמת איסוף רכב'
+          }
+          description={
+            completionChecklistState.task.type === 'הסעת רכב חלופי'
+              ? 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני המשך למסירת הרכב.'
+              : 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני השלמת המשימה.'
+          }
           persist
           taskId={completionChecklistState.task.id}
           driverId={driverId || undefined}
           forceCompletion
           onSubmit={async () => {
-            if (!client || !completionChecklistState) return;
+            if (!completionChecklistState) return;
+            
+            // For "הסעת רכב חלופי", after checklist completion, proceed to the special form
+            const completionFlow = getCompletionFlowForTaskType(
+              completionChecklistState.task.type
+            );
+            if (completionFlow === 'replacement_car_delivery') {
+              setCompletionChecklistState(null);
+              setCompletionFormState({
+                task: completionChecklistState.task,
+                nextStatus: completionChecklistState.nextStatus,
+              });
+              return;
+            }
+
+            // For other task types, update status directly
+            if (!client) return;
             const { error: upErr } = await client.rpc('update_task_status', {
               p_task_id: completionChecklistState.task.id,
               p_status: completionChecklistState.nextStatus,

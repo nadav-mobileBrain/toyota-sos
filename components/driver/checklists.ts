@@ -135,6 +135,18 @@ export function getCompletionChecklistForTaskType(
     ];
   }
 
+  if (taskType === 'הסעת רכב חלופי') {
+    // Pre-step before the 3-step ReplacementCarDeliveryForm
+    return [
+      {
+        id: 'delivery_form',
+        type: 'boolean',
+        title: 'האם יש טופס מסירת רכב?',
+        required: true,
+      },
+    ];
+  }
+
   return null;
 }
 
