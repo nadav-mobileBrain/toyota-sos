@@ -147,6 +147,18 @@ export function getCompletionChecklistForTaskType(
     ];
   }
 
+  if (taskType === 'ביצוע טסט') {
+    // Pre-step before the TestCompletionPopup
+    return [
+      {
+        id: 'signed_test_form',
+        type: 'boolean',
+        title: 'האם יש טופס טסט חתום?',
+        required: true,
+      },
+    ];
+  }
+
   return null;
 }
 

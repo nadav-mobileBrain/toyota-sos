@@ -657,6 +657,8 @@ export function DriverHome() {
           title={
             completionChecklistState.task.type === 'הסעת רכב חלופי'
               ? 'צ׳ק-ליסט לפני מסירת רכב חלופי'
+              : completionChecklistState.task.type === 'ביצוע טסט'
+              ? 'צ׳ק-ליסט השלמת טסט'
               : 'צ׳ק-ליסט השלמת איסוף רכב'
           }
           description={
@@ -664,6 +666,8 @@ export function DriverHome() {
               ? completionChecklistState.allowSkip
                 ? 'נמצאו תמונות וחתימה קיימות. ניתן לדלג על הצ׳ק-ליסט ולהשתמש בתמונות הקיימות, או להעלות תמונות נוספות.'
                 : 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני המשך למסירת הרכב.'
+              : completionChecklistState.task.type === 'ביצוע טסט'
+              ? 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני השלמת הטסט.'
               : 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני השלמת המשימה.'
           }
           persist
@@ -703,6 +707,16 @@ export function DriverHome() {
                 task: completionChecklistState.task,
                 nextStatus: completionChecklistState.nextStatus,
                 hasExistingAttachments: existingAttachments,
+              });
+              return;
+            }
+
+            // For "ביצוע טסט", after checklist completion, proceed to the test completion popup
+            if (completionFlow === 'test_completion') {
+              setCompletionChecklistState(null);
+              setTestCompletionState({
+                task: completionChecklistState.task,
+                nextStatus: completionChecklistState.nextStatus,
               });
               return;
             }
