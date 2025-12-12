@@ -87,6 +87,19 @@ const StatusByTypeChart = dynamic(
   }
 );
 
+const TasksByDriverTypeChart = dynamic(
+  () =>
+    import(
+      '@/components/admin/dashboard/charts/TasksByDriverTypeChart'
+    ).then((mod) => ({ default: mod.TasksByDriverTypeChart })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full animate-pulse bg-slate-100 rounded" />
+    ),
+  }
+);
+
 function ChartLegend({
   items,
 }: {
@@ -230,6 +243,11 @@ export function DashboardCharts() {
 
         {/* Chart 6 - Status by Type */}
         <StatusByTypeChart />
+
+        {/* Chart 7 - Tasks by Driver Type (Full Width) */}
+        <div className="md:col-span-2 xl:col-span-3">
+          <TasksByDriverTypeChart />
+        </div>
       </div>
     </section>
   );
