@@ -4,6 +4,7 @@ import dayjs from '@/lib/dayjs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import { MapPinIcon } from 'lucide-react';
+import { TaskAttachments } from '@/components/admin/TaskAttachments';
 
 export type TaskCardProps = {
   id: string;
@@ -26,6 +27,7 @@ export type TaskCardProps = {
 
 export function TaskCard(props: TaskCardProps) {
   const {
+    id,
     title,
     type,
     priority,
@@ -173,6 +175,9 @@ export function TaskCard(props: TaskCardProps) {
           </div>
         ) : null}
       </div>
+
+      {/* Task Attachments (images and signatures) */}
+      <TaskAttachments taskId={id} taskType={type} />
 
       <div className="mt-3 flex gap-2">
         {wazeHref ? (

@@ -40,24 +40,73 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
           .eq('task_id', taskId)
           .order('signed_at', { ascending: true });
 
-        if (!signaturesError && signaturesData) {
+        if (!signaturesError && signaturesData && signaturesData.length > 0) {
           for (const sig of signaturesData) {
-            // Extract path from signature_url (format: task-attachments/path or just path)
-            const path = sig.signature_url.startsWith('task-attachments/')
-              ? sig.signature_url.replace('task-attachments/', '')
-              : sig.signature_url;
-            const { data: signedData } = await supa.storage
-              .from('task-attachments')
-              .createSignedUrl(path, 3600); // 1 hour expiry
+            try {
+              // Extract path from signature_url (format: task-attachments/path or just path)
+              let path = sig.signature_url;
+              if (path.startsWith('task-attachments/')) {
+                path = path.replace('task-attachments/', '');
+              }
+              
+              const { data: signedData, error: signError } = await supa.storage
+                .from('task-attachments')
+                .createSignedUrl(path, 3600); // 1 hour expiry
 
-            allAttachments.push({
-              id: sig.id,
-              url: sig.signature_url,
-              signedUrl: signedData?.signedUrl || null,
-              type: 'signature',
-              description: sig.signed_by_name || 'חתימת לקוח',
-            });
+              if (!signError && signedData?.signedUrl) {
+                allAttachments.push({
+                  id: sig.id,
+                  url: sig.signature_url,
+                  signedUrl: signedData.signedUrl,
+                  type: 'signature',
+                  description: sig.signed_by_name || 'חתימת לקוח',
+                });
+              } else {
+                console.warn('Failed to create signed URL for signature:', sig.id, signError);
+              }
+            } catch (err) {
+              console.error('Error processing signature:', sig.id, err);
+            }
           }
+        }
+
+        // Also check storage directly for signatures folder (in case they're not in DB)
+        try {
+          const { data: signaturesList } = await supa.storage
+            .from('task-attachments')
+            .list(`${taskId}/signatures`, {
+              limit: 100,
+              sortBy: { column: 'created_at', order: 'asc' },
+            });
+
+          if (signaturesList && signaturesList.length > 0) {
+            for (const file of signaturesList) {
+              // Skip if already in attachments (from DB)
+              if (
+                !allAttachments.some(
+                  (a) =>
+                    a.type === 'signature' &&
+                    a.url.includes(`signatures/${file.name}`)
+                )
+              ) {
+                const path = `${taskId}/signatures/${file.name}`;
+                const { data: signedData } = await supa.storage
+                  .from('task-attachments')
+                  .createSignedUrl(path, 3600);
+
+                allAttachments.push({
+                  id: `sig-${file.name}`,
+                  url: `task-attachments/${path}`,
+                  signedUrl: signedData?.signedUrl || null,
+                  type: 'signature',
+                  description: 'חתימת לקוח',
+                });
+              }
+            }
+          }
+        } catch (err) {
+          // Folder might not exist, that's ok
+          console.debug('No signatures folder found');
         }
 
         // Check storage directly for car images (from car-images folder)
