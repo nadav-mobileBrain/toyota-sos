@@ -23,6 +23,7 @@ export interface TasksBoardProps {
   taskAssignees: TaskAssignee[];
   clients: Client[];
   vehicles: Vehicle[];
+  driverBreaks?: Record<string, boolean>;
 }
 
 export interface KanbanColumnProps {
@@ -42,6 +43,7 @@ export interface KanbanColumnProps {
   bulkEnabled: boolean;
   onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
+  driverBreaks?: Record<string, boolean>;
 }
 
 export interface TaskCardProps {

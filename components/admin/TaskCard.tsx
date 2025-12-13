@@ -87,13 +87,13 @@ export function TaskCard({
           </h4> */}
         </div>
         {task.priority === 'מיידי' && (
-          <span
-            className={`shrink-0 inline-block rounded-full px-1.5 py-0.5 text-xs font-bold text-white ${priorityColor(
-              task.priority
-            )}`}
-          >
-            {priorityLabel(task.priority)}
-          </span>
+        <span
+          className={`shrink-0 inline-block rounded-full px-1.5 py-0.5 text-xs font-bold text-white ${priorityColor(
+            task.priority
+          )}`}
+        >
+          {priorityLabel(task.priority)}
+        </span>
         )}
       </div>
 

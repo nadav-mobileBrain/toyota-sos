@@ -98,19 +98,19 @@ export function TaskCard(props: TaskCardProps) {
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         {priority !== 'ללא עדיפות' && (
-          <div className="flex items-center gap-4">
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-xs text-gray-500">עדיפות</span>
-              <span
-                className={cn(
-                  'inline-flex rounded px-2 py-1 text-xs text-white',
-                  priorityColor
-                )}
-              >
-                {priority}
-              </span>
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-xs text-gray-500">עדיפות</span>
+            <span
+              className={cn(
+                'inline-flex rounded px-2 py-1 text-xs text-white',
+                priorityColor
+              )}
+            >
+              {priority}
+            </span>
           </div>
+        </div>
         )}
 
         <div className="flex flex-col gap-1">

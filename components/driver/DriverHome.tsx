@@ -8,6 +8,7 @@ import { TaskCard, TaskCardProps } from '@/components/driver/TaskCard';
 import { TaskSkeleton } from '@/components/driver/TaskSkeleton';
 import { getDriverSession } from '@/lib/auth';
 import { useAuth } from '@/components/AuthProvider';
+import { Button } from '@/components/ui/button';
 import { ChecklistModal } from '@/components/driver/ChecklistModal';
 import {
   getStartChecklistForTaskType,
@@ -18,6 +19,7 @@ import { ReplacementCarDeliveryForm } from '@/components/driver/ReplacementCarDe
 import { TestCompletionPopup } from '@/components/driver/TestCompletionPopup';
 import { toastSuccess, toastError } from '@/lib/toast';
 import { checkExistingAttachments } from '@/lib/taskAttachments';
+import { UtensilsIcon } from 'lucide-react';
 
 function getChecklistInfo(type: string) {
   switch (type) {
@@ -118,6 +120,10 @@ export function DriverHome() {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Break state
+  const [isOnBreak, setIsOnBreak] = useState(false);
+  const [breakLoading, setBreakLoading] = useState(false);
 
   // Checklist flow state: when a status change requires a start checklist
   const [checklistState, setChecklistState] = useState<{
@@ -282,6 +288,110 @@ export function DriverHome() {
     };
   }, [tabState, cursor, client]);
 
+  // Check break status on mount
+  useEffect(() => {
+    const checkBreakStatus = async () => {
+      try {
+        const localSession = getDriverSession();
+        const driverId = localSession?.userId;
+        const url = driverId
+          ? `/api/driver/break?user_id=${encodeURIComponent(driverId)}`
+          : '/api/driver/break';
+        const res = await fetch(url, {
+          credentials: 'include', // Include cookies
+          headers: driverId ? { 'x-toyota-user-id': driverId } : undefined,
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.ok) {
+            setIsOnBreak(json.data.isOnBreak);
+          }
+        } else {
+          console.error(
+            '[DriverBreaks] Failed to check break status:',
+            res.status
+          );
+        }
+      } catch (error) {
+        console.error('[DriverBreaks] Error checking break status:', error);
+      }
+    };
+    checkBreakStatus();
+  }, []);
+
+  // Handle break start/end
+  const handleBreakToggle = async () => {
+    if (breakLoading) return;
+
+    setBreakLoading(true);
+    try {
+      const localSession = getDriverSession();
+      const driverId = localSession?.userId;
+      if (isOnBreak) {
+        // End break
+        console.log('[DriverBreaks] Ending break...');
+        const res = await fetch('/api/driver/break', {
+          method: 'PATCH',
+          credentials: 'include', // Include cookies
+          headers: driverId ? { 'x-toyota-user-id': driverId } : undefined,
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.ok) {
+            setIsOnBreak(false);
+            toastSuccess('הפסקה הסתיימה');
+            console.log('[DriverBreaks] ✅ Break ended successfully');
+          } else {
+            toastError('שגיאה בסיום הפסקה');
+          }
+        } else {
+          const errorData = await res
+            .json()
+            .catch(() => ({ error: 'Unknown error' }));
+          console.error(
+            '[DriverBreaks] ❌ Failed to end break:',
+            res.status,
+            errorData
+          );
+          toastError(errorData.error || 'שגיאה בסיום הפסקה');
+        }
+      } else {
+        // Start break
+        console.log('[DriverBreaks] Starting break...');
+        const res = await fetch('/api/driver/break', {
+          method: 'POST',
+          credentials: 'include', // Include cookies
+          headers: driverId ? { 'x-toyota-user-id': driverId } : undefined,
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.ok) {
+            setIsOnBreak(true);
+            toastSuccess('הפסקה התחילה');
+            console.log('[DriverBreaks] ✅ Break started successfully');
+          } else {
+            toastError('שגיאה בהתחלת הפסקה');
+          }
+        } else {
+          const errorData = await res
+            .json()
+            .catch(() => ({ error: 'Unknown error' }));
+          console.error(
+            '[DriverBreaks] ❌ Failed to start break:',
+            res.status,
+            errorData
+          );
+          toastError(errorData.error || 'שגיאה בהתחלת הפסקה');
+        }
+      }
+    } catch (error) {
+      console.error('[DriverBreaks] Error toggling break:', error);
+      toastError('שגיאה בפעולת הפסקה');
+    } finally {
+      setBreakLoading(false);
+    }
+  };
+
   // Initial load and on tab changes, trigger fetch once client is ready
   useEffect(() => {
     if (!client) return;
@@ -408,6 +518,56 @@ export function DriverHome() {
           </span>
         ) : null}
       </div>
+
+      {/* Break Button */}
+      <Button
+        type="button"
+        onClick={handleBreakToggle}
+        disabled={breakLoading}
+        className={[
+          'w-full h-auto rounded-xl px-4 py-3 mb-2 justify-between',
+          'shadow-sm hover:shadow-md transition-all',
+          isOnBreak
+            ? 'bg-orange-500 text-white hover:bg-orange-600'
+            : 'bg-gray-900 text-white hover:bg-gray-800',
+        ].join(' ')}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span
+            className={[
+              'grid place-items-center h-9 w-9 rounded-full',
+              isOnBreak ? 'bg-white/15' : 'bg-white/10',
+            ].join(' ')}
+            aria-hidden="true"
+          >
+            <UtensilsIcon className="h-4 w-4" />
+          </span>
+          <div className="min-w-0 text-right">
+            <div className="text-sm font-semibold leading-5">
+              {isOnBreak ? 'סיים הפסקה' : 'אני בהפסקה'}
+            </div>
+            <div className="text-xs opacity-90">
+              {breakLoading
+                ? isOnBreak
+                  ? 'מסיים...'
+                  : 'מתחיל...'
+                : isOnBreak
+                ? 'לחץ כדי לחזור לעבודה'
+                : 'לחץ כדי לסמן הפסקה'}
+            </div>
+          </div>
+        </div>
+
+        <div className="shrink-0 flex items-center gap-2">
+          {breakLoading && (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          )}
+          <span className="text-xs font-medium opacity-90">
+            {isOnBreak ? 'פעיל' : 'כבוי'}
+          </span>
+        </div>
+      </Button>
+
       {/* Tabs */}
       <div className="grid grid-cols-2 gap-2">
         {(
@@ -509,7 +669,10 @@ export function DriverHome() {
                             });
                           }
                         } else {
-                          setCompletionChecklistState({ task, nextStatus: next });
+                          setCompletionChecklistState({
+                            task,
+                            nextStatus: next,
+                          });
                         }
                         return;
                       }
@@ -693,7 +856,7 @@ export function DriverHome() {
           }
           onSubmit={async () => {
             if (!completionChecklistState) return;
-            
+
             // For "הסעת רכב חלופי", after checklist completion, proceed to the special form
             const completionFlow = getCompletionFlowForTaskType(
               completionChecklistState.task.type

@@ -77,6 +77,28 @@ export default async function AdminTasksPage() {
     driversError = e instanceof Error ? e.message : 'Failed to fetch drivers';
   }
 
+  // Fetch active driver breaks
+  let driverBreaks: Record<string, boolean> = {};
+  let breaksError: string | null = null;
+
+  try {
+    const { data: breaksData, error: breaksErrorData } = await admin
+      .from('driver_breaks')
+      .select('driver_id')
+      .is('ended_at', null);
+
+    if (breaksErrorData) {
+      breaksError = breaksErrorData.message;
+    } else {
+      // Create an object of driver_id -> true for drivers on break
+      breaksData?.forEach((breakRecord) => {
+        driverBreaks[breakRecord.driver_id] = true;
+      });
+    }
+  } catch (e) {
+    breaksError = e instanceof Error ? e.message : 'Failed to fetch breaks';
+  }
+
   // Fetch driver assignments for tasks
   let taskAssignees: TaskAssignee[] = [];
   let assigneesError: string | null = null;
@@ -164,6 +186,7 @@ export default async function AdminTasksPage() {
           taskAssignees={taskAssignees}
           clients={clients}
           vehicles={vehicles}
+          driverBreaks={driverBreaks}
         />
       </div>
     </main>

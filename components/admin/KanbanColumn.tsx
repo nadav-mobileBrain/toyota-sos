@@ -19,6 +19,7 @@ export function KanbanColumn({
   bulkEnabled,
   onEdit,
   onDelete,
+  driverBreaks = {},
 }: KanbanColumnProps) {
   // Setup droppable
   const { setNodeRef } = useDroppable({
@@ -42,8 +43,14 @@ export function KanbanColumn({
       <div className="sticky top-0 border-b border-gray-200 bg-white px-4 py-3 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-primary underline text-xl">
+            <h3 className="font-bold text-primary underline text-xl flex items-center gap-2">
               {column.label}
+              {column.type === 'driver' && driverBreaks[column.id] && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
+                  <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+                  בהפסקה
+                </span>
+              )}
             </h3>
             <p className="text-xs font-medium text-gray-500">
               {tasks.length} {tasks.length === 1 ? 'משימה' : 'משימות'}

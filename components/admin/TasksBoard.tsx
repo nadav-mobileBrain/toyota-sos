@@ -107,12 +107,15 @@ export function TasksBoard({
   taskAssignees,
   clients,
   vehicles,
+  driverBreaks = {},
 }: TasksBoardProps) {
   // State management
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [assignees, setAssignees] = useState<TaskAssignee[]>(taskAssignees);
   const [vehiclesState, setVehiclesState] = useState<Vehicle[]>(vehicles);
   const [clientsState, setClientsState] = useState<Client[]>(clients);
+  const [driverBreaksState, setDriverBreaksState] =
+    useState<Record<string, boolean>>(driverBreaks);
   // Persisted groupBy via URL query (?groupBy=driver|status) and localStorage
   const initialGroupBy = 'status' as GroupBy;
   const [groupBy, setGroupBy] = useState<GroupBy>(initialGroupBy);
@@ -129,6 +132,18 @@ export function TasksBoard({
   useEffect(() => {
     setClientsState(clients);
   }, [clients]);
+
+  // Initialize driverBreaksState only on mount, don't sync from props after that
+  // to avoid overriding real-time updates
+  useEffect(() => {
+    if (Object.keys(driverBreaks).length > 0) {
+      setDriverBreaksState(driverBreaks);
+      console.log(
+        '[DriverBreaks] Initial state loaded from props:',
+        driverBreaks
+      );
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setAssignees(taskAssignees);
@@ -367,7 +382,7 @@ export function TasksBoard({
           throw new Error(text || 'שגיאה במחיקת משימה');
         }
         toastSuccess('המשימה נמחקה בהצלחה');
-      } catch (error) {
+      } catch {
         setTasks(prevTasks);
         setAssignees(prevAssignees);
         toastError('שגיאה במחיקת משימה');
@@ -720,10 +735,7 @@ export function TasksBoard({
         });
 
         if (!response.ok) {
-          console.error(
-            'Failed to unassign driver:',
-            response.statusText
-          );
+          console.error('Failed to unassign driver:', response.statusText);
           if (prevSnapshot) {
             setAssignees(prevSnapshot);
           }
@@ -763,7 +775,7 @@ export function TasksBoard({
         const currentAssignee = assignees.find(
           (ta) => ta.task_id === taskId && ta.is_lead
         );
-        
+
         // Handle unassigning
         if (targetDriverId === 'unassigned') {
           if (!currentAssignee) return; // Already unassigned
@@ -775,7 +787,7 @@ export function TasksBoard({
           persistDriverUnassignment(taskId, prevSnapshot);
           return;
         }
-        
+
         if (currentAssignee?.driver_id === targetDriverId) return;
         const prevSnapshot = assignees;
         setAssignees((prevAssignees) => {
@@ -806,19 +818,29 @@ export function TasksBoard({
         persistTaskUpdate(taskId, { status: updatePayload.status });
       }
     },
-    [tasks, assignees, groupBy, persistDriverAssignment, persistDriverUnassignment, persistTaskUpdate]
+    [
+      tasks,
+      assignees,
+      groupBy,
+      persistDriverAssignment,
+      persistDriverUnassignment,
+      persistTaskUpdate,
+    ]
   );
 
-  // Realtime updates (tasks, task_assignees)
+  // Realtime updates (tasks, task_assignees, driver_breaks)
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    console.log('[DriverBreaks] Setting up real-time subscription...');
     // Lazy load browser client to avoid SSR issues
     let supa: SupabaseClient;
+    let channel: ReturnType<typeof supa.channel> | null = null;
     (async () => {
       try {
         const { createBrowserClient } = await import('@/lib/auth');
         supa = createBrowserClient();
-        const channel = supa
+        console.log('[DriverBreaks] Supabase client created');
+        channel = supa
           .channel('realtime:admin-tasks')
           .on(
             'postgres_changes',
@@ -868,21 +890,138 @@ export function TasksBoard({
               });
             }
           )
-          .subscribe();
-        // Cleanup
-        return () => {
-          try {
-            if (channel) supa.removeChannel(channel);
-          } catch {
-            /* no-op */
-          }
-        };
-      } catch {
-        // no-op
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'driver_breaks',
+              filter: undefined, // Subscribe to all changes
+            },
+            (payload: PostgresChangePayload) => {
+              console.log(
+                '[DriverBreaks] ✅ Real-time event received:',
+                payload.eventType,
+                payload
+              );
+              console.log(
+                '[DriverBreaks] Full payload.new:',
+                JSON.stringify(payload.new, null, 2)
+              );
+              console.log(
+                '[DriverBreaks] Full payload.old:',
+                JSON.stringify(payload.old, null, 2)
+              );
+              setDriverBreaksState((prev) => {
+                console.log(
+                  '[DriverBreaks] Current state before update:',
+                  prev
+                );
+                const newState = { ...prev };
+                if (payload.eventType === 'INSERT') {
+                  const row = payload.new as {
+                    driver_id: string;
+                    ended_at: string | null;
+                  };
+                  console.log(
+                    '[DriverBreaks] INSERT - driver_id:',
+                    row.driver_id,
+                    'ended_at:',
+                    row.ended_at
+                  );
+                  // Only mark as on break if ended_at is null
+                  if (!row.ended_at) {
+                    newState[row.driver_id] = true;
+                    console.log(
+                      '[DriverBreaks] ✅ Driver started break:',
+                      row.driver_id
+                    );
+                  }
+                }
+                if (payload.eventType === 'UPDATE') {
+                  const row = payload.new as {
+                    driver_id: string;
+                    ended_at: string | null;
+                  };
+                  console.log(
+                    '[DriverBreaks] UPDATE - driver_id:',
+                    row.driver_id
+                  );
+                  console.log(
+                    '[DriverBreaks] UPDATE - new ended_at:',
+                    row.ended_at
+                  );
+
+                  // Don't depend on payload.old (replica identity might omit columns).
+                  // ended_at set => break ended; ended_at null => break active.
+                  if (row.ended_at) {
+                    delete newState[row.driver_id];
+                    console.log(
+                      '[DriverBreaks] ✅ Driver ended break:',
+                      row.driver_id
+                    );
+                  } else {
+                    newState[row.driver_id] = true;
+                    console.log(
+                      '[DriverBreaks] ✅ Driver started break:',
+                      row.driver_id
+                    );
+                  }
+                }
+                if (payload.eventType === 'DELETE') {
+                  const row = payload.old as { driver_id: string };
+                  delete newState[row.driver_id];
+                  console.log(
+                    '[DriverBreaks] ✅ Break deleted:',
+                    row.driver_id
+                  );
+                }
+                console.log(
+                  '[DriverBreaks] 🎯 New state after update:',
+                  newState
+                );
+                return newState;
+              });
+            }
+          )
+          .subscribe((status, err) => {
+            console.log('[DriverBreaks] 📡 Subscription status:', status);
+            if (err) {
+              console.error('[DriverBreaks] ❌ Subscription error:', err);
+            }
+            if (status === 'SUBSCRIBED') {
+              console.log(
+                '[DriverBreaks] ✅ Successfully subscribed to driver_breaks changes'
+              );
+              console.log(
+                '[DriverBreaks] Waiting for events... Make sure migration 20250109000000_grant_driver_breaks_realtime.sql is applied'
+              );
+            } else if (status === 'CHANNEL_ERROR') {
+              console.error(
+                '[DriverBreaks] ❌ Channel error - check RLS policies and grants'
+              );
+            } else if (status === 'TIMED_OUT') {
+              console.error('[DriverBreaks] ❌ Subscription timed out');
+            } else if (status === 'CLOSED') {
+              console.warn('[DriverBreaks] ⚠️ Subscription closed');
+            }
+          });
+      } catch (error) {
+        console.error(
+          '[DriverBreaks] Error setting up real-time subscription:',
+          error
+        );
       }
     })();
+    // Cleanup
     return () => {
-      /* channel cleanup in inner func */
+      try {
+        if (channel && supa) {
+          supa.removeChannel(channel);
+        }
+      } catch (error) {
+        console.error('[DriverBreaks] Error cleaning up channel:', error);
+      }
     };
   }, []);
 
@@ -947,7 +1086,7 @@ export function TasksBoard({
           aria-label="לוח משימות"
         >
           {/* Filters & Search & Sort */}
-          <div className="relative z-50 flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-2 bg-white flex-shrink-0">
+          <div className="relative z-50 flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-2 bg-white shrink-0">
             <input
               type="text"
               placeholder="חפש משימות (כותרת / לקוח / רכב)"
@@ -1156,7 +1295,7 @@ export function TasksBoard({
           ) : (
             <>
               {bulkEnabled && selectedIds.size > 0 && (
-                <div className="flex items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-2 flex-shrink-0">
+                <div className="flex items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-2 shrink-0">
                   <span className="text-sm text-gray-700">
                     נבחרו {selectedIds.size}
                   </span>
@@ -1209,11 +1348,11 @@ export function TasksBoard({
                 </div>
               )}
               {/* Kanban grid with horizontal scroll */}
-              <div 
+              <div
                 className="flex flex-1 min-h-0 gap-6 overflow-x-auto overflow-y-hidden p-4"
                 style={{
                   scrollbarWidth: 'thin',
-                  scrollbarColor: '#9ca3af #f3f4f6'
+                  scrollbarColor: '#9ca3af #f3f4f6',
                 }}
               >
                 {columns.map((column) => {
@@ -1238,6 +1377,7 @@ export function TasksBoard({
                       onDelete={handleDeleteTask}
                       selectAllInColumn={selectAllInColumn}
                       bulkEnabled={!!bulkEnabled}
+                      driverBreaks={driverBreaksState}
                     />
                   );
                 })}
