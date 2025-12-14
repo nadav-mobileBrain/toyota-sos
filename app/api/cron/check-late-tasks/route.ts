@@ -92,6 +92,8 @@ export async function GET(request: NextRequest) {
             .filter(Boolean)
             .join(', ') || 'ללא שם';
 
+        const taskTitle = task.title || 'ללא כותרת';
+
         // Send Push Notification
         await notify({
           type: 'late_start_alert',
@@ -99,7 +101,7 @@ export async function GET(request: NextRequest) {
           recipients: recipientList,
           payload: {
             title: 'התראה על איחור במשימה',
-            body: `המשימה "${task.title}" (נהג: ${drivers}) לא התחילה בזמן (איחור של 5 דקות).`,
+            body: `המשימה "${taskTitle}" (נהג: ${drivers}) לא התחילה בזמן (איחור של 5 דקות).`,
             url: `/admin/dashboard?taskId=${task.id}`, // Deep link to task in dashboard
             priority: 'high',
             taskId: task.id,
