@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/check-late-tasks?key=${CRON_SECRET}",
-      "schedule": "* * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
