@@ -15,6 +15,10 @@ import { AdminTasksShell } from '@/components/admin/AdminTasksShell';
  * then renders the TasksBoard component for Kanban view.
  */
 
+// Disable caching to ensure fresh data on every page load
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AdminTasksPage() {
   const admin = getSupabaseAdmin();
 
@@ -42,7 +46,9 @@ export default async function AdminTasksPage() {
         updated_by,
         created_at,
         updated_at,
-        task_stops(id, client_id, address, advisor_name, sort_order)
+        advisor_name,
+        advisor_color,
+        task_stops(id, client_id, address, advisor_name, advisor_color, sort_order)
       `
       )
       .is('deleted_at', null)
@@ -63,6 +69,7 @@ export default async function AdminTasksPage() {
                 client_id: stop.client_id,
                 address: stop.address,
                 advisor_name: stop.advisor_name,
+                advisor_color: stop.advisor_color,
                 sort_order: stop.sort_order,
                 created_at: '',
                 updated_at: '',

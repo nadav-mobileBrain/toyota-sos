@@ -7,6 +7,10 @@ import type { TaskStatus, TaskPriority, TaskType } from '@/types/task';
 import type { TaskCardProps } from '@/types/board';
 import { PencilIcon, Trash2Icon } from 'lucide-react';
 import {
+  getAdvisorColorBgClass,
+  getAdvisorColorTextClass,
+} from '@/lib/advisorColors';
+import {
   AlertDialog,
   AlertDialogTrigger,
   AlertDialogContent,
@@ -172,12 +176,21 @@ export function TaskCard({
       </div>
 
       {/* Advisor info */}
-      {task.advisor_name && (
-        <div className="mb-2 flex items-center gap-1 text-xs text-gray-600">
+      {(task.advisor_name || task.advisor_color) && (
+        <div className="mb-2 flex items-center gap-1 text-xs text-gray-600 flex-wrap">
           <span className="font-medium">👨‍💼</span>
-          <span className="truncate" title={task.advisor_name}>
-            {task.advisor_name}
-          </span>
+          {task.advisor_name && (
+            <span className="truncate" title={task.advisor_name}>
+              {task.advisor_name}
+            </span>
+          )}
+          {task.advisor_color && (
+            <span
+              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getAdvisorColorBgClass(task.advisor_color)} ${getAdvisorColorTextClass(task.advisor_color)}`}
+            >
+              {task.advisor_color}
+            </span>
+          )}
         </div>
       )}
 

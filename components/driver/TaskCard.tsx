@@ -5,6 +5,11 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import { MapPinIcon } from 'lucide-react';
 import { TaskAttachments } from '@/components/admin/TaskAttachments';
+import {
+  getAdvisorColorBgClass,
+  getAdvisorColorTextClass,
+} from '@/lib/advisorColors';
+import type { AdvisorColor } from '@/types/task';
 
 export type TaskCardProps = {
   id: string;
@@ -16,10 +21,13 @@ export type TaskCardProps = {
   estimatedEnd?: string | Date | null;
   address?: string | null;
   clientName?: string | null;
+  advisorName?: string | null;
+  advisorColor?: AdvisorColor | null;
   stops?: {
     address: string;
     clientName?: string | null;
     advisorName?: string | null;
+    advisorColor?: AdvisorColor | null;
   }[];
   vehicle?: { licensePlate?: string | null; model?: string | null } | null;
   onStatusChange?: (next: TaskCardProps['status']) => void;
@@ -36,6 +44,8 @@ export function TaskCard(props: TaskCardProps) {
     estimatedEnd,
     address,
     clientName,
+    advisorName,
+    advisorColor,
     stops,
     vehicle,
     onStatusChange,
@@ -164,7 +174,19 @@ export function TaskCard(props: TaskCardProps) {
                 </div>
                 {s.address ? <div>כתובת: {s.address}</div> : null}
                 {s.clientName ? <div>לקוח: {s.clientName}</div> : null}
-                {s.advisorName ? <div>יועץ: {s.advisorName}</div> : null}
+                {(s.advisorName || s.advisorColor) && (
+                  <div className="flex items-center gap-2">
+                    <span>יועץ:</span>
+                    {s.advisorName && <span>{s.advisorName}</span>}
+                    {s.advisorColor && (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getAdvisorColorBgClass(s.advisorColor)} ${getAdvisorColorTextClass(s.advisorColor)}`}
+                      >
+                        {s.advisorColor}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -172,6 +194,19 @@ export function TaskCard(props: TaskCardProps) {
           <>
             {address ? <div>כתובת: {address}</div> : null}
             {clientName ? <div>לקוח: {clientName}</div> : null}
+            {(advisorName || advisorColor) && (
+              <div className="flex items-center gap-2">
+                <span>יועץ:</span>
+                {advisorName && <span>{advisorName}</span>}
+                {advisorColor && (
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getAdvisorColorBgClass(advisorColor)} ${getAdvisorColorTextClass(advisorColor)}`}
+                  >
+                    {advisorColor}
+                  </span>
+                )}
+              </div>
+            )}
           </>
         )}
         {vehicle?.licensePlate ? (

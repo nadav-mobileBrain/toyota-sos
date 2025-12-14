@@ -13,6 +13,7 @@ export type TaskType =
   | 'ביצוע טסט'
   | 'חילוץ רכב תקוע'
   | 'אחר';
+export type AdvisorColor = 'צהוב' | 'ירוק' | 'כתום' | 'סגול בהיר';
 
 export interface Task {
   id: string;
@@ -29,6 +30,7 @@ export interface Task {
   created_by: string | null;
   updated_by: string | null;
   advisor_name?: string | null;
+  advisor_color?: AdvisorColor | null;
   created_at: string;
   updated_at: string;
   admin_notified_late_start?: boolean;
@@ -49,6 +51,7 @@ export interface TaskStop {
   client_id: string | null;
   address: string;
   advisor_name: string | null;
+  advisor_color: AdvisorColor | null;
   sort_order: number;
   created_at: string;
   updated_at: string;

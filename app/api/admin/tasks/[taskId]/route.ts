@@ -3,6 +3,10 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { cookies } from 'next/headers';
 import { notify } from '@/lib/notify';
 
+// Disable caching for API routes
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const multiStopTypes = new Set(['הסעת לקוח הביתה', 'הסעת לקוח למוסך']);
 const multiStopAliases = new Set(['drive_client_home', 'drive_client_to_dealership']);
 const isMultiStopType = (val: string | null | undefined) => {
@@ -14,6 +18,7 @@ type StopPayload = {
   client_id: string;
   address: string;
   advisor_name: string | null;
+  advisor_color: string | null;
   sort_order: number;
 };
 
@@ -24,6 +29,11 @@ function normalizeStops(rawStops: any[]): StopPayload[] {
     advisor_name:
       typeof s?.advisor_name === 'string' && s.advisor_name.trim()
         ? s.advisor_name.trim()
+        : null,
+    advisor_color:
+      typeof s?.advisor_color === 'string' &&
+      ['צהוב', 'ירוק', 'כתום', 'סגול בהיר'].includes(s.advisor_color)
+        ? s.advisor_color
         : null,
     sort_order:
       typeof s?.sort_order === 'number' && Number.isFinite(s.sort_order)
@@ -63,7 +73,17 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ data }, { status: 200 });
+    return NextResponse.json(
+      { data },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -104,6 +124,7 @@ export async function PATCH(
       'client_id',
       'vehicle_id',
       'advisor_name',
+      'advisor_color',
     ];
     const updatePayload: Record<string, any> = {};
 
@@ -117,14 +138,14 @@ export async function PATCH(
     const normalizedStops = rawStops.length ? normalizeStops(rawStops) : [];
 
     // Fetch current task info when needed (type derivation or to ensure existence)
+    const admin = getSupabaseAdmin();
     let currentTask:
-      | { type?: string | null; client_id?: string | null; address?: string | null; advisor_name?: string | null }
+      | { type?: string | null; client_id?: string | null; address?: string | null; advisor_name?: string | null; advisor_color?: string | null }
       | null = null;
     if (normalizedStops.length > 0 || updatePayload.type) {
-      const admin = getSupabaseAdmin();
       const { data: existing, error: existingError } = await admin
         .from('tasks')
-        .select('type, client_id, address, advisor_name')
+        .select('type, client_id, address, advisor_name, advisor_color')
         .eq('id', taskId)
         .single();
 
@@ -137,9 +158,21 @@ export async function PATCH(
       currentTask = existing;
     }
 
-    const effectiveType =
+    // Determine effective type for validation - fetch if not already loaded
+    let effectiveType: string | undefined =
       (updatePayload.type as string | undefined) ??
       (currentTask?.type as string | undefined);
+    
+    // If we still don't have the type, fetch it
+    if (!effectiveType) {
+      const { data: taskData } = await admin
+        .from('tasks')
+        .select('type')
+        .eq('id', taskId)
+        .single();
+      effectiveType = taskData?.type as string | undefined;
+    }
+    
     const isMulti =
       isMultiStopType(effectiveType) || normalizedStops.length > 0;
 
@@ -164,9 +197,9 @@ export async function PATCH(
             { status: 400 }
           );
         }
-        if (!stop.advisor_name) {
+        if (!stop.advisor_name && !stop.advisor_color) {
           return NextResponse.json(
-            { error: 'חובה להזין שם יועץ עבור כל עצירה' },
+            { error: 'חובה להזין שם יועץ או לבחור צבע יועץ עבור כל עצירה' },
             { status: 400 }
           );
         }
@@ -177,14 +210,26 @@ export async function PATCH(
       updatePayload.client_id = firstStop.client_id;
       updatePayload.address = firstStop.address;
       updatePayload.advisor_name = firstStop.advisor_name;
+      updatePayload.advisor_color = firstStop.advisor_color;
+    }
+    
+    // Validation for "Drive Client Home" - must have advisor name or color
+    if (effectiveType === 'הסעת לקוח הביתה') {
+      const effectiveAdvisorName = updatePayload.advisor_name ?? currentTask?.advisor_name;
+      const effectiveAdvisorColor = updatePayload.advisor_color ?? currentTask?.advisor_color;
+      if (!effectiveAdvisorName && !effectiveAdvisorColor) {
+        return NextResponse.json(
+          { error: 'חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת הסעת לקוח הביתה' },
+          { status: 400 }
+        );
+      }
     }
 
     // Add metadata
     updatePayload.updated_at = new Date().toISOString();
     // Note: updated_by would require extracting user ID from auth context
 
-    // Update in Supabase
-    const admin = getSupabaseAdmin();
+    // Update in Supabase - explicitly select all fields including advisor_color
     const { data, error } = await admin
       .from('tasks')
       .update(updatePayload)
@@ -269,7 +314,17 @@ export async function PATCH(
       // Do not fail the response
     }
 
-    return NextResponse.json({ success: true, data: responseData }, { status: 200 });
+    return NextResponse.json(
+      { success: true, data: responseData },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error in PATCH /api/admin/tasks/[taskId]:', error);
     console.error('Error details:', error instanceof Error ? error.message : String(error));
@@ -306,7 +361,17 @@ export async function DELETE(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    return NextResponse.json({ ok: true }, { status: 200 });
+    return NextResponse.json(
+      { ok: true },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

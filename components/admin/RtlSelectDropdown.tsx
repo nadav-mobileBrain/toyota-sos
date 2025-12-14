@@ -13,6 +13,9 @@ import { Button } from '@/components/ui/button';
 type Option = {
   value: string;
   label: string;
+  color?: string; // Hex color or Tailwind class
+  bgClass?: string; // Tailwind background class
+  textClass?: string; // Tailwind text class
 };
 
 interface RtlSelectDropdownProps {
@@ -42,10 +45,19 @@ export function RtlSelectDropdown(props: RtlSelectDropdownProps) {
         .filter(Boolean);
       return labels.length > 0 ? labels.join(', ') : placeholder;
     }
-    return (
-      options.find((o) => o.value === (value as string))?.label || placeholder
-    );
+    const selectedOption = options.find((o) => o.value === (value as string));
+    if (!selectedOption) return placeholder;
+    return selectedOption.label;
   };
+
+  const getSelectedOption = () => {
+    if (multiple && Array.isArray(value)) {
+      return null;
+    }
+    return options.find((o) => o.value === (value as string));
+  };
+
+  const selectedOption = getSelectedOption();
 
   const handleMultiChange = (val: string, checked: boolean) => {
     const current = Array.isArray(value) ? value : [];
@@ -67,7 +79,15 @@ export function RtlSelectDropdown(props: RtlSelectDropdownProps) {
             buttonClassName ?? ''
           }`}
         >
-          <span className="truncate">{getLabel()}</span>
+          <div className="flex items-center gap-2 truncate">
+            {selectedOption?.bgClass && (
+              <span
+                className={`inline-block h-4 w-4 shrink-0 rounded-full ${selectedOption.bgClass} ${selectedOption.textClass || ''}`}
+                style={selectedOption.color ? { backgroundColor: selectedOption.color } : undefined}
+              />
+            )}
+            <span className="truncate">{getLabel()}</span>
+          </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -84,7 +104,15 @@ export function RtlSelectDropdown(props: RtlSelectDropdownProps) {
               }
               className="hover:bg-blue-600 hover:text-white"
             >
-              {opt.label}
+              <div className="flex items-center gap-2">
+                {opt.bgClass && (
+                  <span
+                    className={`inline-block h-4 w-4 rounded-full ${opt.bgClass} ${opt.textClass || ''}`}
+                    style={opt.color ? { backgroundColor: opt.color } : undefined}
+                  />
+                )}
+                <span>{opt.label}</span>
+              </div>
             </DropdownMenuCheckboxItem>
           ))
         ) : (
@@ -98,7 +126,15 @@ export function RtlSelectDropdown(props: RtlSelectDropdownProps) {
                 value={opt.value}
                 className="hover:bg-blue-600 hover:text-white"
               >
-                {opt.label}
+                <div className="flex items-center gap-2">
+                  {opt.bgClass && (
+                    <span
+                      className={`inline-block h-4 w-4 rounded-full ${opt.bgClass} ${opt.textClass || ''}`}
+                      style={opt.color ? { backgroundColor: opt.color } : undefined}
+                    />
+                  )}
+                  <span>{opt.label}</span>
+                </div>
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>

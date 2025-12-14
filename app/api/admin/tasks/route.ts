@@ -4,6 +4,10 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import type { TaskAssignee } from '@/types/task';
 import { notify } from '@/lib/notify';
 
+// Disable caching for API routes
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const multiStopTypes = new Set(['הסעת לקוח הביתה', 'הסעת לקוח למוסך']);
 const multiStopAliases = new Set(['drive_client_home', 'drive_client_to_dealership']);
 const isMultiStopType = (val: string | null | undefined) => {
@@ -35,6 +39,7 @@ export async function POST(request: NextRequest) {
       status,
       details,
       advisor_name,
+      advisor_color,
       estimated_start,
       estimated_end,
       address,
@@ -62,6 +67,7 @@ export async function POST(request: NextRequest) {
       client_id: string;
       address: string;
       advisor_name: string | null;
+      advisor_color: string | null;
       sort_order: number;
     }[] = [];
 
@@ -79,6 +85,11 @@ export async function POST(request: NextRequest) {
         advisor_name:
           typeof s?.advisor_name === 'string' && s.advisor_name.trim()
             ? s.advisor_name.trim()
+            : null,
+        advisor_color:
+          typeof s?.advisor_color === 'string' &&
+          ['צהוב', 'ירוק', 'כתום', 'סגול בהיר'].includes(s.advisor_color)
+            ? s.advisor_color
             : null,
         sort_order:
           typeof s?.sort_order === 'number' && Number.isFinite(s.sort_order)
@@ -99,9 +110,9 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        if (!stop.advisor_name) {
+        if (!stop.advisor_name && !stop.advisor_color) {
           return NextResponse.json(
-            { error: 'חובה להזין שם יועץ עבור כל עצירה' },
+            { error: 'חובה להזין שם יועץ או לבחור צבע יועץ עבור כל עצירה' },
             { status: 400 }
           );
         }
@@ -117,6 +128,22 @@ export async function POST(request: NextRequest) {
     const effectiveAdvisorName = isMulti
       ? firstStop?.advisor_name ?? null
       : advisor_name ?? null;
+    const effectiveAdvisorColor = isMulti
+      ? firstStop?.advisor_color ?? null
+      : (typeof advisor_color === 'string' &&
+        ['צהוב', 'ירוק', 'כתום', 'סגול בהיר'].includes(advisor_color)
+          ? advisor_color
+          : null) ?? null;
+    
+    // Validation for "Drive Client Home" - must have advisor name or color
+    if (type === 'הסעת לקוח הביתה') {
+      if (!effectiveAdvisorName && !effectiveAdvisorColor) {
+        return NextResponse.json(
+          { error: 'חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת הסעת לקוח הביתה' },
+          { status: 400 }
+        );
+      }
+    }
     // Insert task
     const { data: created, error } = await admin
       .from('tasks')
@@ -127,6 +154,7 @@ export async function POST(request: NextRequest) {
         status,
         details: details ?? null,
         advisor_name: effectiveAdvisorName,
+        advisor_color: effectiveAdvisorColor,
         estimated_start: estimated_start ?? null,
         estimated_end: estimated_end ?? null,
         address: effectiveAddress ?? '',
@@ -223,7 +251,17 @@ export async function POST(request: NextRequest) {
       ? { ...created, stops: createdStops }
       : created;
 
-    return NextResponse.json({ ok: true, data: responseTask }, { status: 200 });
+    return NextResponse.json(
+      { ok: true, data: responseTask },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (err: unknown) {
     const error = err as Error;
     return NextResponse.json(

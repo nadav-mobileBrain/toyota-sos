@@ -10,7 +10,14 @@ import type {
   TaskStatus,
   TaskType,
   TaskAssignee,
+  AdvisorColor,
 } from '@/types/task';
+import {
+  getAdvisorColorOptions,
+  getAdvisorColorBgClass,
+  getAdvisorColorTextClass,
+  getAdvisorColorHex,
+} from '@/lib/advisorColors';
 import type { Driver } from '@/types/user';
 import type { Client, Vehicle } from '@/types/entity';
 import { trackFormSubmitted } from '@/lib/events';
@@ -34,6 +41,7 @@ type StopForm = {
   clientQuery: string;
   address: string;
   advisorName: string;
+  advisorColor: AdvisorColor | null;
 };
 
 // Validation schema for estimated date (no past dates allowed)
@@ -173,6 +181,9 @@ export function TaskDialog(props: TaskDialogProps) {
   const [newVehiclePlate, setNewVehiclePlate] = useState('');
   const [newVehicleModel, setNewVehicleModel] = useState('');
   const [advisorName, setAdvisorName] = useState(task?.advisor_name ?? '');
+  const [advisorColor, setAdvisorColor] = useState<AdvisorColor | null>(
+    (task?.advisor_color as AdvisorColor) || null
+  );
   const [stops, setStops] = useState<StopForm[]>([]);
   const [activeStopIndex, setActiveStopIndex] = useState(0);
 
@@ -201,6 +212,7 @@ export function TaskDialog(props: TaskDialogProps) {
       setStatus(task?.status ?? 'בהמתנה');
       setDetails(task?.details ?? '');
       setAdvisorName(task?.advisor_name ?? '');
+      setAdvisorColor((task?.advisor_color as AdvisorColor) || null);
       setEstimatedDate(
         task?.estimated_start ? new Date(task.estimated_start) : new Date()
       );
@@ -230,6 +242,7 @@ export function TaskDialog(props: TaskDialogProps) {
               clientQuery: existing?.name ?? '',
               address: task.address ?? '',
               advisorName: task.advisor_name ?? '',
+              advisorColor: (task.advisor_color as AdvisorColor) || null,
             },
           ]);
         }
@@ -242,6 +255,7 @@ export function TaskDialog(props: TaskDialogProps) {
               clientQuery: '',
               address: task?.address ?? '',
               advisorName: task?.advisor_name ?? '',
+              advisorColor: (task?.advisor_color as AdvisorColor) || null,
             },
           ]);
         }
@@ -259,12 +273,25 @@ export function TaskDialog(props: TaskDialogProps) {
       } else {
         setVehicleQuery('');
       }
-      if (mode === 'edit' && assignees.length > 0) {
-        const lead = assignees.find((a) => a.is_lead);
-        const co = assignees.filter((a) => !a.is_lead).map((a) => a.driver_id);
-        setLeadDriverId(lead?.driver_id ?? '');
-        setCoDriverIds(co);
+      // Load driver assignments - check both assignees prop and ensure we have task context
+      if (mode === 'edit' && task) {
+        // Use assignees prop if available, otherwise empty array
+        const taskAssignees = assignees.length > 0 
+          ? assignees.filter((a) => a.task_id === task.id)
+          : [];
+        
+        if (taskAssignees.length > 0) {
+          const lead = taskAssignees.find((a) => a.is_lead);
+          const co = taskAssignees.filter((a) => !a.is_lead).map((a) => a.driver_id);
+          setLeadDriverId(lead?.driver_id ?? '');
+          setCoDriverIds(co);
+        } else {
+          // If no assignees found, reset to empty (might be unassigned task)
+          setLeadDriverId('');
+          setCoDriverIds([]);
+        }
       } else {
+        // Create mode - always start empty
         setLeadDriverId('');
         setCoDriverIds([]);
       }
@@ -275,6 +302,19 @@ export function TaskDialog(props: TaskDialogProps) {
       }
     }
   }, [open, task, mode, assignees, clients, vehicles]);
+
+  // Also update driver assignments when assignees prop changes (for edit mode)
+  useEffect(() => {
+    if (mode === 'edit' && task && open && assignees.length > 0) {
+      const taskAssignees = assignees.filter((a) => a.task_id === task.id);
+      if (taskAssignees.length > 0) {
+        const lead = taskAssignees.find((a) => a.is_lead);
+        const co = taskAssignees.filter((a) => !a.is_lead).map((a) => a.driver_id);
+        setLeadDriverId(lead?.driver_id ?? '');
+        setCoDriverIds(co);
+      }
+    }
+  }, [assignees, task, mode, open]);
 
   const isMultiStopType = useMemo(
     () => isMultiStopTaskType(type),
@@ -290,6 +330,7 @@ export function TaskDialog(props: TaskDialogProps) {
             clientQuery: clientQuery || '',
             address: addressQuery || '',
             advisorName: advisorName || '',
+            advisorColor: advisorColor,
           },
         ]);
       }
@@ -300,6 +341,7 @@ export function TaskDialog(props: TaskDialogProps) {
       setAddress(first.address);
       setAddressQuery(first.address);
       setAdvisorName(first.advisorName);
+      setAdvisorColor(first.advisorColor);
       setStops([]);
     }
   }, [
@@ -336,6 +378,7 @@ export function TaskDialog(props: TaskDialogProps) {
               clientQuery: clientName,
               address: s?.address || '',
               advisorName: s?.advisor_name || '',
+              advisorColor: (s?.advisor_color as AdvisorColor) || null,
             };
           });
         if (!cancelled) {
@@ -417,8 +460,8 @@ export function TaskDialog(props: TaskDialogProps) {
         if (!stop.address.trim()) {
           return 'חובה להזין כתובת עבור כל עצירה';
         }
-        if (!stop.advisorName.trim()) {
-          return 'חובה להזין שם יועץ עבור כל עצירה';
+        if (!stop.advisorName.trim() && !stop.advisorColor) {
+          return 'חובה להזין שם יועץ או לבחור צבע יועץ עבור כל עצירה';
         }
       }
     }
@@ -623,11 +666,13 @@ export function TaskDialog(props: TaskDialogProps) {
 
       let finalClientId = clientId;
       let finalAdvisorForTask = advisorName.trim();
+      let finalAdvisorColor = advisorColor;
       let addressForTask = addressQuery || '';
       let stopsPayload: {
         client_id: string;
         address: string;
-        advisor_name: string;
+        advisor_name: string | null;
+        advisor_color: AdvisorColor | null;
         sort_order: number;
       }[] = [];
 
@@ -645,14 +690,16 @@ export function TaskDialog(props: TaskDialogProps) {
             throw new Error('חובה להזין כתובת עבור כל עצירה');
           }
           const advisorValue = stop.advisorName.trim();
-          if (!advisorValue) {
-            throw new Error('חובה להזין שם יועץ עבור כל עצירה');
+          const advisorColorValue = stop.advisorColor;
+          if (!advisorValue && !advisorColorValue) {
+            throw new Error('חובה להזין שם יועץ או לבחור צבע יועץ עבור כל עצירה');
           }
 
           return {
             client_id: resolvedClientId,
             address: addressValue,
-            advisor_name: advisorValue,
+            advisor_name: advisorValue || null,
+            advisor_color: advisorColorValue || null,
             sort_order: idx,
           };
         });
@@ -660,7 +707,8 @@ export function TaskDialog(props: TaskDialogProps) {
         if (stopsPayload.length > 0) {
           finalClientId = stopsPayload[0].client_id;
           addressForTask = stopsPayload[0].address;
-          finalAdvisorForTask = stopsPayload[0].advisor_name;
+          finalAdvisorForTask = stopsPayload[0].advisor_name || '';
+          finalAdvisorColor = stopsPayload[0].advisor_color;
           setAddressQuery(stopsPayload[0].address);
         }
       } else {
@@ -688,11 +736,19 @@ export function TaskDialog(props: TaskDialogProps) {
           throw new Error('חובה לבחור רכב עבור משימת הסעת לקוח הביתה');
         }
         if (isMultiStopType) {
-          if (stopsPayload.some((s) => !s.advisor_name?.trim())) {
-            throw new Error('חובה להזין שם יועץ עבור כל עצירה');
+          if (
+            stopsPayload.some(
+              (s) => !s.advisor_name?.trim() && !s.advisor_color
+            )
+          ) {
+            throw new Error(
+              'חובה להזין שם יועץ או לבחור צבע יועץ עבור כל עצירה'
+            );
           }
-        } else if (!advisorName.trim()) {
-          throw new Error('חובה להזין שם יועץ עבור משימת הסעת לקוח הביתה');
+        } else if (!advisorName.trim() && !advisorColor) {
+          throw new Error(
+            'חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת הסעת לקוח הביתה'
+          );
         }
       }
 
@@ -733,6 +789,7 @@ export function TaskDialog(props: TaskDialogProps) {
           status,
           details: details || null,
           advisor_name: finalAdvisorForTask || null,
+          advisor_color: advisorColor || null,
           estimated_start: estimatedStartDatetime || null,
           estimated_end: estimatedEndDatetime || null,
           address: addressForTask || '',
@@ -783,7 +840,8 @@ export function TaskDialog(props: TaskDialogProps) {
           stops?: {
             client_id: string;
             address: string;
-            advisor_name: string;
+            advisor_name: string | null;
+            advisor_color: AdvisorColor | null;
             sort_order: number;
           }[];
         } = {
@@ -793,6 +851,7 @@ export function TaskDialog(props: TaskDialogProps) {
           status,
           details: details || null,
           advisor_name: finalAdvisorForTask || null,
+          advisor_color: finalAdvisorColor || null,
           estimated_start: estimatedStartDatetime || undefined,
           estimated_end: estimatedEndDatetime || undefined,
           address: addressForTask || '',
@@ -943,20 +1002,58 @@ export function TaskDialog(props: TaskDialogProps) {
           </label>
 
           {!isMultiStopType && (
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-primary">
-                שם יועץ{' '}
-                {type === 'הסעת לקוח הביתה' && (
-                  <span className="text-red-500">*</span>
+            <>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-primary">
+                  שם יועץ{' '}
+                  {type === 'הסעת לקוח הביתה' && (
+                    <span className="text-red-500">*</span>
+                  )}
+                </span>
+                <input
+                  className="rounded border border-gray-300 p-2"
+                  value={advisorName}
+                  onChange={(e) => setAdvisorName(e.target.value)}
+                  placeholder="הזן שם יועץ"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-primary">
+                  צבע יועץ{' '}
+                  {type === 'הסעת לקוח הביתה' && (
+                    <span className="text-red-500">*</span>
+                  )}
+                </span>
+                <RtlSelectDropdown
+                  value={advisorColor || ''}
+                  options={[
+                    { value: '', label: '—' },
+                    ...getAdvisorColorOptions().map((color) => ({
+                      value: color,
+                      label: color,
+                      bgClass: getAdvisorColorBgClass(color),
+                      textClass: getAdvisorColorTextClass(color),
+                      color: getAdvisorColorHex(color),
+                    })),
+                  ]}
+                  onChange={(value) =>
+                    setAdvisorColor(
+                      value === '' ? null : (value as AdvisorColor)
+                    )
+                  }
+                  placeholder="בחר צבע"
+                />
+                {advisorColor && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getAdvisorColorBgClass(advisorColor)} ${getAdvisorColorTextClass(advisorColor)}`}
+                    >
+                      {advisorColor}
+                    </span>
+                  </div>
                 )}
-              </span>
-              <input
-                className="rounded border border-gray-300 p-2"
-                value={advisorName}
-                onChange={(e) => setAdvisorName(e.target.value)}
-                placeholder="הזן שם יועץ"
-              />
-            </label>
+              </label>
+            </>
           )}
 
           <label className="flex flex-col gap-1">
@@ -1186,7 +1283,9 @@ export function TaskDialog(props: TaskDialogProps) {
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <Label className="text-primary">שם יועץ</Label>
+                        <Label className="text-primary">
+                          שם יועץ <span className="text-red-500">*</span>
+                        </Label>
                         <Input
                           type="text"
                           placeholder="שם יועץ"
@@ -1201,6 +1300,49 @@ export function TaskDialog(props: TaskDialogProps) {
                             )
                           }
                         />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-primary">
+                          צבע יועץ <span className="text-red-500">*</span>
+                        </Label>
+                        <RtlSelectDropdown
+                          value={stop.advisorColor || ''}
+                          options={[
+                            { value: '', label: '—' },
+                            ...getAdvisorColorOptions().map((color) => ({
+                              value: color,
+                              label: color,
+                              bgClass: getAdvisorColorBgClass(color),
+                              textClass: getAdvisorColorTextClass(color),
+                              color: getAdvisorColorHex(color),
+                            })),
+                          ]}
+                          onChange={(value) =>
+                            setStops((prev) =>
+                              prev.map((s, i) =>
+                                i === idx
+                                  ? {
+                                      ...s,
+                                      advisorColor:
+                                        value === ''
+                                          ? null
+                                          : (value as AdvisorColor),
+                                    }
+                                  : s
+                              )
+                            )
+                          }
+                          placeholder="בחר צבע"
+                        />
+                        {stop.advisorColor && (
+                          <div className="mt-1 flex items-center gap-2">
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getAdvisorColorBgClass(stop.advisorColor)} ${getAdvisorColorTextClass(stop.advisorColor)}`}
+                            >
+                              {stop.advisorColor}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

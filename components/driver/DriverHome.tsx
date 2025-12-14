@@ -5,6 +5,7 @@ import dayjs from '@/lib/dayjs';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useRef } from 'react';
 import { TaskCard, TaskCardProps } from '@/components/driver/TaskCard';
+import type { AdvisorColor } from '@/types/task';
 import { TaskSkeleton } from '@/components/driver/TaskSkeleton';
 import { getDriverSession } from '@/lib/auth';
 import { useAuth } from '@/components/AuthProvider';
@@ -162,6 +163,8 @@ export function DriverHome() {
   }
 
   type SupaTaskRow = {
+    advisor_name?: string | null;
+    advisor_color?: AdvisorColor | null;
     id: string;
     title: string;
     type: DriverTask['type'];
@@ -229,6 +232,8 @@ export function DriverHome() {
         estimatedEnd: t.estimated_end,
         address: t.address,
         clientName: t.client_name,
+        advisorName: t.advisor_name || null,
+        advisorColor: (t.advisor_color as AdvisorColor) || null,
         vehicle: t.vehicle_license_plate
           ? {
               licensePlate: t.vehicle_license_plate,
@@ -243,7 +248,7 @@ export function DriverHome() {
         const { data: stopRows, error: stopsError } = await client
           .from('task_stops')
           .select(
-            'task_id, address, advisor_name, sort_order, client:clients(id,name)'
+            'task_id, address, advisor_name, advisor_color, sort_order, client:clients(id,name)'
           )
           .in('task_id', taskIds)
           .order('sort_order', { ascending: true });
@@ -261,6 +266,7 @@ export function DriverHome() {
               address: row.address || '',
               clientName: clientData?.name || null,
               advisorName: row.advisor_name || null,
+              advisorColor: (row.advisor_color as AdvisorColor) || null,
             });
             grouped.set(row.task_id, entry);
           }

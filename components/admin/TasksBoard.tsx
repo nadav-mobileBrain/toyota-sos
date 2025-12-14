@@ -447,9 +447,51 @@ export function TasksBoard({
 
   // DnD: finalize drop and persist changes
 
+  // Track tasks that are being updated via handleUpdated to prevent realtime from overwriting
+  const updatingTasksRef = React.useRef<Set<string>>(new Set());
+  
   const handleUpdated = useCallback(
     (updated: Task, leadId?: string, coIds?: string[]) => {
-      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+      console.log('[TasksBoard] handleUpdated called:', {
+        taskId: updated.id,
+        advisor_color: updated.advisor_color,
+        advisor_name: updated.advisor_name,
+        fullTask: updated,
+      });
+      
+      // Mark this task as being updated manually
+      updatingTasksRef.current.add(updated.id);
+      
+      setTasks((prev) => {
+        return prev.map((t) => {
+          if (t.id === updated.id) {
+            // Replace the entire task with the updated version from the API
+            // This ensures all fields including advisor_color are properly updated
+            // Use the updated task directly from API, which has the latest data
+            const merged: Task = {
+              ...updated, // Start with the fresh data from API
+              // Preserve stops if they weren't included in the update response
+              stops: updated.stops !== undefined ? updated.stops : t.stops,
+            };
+            console.log('[TasksBoard] Merged task:', {
+              taskId: merged.id,
+              advisor_color: merged.advisor_color,
+              advisor_name: merged.advisor_name,
+              updated_advisor_color: updated.advisor_color,
+              updated_advisor_name: updated.advisor_name,
+              hasStops: !!merged.stops,
+            });
+            
+            // Clear the flag after a short delay to allow realtime updates again
+            setTimeout(() => {
+              updatingTasksRef.current.delete(updated.id);
+            }, 1000);
+            
+            return merged;
+          }
+          return t;
+        });
+      });
 
       // If driver info was provided, sync local assignees snapshot for this task
       if (leadId !== undefined || coIds !== undefined) {
@@ -854,9 +896,53 @@ export function TasksBoard({
                 }
                 if (payload.eventType === 'UPDATE') {
                   const row = payload.new as Task;
-                  return prev.map((t) =>
-                    t.id === row.id ? { ...t, ...row } : t
-                  );
+                  console.log('[TasksBoard] UPDATE event received:', {
+                    taskId: row.id,
+                    advisor_color: row.advisor_color,
+                    advisor_name: row.advisor_name,
+                    fullRow: row,
+                    hasAdvisorColor: 'advisor_color' in row,
+                    hasAdvisorName: 'advisor_name' in row,
+                    isManuallyUpdating: updatingTasksRef.current.has(row.id),
+                  });
+                  
+                  // Skip realtime update if this task is being manually updated
+                  if (updatingTasksRef.current.has(row.id)) {
+                    console.log('[TasksBoard] Skipping realtime update - task is being manually updated');
+                    return prev;
+                  }
+                  
+                  return prev.map((t) => {
+                    if (t.id === row.id) {
+                      // Merge only the fields that exist in the update payload
+                      // This ensures we don't lose fields that weren't included in the realtime event
+                      // Explicitly preserve advisor_color and advisor_name if they exist in the update
+                      const updated = { ...t };
+                      Object.keys(row).forEach((key) => {
+                        const value = row[key as keyof Task];
+                        // Update field if it exists in the payload (even if null/undefined)
+                        if (key in row) {
+                          (updated as any)[key] = value;
+                        }
+                      });
+                      // Explicitly handle advisor fields - update if present in payload, otherwise keep existing
+                      if ('advisor_color' in row) {
+                        updated.advisor_color = row.advisor_color ?? null;
+                      }
+                      if ('advisor_name' in row) {
+                        updated.advisor_name = row.advisor_name ?? null;
+                      }
+                      console.log('[TasksBoard] After realtime merge:', {
+                        taskId: updated.id,
+                        advisor_color: updated.advisor_color,
+                        advisor_name: updated.advisor_name,
+                        original_advisor_color: t.advisor_color,
+                        original_advisor_name: t.advisor_name,
+                      });
+                      return updated;
+                    }
+                    return t;
+                  });
                 }
                 if (payload.eventType === 'DELETE') {
                   const row = payload.old as Task;
