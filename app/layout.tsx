@@ -62,14 +62,16 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         <ConnectivityProvider>
           <MixpanelInit />
-          {/* Install prompt button (conditionally rendered) */}
-          <div className="fixed top-2 left-2 z-40">
-            <InstallAppButton />
-          </div>
           {/* App Logo */}
           <AppLogo />
           <OfflineBanner />
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            {/* Install prompt button (conditionally rendered based on role) */}
+            <div className="fixed top-2 left-2 z-40">
+              <InstallAppButton />
+            </div>
+            {children}
+          </AuthProvider>
           <Toaster
             position="top-center"
             reverseOrder={false}

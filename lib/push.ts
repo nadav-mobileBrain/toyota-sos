@@ -67,25 +67,52 @@ export async function subscribeToPush(options?: {
     if (typeof window === 'undefined') {
       return { ok: false, reason: 'not-browser' };
     }
+
+    // Check if notifications are supported
+    if (!('Notification' in window)) {
+      return { ok: false, reason: 'notifications-not-supported' };
+    }
+
+    // Check if service worker is supported
+    if (!('serviceWorker' in navigator)) {
+      return { ok: false, reason: 'service-worker-not-supported' };
+    }
+
+    // Check if push manager is supported
+    if (!('PushManager' in window)) {
+      return { ok: false, reason: 'push-not-supported' };
+    }
+
     // Request permission
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
       return { ok: false, reason: permission };
     }
+
     // Register SW
-    const reg = await registerServiceWorker(options?.serviceWorkerPath);
+    const reg = await registerServiceWorker(options?.serviceWorkerPath || '/sw.js');
+    
+    // Wait for service worker to be ready
+    await reg.update();
+    
     // Subscribe
     let appServerKey: Uint8Array;
     try {
       appServerKey = getVapidApplicationServerKey();
-    } catch {
-      // Fallback for environments where base64url decode is unavailable in tests
-      appServerKey = new Uint8Array([0]);
+    } catch (err: any) {
+      console.error('VAPID key error:', err);
+      return { ok: false, reason: 'vapid-key-error' };
     }
+
+    // Check if push manager is available
+    if (!reg.pushManager) {
+      return { ok: false, reason: 'push-manager-unavailable' };
+    }
+
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-    // Some TS libdom versions are too strict; cast to satisfy BufferSource
-    applicationServerKey: appServerKey as unknown as ArrayBuffer,
+      // Some TS libdom versions are too strict; cast to satisfy BufferSource
+      applicationServerKey: appServerKey as unknown as ArrayBuffer,
     });
     // Persist via provided callback or POST to API
     if (options?.persistEndpoint) {

@@ -32,18 +32,33 @@ export function PermissionPrompt() {
         setStatus('granted');
         setMessage('התראות הופעלו בהצלחה');
       } else {
-        setStatus(
-          res.reason === 'granted'
-            ? 'granted'
-            : res.reason === 'denied'
-            ? 'denied'
-            : 'error'
-        );
-        setMessage(
-          res.reason === 'denied'
-            ? 'בקשת ההתראות נדחתה'
-            : 'ארעה שגיאה בהפעלת התראות'
-        );
+        const reason = res.reason || 'unknown';
+        let statusToSet: 'granted' | 'denied' | 'error' = 'error';
+        let messageToSet = 'ארעה שגיאה בהפעלת התראות';
+
+        if (reason === 'granted') {
+          statusToSet = 'granted';
+          messageToSet = 'התראות הופעלו בהצלחה';
+        } else if (reason === 'denied') {
+          statusToSet = 'denied';
+          messageToSet = 'בקשת ההתראות נדחתה. אנא אפשר התראות בהגדרות הדפדפן';
+        } else if (reason === 'default') {
+          statusToSet = 'denied';
+          messageToSet = 'בקשת ההתראות נדחתה';
+        } else if (reason === 'notifications-not-supported') {
+          messageToSet = 'הדפדפן שלך לא תומך בהתראות';
+        } else if (reason === 'service-worker-not-supported') {
+          messageToSet = 'הדפדפן שלך לא תומך ב-Service Worker';
+        } else if (reason === 'push-not-supported') {
+          messageToSet = 'הדפדפן שלך לא תומך ב-Push Notifications';
+        } else if (reason === 'vapid-key-error') {
+          messageToSet = 'שגיאה בהגדרת מפתחות ההתראות. אנא פנה למנהל המערכת';
+        } else if (reason === 'push-manager-unavailable') {
+          messageToSet = 'שירות ההתראות לא זמין כרגע';
+        }
+
+        setStatus(statusToSet);
+        setMessage(messageToSet);
       }
     } catch {
       setStatus('error');

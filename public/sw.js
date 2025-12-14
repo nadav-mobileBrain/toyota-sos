@@ -279,16 +279,6 @@ self.addEventListener('online', () => {
 });
 
 /* global self, clients */
-// Basic Service Worker for Web Push handling, actions, and deep links
-// Install/activate lifecycle: take control ASAP
-self.addEventListener('install', (event) => {
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
-});
-
 // Handle incoming push events
 // Expected payload (JSON):
 // {

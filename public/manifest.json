@@ -39,5 +39,9 @@
       "sizes": "16x16 32x32 48x48 64x64"
     }
   ],
-  "categories": ["productivity", "business"]
+  "categories": ["productivity", "business"],
+  "permissions": [
+    "notifications"
+  ],
+  "gcm_sender_id": "103953800507"
 }
