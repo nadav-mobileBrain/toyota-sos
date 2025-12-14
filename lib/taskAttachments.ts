@@ -29,7 +29,7 @@ export async function checkExistingAttachments(
         .list(`${taskId}/car-images`, {
           limit: 1,
         });
-      result.hasCarImages = carImagesList && carImagesList.length > 0;
+      result.hasCarImages = !!(carImagesList && carImagesList.length > 0);
     } catch {
       // Folder doesn't exist, that's ok
     }
@@ -41,7 +41,7 @@ export async function checkExistingAttachments(
         .list(`${taskId}/client-license`, {
           limit: 1,
         });
-      result.hasLicense = licenseList && licenseList.length > 0;
+      result.hasLicense = !!(licenseList && licenseList.length > 0);
     } catch {
       // Folder doesn't exist, that's ok
     }
@@ -53,7 +53,7 @@ export async function checkExistingAttachments(
       .eq('task_id', taskId)
       .limit(1);
 
-    result.hasSignature = signaturesData && signaturesData.length > 0;
+    result.hasSignature = !!(signaturesData && signaturesData.length > 0);
 
     // Also check storage directly for signatures folder
     if (!result.hasSignature) {
@@ -63,7 +63,7 @@ export async function checkExistingAttachments(
           .list(`${taskId}/signatures`, {
             limit: 1,
           });
-        result.hasSignature = signaturesList && signaturesList.length > 0;
+        result.hasSignature = !!(signaturesList && signaturesList.length > 0);
       } catch {
         // Folder doesn't exist, that's ok
       }
