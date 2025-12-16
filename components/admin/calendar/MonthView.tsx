@@ -110,16 +110,37 @@ function DayCell({
         isSaturday && 'bg-amber-50/30'
       )}
     >
-      {/* Day number - aligned to the right like Google Calendar */}
-      <div className="flex justify-end mb-1.5">
+      {/* Day number and task count badge */}
+      <div className="flex items-center justify-between mb-1.5">
+        {/* Task count badge */}
+        {dayTasks.length > 0 && isCurrentMonth && (
+          <div className="flex items-center gap-1">
+            <span
+              className={cn(
+                'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold',
+                dayTasks.length >= 5
+                  ? 'bg-red-500 text-white'
+                  : dayTasks.length >= 3
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-blue-500 text-white'
+              )}
+            >
+              {dayTasks.length}
+            </span>
+            <span className="text-[9px] text-slate-400 font-medium">מס׳ משימות</span>
+          </div>
+        )}
+        {(dayTasks.length === 0 || !isCurrentMonth) && <span />}
+
+        {/* Day number */}
         <span
           className={cn(
             'inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold transition-colors',
             today
               ? 'bg-toyota-red text-white shadow-sm'
               : isCurrentMonth
-                ? 'text-slate-700 group-hover:bg-slate-100'
-                : 'text-slate-400'
+              ? 'text-slate-700 group-hover:bg-slate-100'
+              : 'text-slate-400'
           )}
         >
           {dayNum}
@@ -152,14 +173,20 @@ function DayCell({
               </button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-80 p-3 max-h-80 overflow-y-auto shadow-xl"
+              className="w-80 p-0 max-h-96 overflow-hidden shadow-2xl border border-slate-200 bg-white z-50"
               align="center"
               side="bottom"
+              dir="rtl"
             >
-              <div className="space-y-2">
-                <div className="text-sm font-semibold text-slate-700 pb-2 border-b border-slate-100">
+              <div className="bg-slate-100 px-4 py-3 border-b border-slate-200">
+                <div className="text-sm font-bold text-slate-800">
                   {format(date, 'EEEE, d בMMMM', { locale: he })}
                 </div>
+                <div className="text-xs text-slate-500 mt-0.5">
+                  {dayTasks.length} משימות
+                </div>
+              </div>
+              <div className="p-3 space-y-2 overflow-y-auto max-h-72 bg-white">
                 {dayTasks.map((task) => (
                   <CalendarTask
                     key={task.id}

@@ -122,7 +122,10 @@ export function CalendarShell({
       }
 
       // Filter by status
-      if (filters.statuses.length > 0 && !filters.statuses.includes(task.status)) {
+      if (
+        filters.statuses.length > 0 &&
+        !filters.statuses.includes(task.status)
+      ) {
         return false;
       }
 
@@ -212,11 +215,7 @@ export function CalendarShell({
   );
 
   const handleTaskCreated = useCallback(
-    (
-      newTask: Task,
-      leadDriverId?: string,
-      coDriverIds?: string[]
-    ) => {
+    (newTask: Task, leadDriverId?: string, coDriverIds?: string[]) => {
       setTasks((prev) => [...prev, newTask]);
       setDialogOpen(false);
       toastSuccess('המשימה נוצרה בהצלחה');
@@ -225,11 +224,7 @@ export function CalendarShell({
   );
 
   const handleTaskUpdated = useCallback(
-    (
-      updatedTask: Task,
-      leadDriverId?: string,
-      coDriverIds?: string[]
-    ) => {
+    (updatedTask: Task, leadDriverId?: string, coDriverIds?: string[]) => {
       setTasks((prev) =>
         prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
       );
@@ -300,9 +295,7 @@ export function CalendarShell({
         estimated_end: newEndDate.toISOString(),
       };
 
-      setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? updatedTask : t))
-      );
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
 
       // Update in database
       try {
@@ -322,9 +315,7 @@ export function CalendarShell({
         toastSuccess('תאריך המשימה עודכן');
       } catch {
         // Revert on error
-        setTasks((prev) =>
-          prev.map((t) => (t.id === taskId ? task : t))
-        );
+        setTasks((prev) => prev.map((t) => (t.id === taskId ? task : t)));
         toastError('שגיאה בעדכון תאריך המשימה');
       }
     },
@@ -362,6 +353,47 @@ export function CalendarShell({
             clients={clientsState}
           />
         )}
+
+        {/* Task type legend */}
+        <div className="flex flex-wrap items-center gap-3 px-2">
+          <span className="text-xs font-medium text-slate-500">
+            מקרא צבעים:
+          </span>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1 text-xs">
+              <span className="w-3 h-3 rounded bg-blue-500"></span>
+              איסוף רכב
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs">
+              <span className="w-3 h-3 rounded bg-green-500"></span>
+              החזרת רכב
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs">
+              <span className="w-3 h-3 rounded bg-purple-500"></span>
+              רכב חלופי
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs">
+              <span className="w-3 h-3 rounded bg-teal-500"></span>
+              לקוח הביתה
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs">
+              <span className="w-3 h-3 rounded bg-orange-500"></span>
+              לקוח למוסך
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs">
+              <span className="w-3 h-3 rounded bg-yellow-500"></span>
+              טסט
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs">
+              <span className="w-3 h-3 rounded bg-red-500"></span>
+              חילוץ
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs">
+              <span className="w-3 h-3 rounded bg-slate-500"></span>
+              אחר
+            </span>
+          </div>
+        </div>
 
         {/* Calendar view */}
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -418,4 +450,3 @@ export function CalendarShell({
     </DndContext>
   );
 }
-

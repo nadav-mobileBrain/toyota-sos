@@ -22,6 +22,14 @@ const typeColors: Record<TaskType, string> = {
   אחר: 'bg-slate-500 hover:bg-slate-600',
 };
 
+// Default color if type doesn't match
+const DEFAULT_COLOR = 'bg-gray-500 hover:bg-gray-600';
+
+// Get color for task type with fallback
+const getTaskColor = (type: TaskType): string => {
+  return typeColors[type] || DEFAULT_COLOR;
+};
+
 const priorityIndicators: Record<TaskPriority, string> = {
   מיידי: '🔴',
   גבוהה: '🟠',
@@ -68,7 +76,7 @@ export function CalendarTask({
   const priorityIcon = priorityIndicators[task.priority];
 
   if (compact) {
-    // Compact view for month grid - Google Calendar style event chip
+    // Compact view for month grid - shows task type clearly
     return (
       <div
         ref={setNodeRef}
@@ -80,22 +88,22 @@ export function CalendarTask({
           onClick?.();
         }}
         className={cn(
-          'cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-white truncate transition-all shadow-sm',
-          typeColors[task.type],
-          statusColors[task.status],
+          'cursor-pointer rounded-md px-2 py-1.5 text-xs font-medium text-white transition-all shadow-sm',
+          getTaskColor(task.type),
+          statusColors[task.status] || '',
           isDragging && 'opacity-50 shadow-lg scale-105'
         )}
         dir="rtl"
       >
-        <span className="flex items-center gap-1">
-          {priorityIcon && <span className="text-[10px]">{priorityIcon}</span>}
-          <span className="font-semibold">{startTime}</span>
-          {task.address && (
-            <span className="truncate opacity-90">
-              {task.address.split(',')[0]}
-            </span>
-          )}
-        </span>
+        <div className="flex items-center justify-between gap-1">
+          <span className="font-bold truncate">{task.type}</span>
+          <span className="flex items-center gap-0.5 shrink-0">
+            {priorityIcon && (
+              <span className="text-[10px]">{priorityIcon}</span>
+            )}
+            <span className="text-[10px] opacity-80">{startTime}</span>
+          </span>
+        </div>
       </div>
     );
   }
@@ -113,8 +121,8 @@ export function CalendarTask({
       }}
       className={cn(
         'cursor-pointer rounded-lg p-2.5 text-sm text-white transition-all shadow-md',
-        typeColors[task.type],
-        statusColors[task.status],
+        getTaskColor(task.type),
+        statusColors[task.status] || '',
         isDragging && 'opacity-50 shadow-xl ring-2 ring-white scale-105'
       )}
       dir="rtl"
@@ -179,7 +187,7 @@ export function CalendarTaskOverlay({ task }: { task: Task }) {
     <div
       className={cn(
         'cursor-grabbing rounded-lg p-2.5 text-white shadow-2xl text-sm w-64',
-        typeColors[task.type]
+        getTaskColor(task.type)
       )}
       dir="rtl"
     >
