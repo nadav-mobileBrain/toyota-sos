@@ -75,6 +75,7 @@ interface TaskDialogProps {
   drivers: Driver[];
   clients: Client[];
   vehicles: Vehicle[];
+  prefilledDate?: Date | null;
   onOpenChange: (open: boolean) => void;
   onCreated?: (
     task: Task,
@@ -129,6 +130,7 @@ export function TaskDialog(props: TaskDialogProps) {
     drivers,
     clients,
     vehicles,
+    prefilledDate,
     onCreated,
     onUpdated,
     onClientCreated,
@@ -151,7 +153,9 @@ export function TaskDialog(props: TaskDialogProps) {
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? 'בהמתנה');
   const [details, setDetails] = useState(task?.details ?? '');
   const [estimatedDate, setEstimatedDate] = useState<Date>(
-    task?.estimated_start ? new Date(task.estimated_start) : new Date()
+    task?.estimated_start
+      ? new Date(task.estimated_start)
+      : prefilledDate || new Date()
   );
   const [estimatedDateError, setEstimatedDateError] = useState<string | null>(
     null
@@ -214,7 +218,9 @@ export function TaskDialog(props: TaskDialogProps) {
       setAdvisorName(task?.advisor_name ?? '');
       setAdvisorColor((task?.advisor_color as AdvisorColor) || null);
       setEstimatedDate(
-        task?.estimated_start ? new Date(task.estimated_start) : new Date()
+        task?.estimated_start
+          ? new Date(task.estimated_start)
+          : prefilledDate || new Date()
       );
       setEstimatedStartTime(
         task?.estimated_start

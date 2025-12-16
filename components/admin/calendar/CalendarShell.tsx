@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
   DndContext,
@@ -63,6 +64,8 @@ export function CalendarShell({
   clients,
   vehicles,
 }: CalendarShellProps) {
+  const router = useRouter();
+
   // State
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [clientsState, setClientsState] = useState<Client[]>(clients);
@@ -218,9 +221,12 @@ export function CalendarShell({
     (newTask: Task, leadDriverId?: string, coDriverIds?: string[]) => {
       setTasks((prev) => [...prev, newTask]);
       setDialogOpen(false);
+      setPrefilledDate(null);
       toastSuccess('המשימה נוצרה בהצלחה');
+      // Refresh the page to get updated data from server
+      router.refresh();
     },
-    []
+    [router]
   );
 
   const handleTaskUpdated = useCallback(
@@ -229,10 +235,21 @@ export function CalendarShell({
         prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
       );
       setDialogOpen(false);
+      setPrefilledDate(null);
       toastSuccess('המשימה עודכנה בהצלחה');
+      // Refresh the page to get updated data from server
+      router.refresh();
     },
-    []
+    [router]
   );
+
+  const handleDialogOpenChange = useCallback((open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      // Reset prefilled date when dialog closes
+      setPrefilledDate(null);
+    }
+  }, []);
 
   const handleClientCreated = useCallback((client: Client) => {
     setClientsState((prev) => [...prev, client]);
@@ -313,13 +330,14 @@ export function CalendarShell({
         }
 
         toastSuccess('תאריך המשימה עודכן');
+        router.refresh();
       } catch {
         // Revert on error
         setTasks((prev) => prev.map((t) => (t.id === taskId ? task : t)));
         toastError('שגיאה בעדכון תאריך המשימה');
       }
     },
-    [tasks]
+    [tasks, router]
   );
 
   return (
@@ -433,13 +451,14 @@ export function CalendarShell({
         <Suspense fallback={null}>
           <LazyTaskDialog
             open={dialogOpen}
-            onOpenChange={setDialogOpen}
+            onOpenChange={handleDialogOpenChange}
             mode={dialogMode}
             task={dialogTask}
             drivers={drivers}
             clients={clientsState}
             vehicles={vehiclesState}
             assignees={dialogAssignees}
+            prefilledDate={prefilledDate}
             onCreated={handleTaskCreated}
             onUpdated={handleTaskUpdated}
             onClientCreated={handleClientCreated}

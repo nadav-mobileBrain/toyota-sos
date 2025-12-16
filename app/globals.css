@@ -229,6 +229,9 @@ body {
 .bg-primary {
   background-color: var(--toyota-blue);
 }
+.bg-toyota-red {
+  background-color: var(--toyota-red);
+}
 .animate-shimmer {
   animation: shimmer 2s ease-in-out infinite;
 }
