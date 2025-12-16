@@ -49,9 +49,17 @@ export function CalendarHeader({
       const year = format(dateRange.end, 'yyyy');
 
       if (startMonth === endMonth) {
-        return `${format(dateRange.start, 'd', { locale: he })}-${format(dateRange.end, 'd', { locale: he })} ${startMonth} ${year}`;
+        return `${format(dateRange.start, 'd', { locale: he })}-${format(
+          dateRange.end,
+          'd',
+          { locale: he }
+        )} ${startMonth} ${year}`;
       } else {
-        return `${format(dateRange.start, 'd MMM', { locale: he })} - ${format(dateRange.end, 'd MMM', { locale: he })} ${year}`;
+        return `${format(dateRange.start, 'd MMM', { locale: he })} - ${format(
+          dateRange.end,
+          'd MMM',
+          { locale: he }
+        )} ${year}`;
       }
     } else {
       return format(currentDate, 'MMMM yyyy', { locale: he });
@@ -104,14 +112,14 @@ export function CalendarHeader({
         >
           <ToggleGroupItem
             value="week"
-            className="data-[state=on]:bg-white data-[state=on]:shadow-sm px-3 py-1.5 text-sm rounded-md"
+            className="data-[state=on]:bg-blue-600 data-[state=on]:shadow-sm data-[state=on]:text-primary px-3 py-1.5 text-sm rounded-md text-black"
           >
             <Calendar className="h-4 w-4 ml-1.5" />
             שבוע
           </ToggleGroupItem>
           <ToggleGroupItem
             value="month"
-            className="data-[state=on]:bg-white data-[state=on]:shadow-sm px-3 py-1.5 text-sm rounded-md"
+            className="data-[state=on]:bg-blue-600 data-[state=on]:shadow-sm data-[state=on]:text-primary px-3 py-1.5 text-sm rounded-md text-black"
           >
             <CalendarDays className="h-4 w-4 ml-1.5" />
             חודש
@@ -135,7 +143,10 @@ export function CalendarHeader({
         </Button>
 
         {/* Create task button */}
-        <Button onClick={onCreateTask} className="bg-toyota-red hover:bg-toyota-red/90">
+        <Button
+          onClick={onCreateTask}
+          className="bg-toyota-red hover:bg-toyota-red/90"
+        >
           <Plus className="h-4 w-4 ml-1.5" />
           משימה חדשה
         </Button>
@@ -143,4 +154,3 @@ export function CalendarHeader({
     </div>
   );
 }
-

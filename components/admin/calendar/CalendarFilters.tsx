@@ -1,17 +1,16 @@
 'use client';
 
-import { X } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { X, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import type {
-  CalendarFilters,
-  TaskType,
-  TaskStatus,
-  TaskPriority,
-} from '@/types/task';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import type { CalendarFilters, TaskType, TaskStatus } from '@/types/task';
 import type { Driver } from '@/types/user';
 import type { Client } from '@/types/entity';
+import { cn } from '@/lib/utils';
 
 const taskTypes: TaskType[] = [
   'איסוף רכב/שינוע',
@@ -26,27 +25,11 @@ const taskTypes: TaskType[] = [
 
 const taskStatuses: TaskStatus[] = ['בהמתנה', 'בעבודה', 'חסומה', 'הושלמה'];
 
-const taskPriorities: TaskPriority[] = [
-  'מיידי',
-  'גבוהה',
-  'בינונית',
-  'נמוכה',
-  'ללא עדיפות',
-];
-
 const statusLabels: Record<TaskStatus, string> = {
   בהמתנה: 'ממתינה',
   בעבודה: 'בביצוע',
   חסומה: 'חסומה',
   הושלמה: 'הושלמה',
-};
-
-const priorityColors: Record<TaskPriority, string> = {
-  מיידי: 'bg-red-500',
-  גבוהה: 'bg-orange-500',
-  בינונית: 'bg-yellow-500',
-  נמוכה: 'bg-green-500',
-  'ללא עדיפות': 'bg-gray-400',
 };
 
 interface CalendarFiltersPanelProps {
@@ -62,6 +45,40 @@ export function CalendarFiltersPanel({
   drivers,
   clients,
 }: CalendarFiltersPanelProps) {
+  const [clientSearch, setClientSearch] = useState('');
+  const [showClientSuggestions, setShowClientSuggestions] = useState(false);
+  const clientInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node) &&
+        clientInputRef.current &&
+        !clientInputRef.current.contains(event.target as Node)
+      ) {
+        setShowClientSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filter clients based on search (min 2 chars)
+  const filteredClients = useMemo(() => {
+    if (clientSearch.length < 2) return [];
+    const searchLower = clientSearch.toLowerCase();
+    return clients
+      .filter(
+        (c) =>
+          c.name.toLowerCase().includes(searchLower) &&
+          !filters.clientIds.includes(c.id)
+      )
+      .slice(0, 10);
+  }, [clientSearch, clients, filters.clientIds]);
+
   const handleTypeToggle = (type: TaskType) => {
     const newTypes = filters.taskTypes.includes(type)
       ? filters.taskTypes.filter((t) => t !== type)
@@ -76,13 +93,6 @@ export function CalendarFiltersPanel({
     onFiltersChange({ ...filters, statuses: newStatuses });
   };
 
-  const handlePriorityToggle = (priority: TaskPriority) => {
-    const newPriorities = filters.priorities.includes(priority)
-      ? filters.priorities.filter((p) => p !== priority)
-      : [...filters.priorities, priority];
-    onFiltersChange({ ...filters, priorities: newPriorities });
-  };
-
   const handleDriverToggle = (driverId: string) => {
     const newDriverIds = filters.driverIds.includes(driverId)
       ? filters.driverIds.filter((id) => id !== driverId)
@@ -90,11 +100,19 @@ export function CalendarFiltersPanel({
     onFiltersChange({ ...filters, driverIds: newDriverIds });
   };
 
-  const handleClientToggle = (clientId: string) => {
-    const newClientIds = filters.clientIds.includes(clientId)
-      ? filters.clientIds.filter((id) => id !== clientId)
-      : [...filters.clientIds, clientId];
-    onFiltersChange({ ...filters, clientIds: newClientIds });
+  const handleAddClient = (clientId: string) => {
+    if (!filters.clientIds.includes(clientId)) {
+      onFiltersChange({ ...filters, clientIds: [...filters.clientIds, clientId] });
+    }
+    setClientSearch('');
+    setShowClientSuggestions(false);
+  };
+
+  const handleRemoveClient = (clientId: string) => {
+    onFiltersChange({
+      ...filters,
+      clientIds: filters.clientIds.filter((id) => id !== clientId),
+    });
   };
 
   const handleClearAll = () => {
@@ -105,14 +123,19 @@ export function CalendarFiltersPanel({
       driverIds: [],
       clientIds: [],
     });
+    setClientSearch('');
   };
 
   const hasActiveFilters =
     filters.taskTypes.length > 0 ||
     filters.statuses.length > 0 ||
-    filters.priorities.length > 0 ||
     filters.driverIds.length > 0 ||
     filters.clientIds.length > 0;
+
+  // Get selected client names for display
+  const selectedClients = filters.clientIds
+    .map((id) => clients.find((c) => c.id === id))
+    .filter(Boolean) as Client[];
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -131,7 +154,7 @@ export function CalendarFiltersPanel({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* Task Types */}
         <div>
           <Label className="text-xs font-medium text-slate-600 mb-2 block">
@@ -180,33 +203,6 @@ export function CalendarFiltersPanel({
           </div>
         </div>
 
-        {/* Priorities */}
-        <div>
-          <Label className="text-xs font-medium text-slate-600 mb-2 block">
-            עדיפות
-          </Label>
-          <div className="space-y-2">
-            {taskPriorities.map((priority) => (
-              <div key={priority} className="flex items-center gap-2">
-                <Checkbox
-                  id={`priority-${priority}`}
-                  checked={filters.priorities.includes(priority)}
-                  onCheckedChange={() => handlePriorityToggle(priority)}
-                />
-                <label
-                  htmlFor={`priority-${priority}`}
-                  className="text-sm text-slate-700 cursor-pointer flex items-center gap-1.5"
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full ${priorityColors[priority]}`}
-                  />
-                  {priority}
-                </label>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Drivers */}
         <div>
           <Label className="text-xs font-medium text-slate-600 mb-2 block">
@@ -234,36 +230,86 @@ export function CalendarFiltersPanel({
           </div>
         </div>
 
-        {/* Clients */}
+        {/* Clients - Autocomplete */}
         <div>
           <Label className="text-xs font-medium text-slate-600 mb-2 block">
             לקוח
           </Label>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {clients.slice(0, 20).map((client) => (
-              <div key={client.id} className="flex items-center gap-2">
-                <Checkbox
-                  id={`client-${client.id}`}
-                  checked={filters.clientIds.includes(client.id)}
-                  onCheckedChange={() => handleClientToggle(client.id)}
-                />
-                <label
-                  htmlFor={`client-${client.id}`}
-                  className="text-sm text-slate-700 cursor-pointer truncate"
-                >
-                  {client.name}
-                </label>
+          <div className="relative">
+            <div className="relative">
+              <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                ref={clientInputRef}
+                type="text"
+                placeholder="חפש לקוח (לפחות 2 תווים)..."
+                value={clientSearch}
+                onChange={(e) => {
+                  setClientSearch(e.target.value);
+                  setShowClientSuggestions(e.target.value.length >= 2);
+                }}
+                onFocus={() => {
+                  if (clientSearch.length >= 2) {
+                    setShowClientSuggestions(true);
+                  }
+                }}
+                className="pr-8 text-sm"
+              />
+            </div>
+
+            {/* Suggestions dropdown */}
+            {showClientSuggestions && filteredClients.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+              >
+                {filteredClients.map((client) => (
+                  <button
+                    key={client.id}
+                    type="button"
+                    onClick={() => handleAddClient(client.id)}
+                    className={cn(
+                      'w-full px-3 py-2 text-right text-sm hover:bg-slate-100 transition-colors',
+                      'border-b border-slate-100 last:border-b-0'
+                    )}
+                  >
+                    {client.name}
+                  </button>
+                ))}
               </div>
-            ))}
-            {clients.length === 0 && (
-              <p className="text-xs text-slate-400">אין לקוחות</p>
             )}
-            {clients.length > 20 && (
-              <p className="text-xs text-slate-400">
-                +{clients.length - 20} נוספים
-              </p>
-            )}
+
+            {showClientSuggestions &&
+              clientSearch.length >= 2 &&
+              filteredClients.length === 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg p-3">
+                  <p className="text-xs text-slate-400 text-center">
+                    לא נמצאו לקוחות
+                  </p>
+                </div>
+              )}
           </div>
+
+          {/* Selected clients */}
+          {selectedClients.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {selectedClients.map((client) => (
+                <Badge
+                  key={client.id}
+                  variant="secondary"
+                  className="text-xs pl-1 pr-2 py-0.5 gap-1"
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveClient(client.id)}
+                    className="hover:bg-slate-300 rounded-full p-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                  {client.name}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
