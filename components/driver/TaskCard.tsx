@@ -108,19 +108,19 @@ export function TaskCard(props: TaskCardProps) {
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         {priority !== 'ללא עדיפות' && (
-        <div className="flex items-center gap-4">
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-xs text-gray-500">עדיפות</span>
-            <span
-              className={cn(
-                'inline-flex rounded px-2 py-1 text-xs text-white',
-                priorityColor
-              )}
-            >
-              {priority}
-            </span>
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-xs text-gray-500">עדיפות</span>
+              <span
+                className={cn(
+                  'inline-flex rounded px-2 py-1 text-xs text-white',
+                  priorityColor
+                )}
+              >
+                {priority}
+              </span>
+            </div>
           </div>
-        </div>
         )}
 
         <div className="flex flex-col gap-1">
@@ -160,8 +160,7 @@ export function TaskCard(props: TaskCardProps) {
         </div>
       </div>
 
-      <h3 className="mt-2 text-lg font-semibold">{title}</h3>
-      <p className="text-sm text-gray-600">{type}</p>
+      <p className="text-md py-2 text-black font-bold">{type}</p>
 
       <div className="mt-3 space-y-2 text-sm text-gray-700">
         <div>חלון זמן: {timeWindow}</div>
@@ -180,7 +179,9 @@ export function TaskCard(props: TaskCardProps) {
                     {s.advisorName && <span>{s.advisorName}</span>}
                     {s.advisorColor && (
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getAdvisorColorBgClass(s.advisorColor)} ${getAdvisorColorTextClass(s.advisorColor)}`}
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getAdvisorColorBgClass(
+                          s.advisorColor
+                        )} ${getAdvisorColorTextClass(s.advisorColor)}`}
                       >
                         {s.advisorColor}
                       </span>
@@ -200,7 +201,9 @@ export function TaskCard(props: TaskCardProps) {
                 {advisorName && <span>{advisorName}</span>}
                 {advisorColor && (
                   <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getAdvisorColorBgClass(advisorColor)} ${getAdvisorColorTextClass(advisorColor)}`}
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getAdvisorColorBgClass(
+                      advisorColor
+                    )} ${getAdvisorColorTextClass(advisorColor)}`}
                   >
                     {advisorColor}
                   </span>
