@@ -18,7 +18,7 @@ export default async function AdminCalendarPage() {
       .select(
         `
         *,
-        task_stops(id, task_id, client_id, address, advisor_name, advisor_color, sort_order, created_at, updated_at)
+        task_stops(id, task_id, client_id, address, advisor_name, advisor_color, sort_order, distance_from_garage, created_at, updated_at)
       `
       )
       .order('estimated_start', { ascending: true });
@@ -39,6 +39,7 @@ export default async function AdminCalendarPage() {
                 advisor_name: stop.advisor_name,
                 advisor_color: stop.advisor_color,
                 sort_order: stop.sort_order,
+                distance_from_garage: stop.distance_from_garage,
                 created_at: stop.created_at,
                 updated_at: stop.updated_at,
               }))

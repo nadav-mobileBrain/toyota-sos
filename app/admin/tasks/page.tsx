@@ -48,7 +48,8 @@ export default async function AdminTasksPage() {
         updated_at,
         advisor_name,
         advisor_color,
-        task_stops(id, client_id, address, advisor_name, advisor_color, sort_order)
+        distance_from_garage,
+        task_stops(id, client_id, address, advisor_name, advisor_color, sort_order, distance_from_garage)
       `
       )
       .is('deleted_at', null)
@@ -71,6 +72,7 @@ export default async function AdminTasksPage() {
                 advisor_name: stop.advisor_name,
                 advisor_color: stop.advisor_color,
                 sort_order: stop.sort_order,
+                distance_from_garage: stop.distance_from_garage,
                 created_at: '',
                 updated_at: '',
               }))
