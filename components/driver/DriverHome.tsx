@@ -312,14 +312,9 @@ export function DriverHome() {
           if (json.ok) {
             setIsOnBreak(json.data.isOnBreak);
           }
-        } else {
-          console.error(
-            '[DriverBreaks] Failed to check break status:',
-            res.status
-          );
         }
-      } catch (error) {
-        console.error('[DriverBreaks] Error checking break status:', error);
+      } catch {
+        // Silent error handling
       }
     };
     checkBreakStatus();
@@ -335,10 +330,9 @@ export function DriverHome() {
       const driverId = localSession?.userId;
       if (isOnBreak) {
         // End break
-        console.log('[DriverBreaks] Ending break...');
         const res = await fetch('/api/driver/break', {
           method: 'PATCH',
-          credentials: 'include', // Include cookies
+          credentials: 'include',
           headers: driverId ? { 'x-toyota-user-id': driverId } : undefined,
         });
         if (res.ok) {
@@ -346,7 +340,6 @@ export function DriverHome() {
           if (json.ok) {
             setIsOnBreak(false);
             toastSuccess('הפסקה הסתיימה');
-            console.log('[DriverBreaks] ✅ Break ended successfully');
           } else {
             toastError('שגיאה בסיום הפסקה');
           }
@@ -354,19 +347,13 @@ export function DriverHome() {
           const errorData = await res
             .json()
             .catch(() => ({ error: 'Unknown error' }));
-          console.error(
-            '[DriverBreaks] ❌ Failed to end break:',
-            res.status,
-            errorData
-          );
           toastError(errorData.error || 'שגיאה בסיום הפסקה');
         }
       } else {
         // Start break
-        console.log('[DriverBreaks] Starting break...');
         const res = await fetch('/api/driver/break', {
           method: 'POST',
-          credentials: 'include', // Include cookies
+          credentials: 'include',
           headers: driverId ? { 'x-toyota-user-id': driverId } : undefined,
         });
         if (res.ok) {
@@ -374,7 +361,6 @@ export function DriverHome() {
           if (json.ok) {
             setIsOnBreak(true);
             toastSuccess('הפסקה התחילה');
-            console.log('[DriverBreaks] ✅ Break started successfully');
           } else {
             toastError('שגיאה בהתחלת הפסקה');
           }
@@ -382,16 +368,10 @@ export function DriverHome() {
           const errorData = await res
             .json()
             .catch(() => ({ error: 'Unknown error' }));
-          console.error(
-            '[DriverBreaks] ❌ Failed to start break:',
-            res.status,
-            errorData
-          );
           toastError(errorData.error || 'שגיאה בהתחלת הפסקה');
         }
       }
-    } catch (error) {
-      console.error('[DriverBreaks] Error toggling break:', error);
+    } catch {
       toastError('שגיאה בפעולת הפסקה');
     } finally {
       setBreakLoading(false);
@@ -550,7 +530,7 @@ export function DriverHome() {
           </span>
           <div className="min-w-0 text-right">
             <div className="text-sm font-semibold leading-5">
-              {isOnBreak ? 'סיים הפסקה' : 'אני בהפסקה'}
+              {isOnBreak ? 'סיים הפסקה' : 'התחל הפסקה'}
             </div>
             <div className="text-xs opacity-90">
               {breakLoading
@@ -559,7 +539,7 @@ export function DriverHome() {
                   : 'מתחיל...'
                 : isOnBreak
                 ? 'לחץ כדי לחזור לעבודה'
-                : 'לחץ כדי לסמן הפסקה'}
+                : ''}
             </div>
           </div>
         </div>
@@ -568,9 +548,6 @@ export function DriverHome() {
           {breakLoading && (
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
           )}
-          <span className="text-xs font-medium opacity-90">
-            {isOnBreak ? 'פעיל' : 'כבוי'}
-          </span>
         </div>
       </Button>
 

@@ -30,14 +30,6 @@ const getTaskColor = (type: TaskType): string => {
   return typeColors[type] || DEFAULT_COLOR;
 };
 
-const priorityIndicators: Record<TaskPriority, string> = {
-  מיידי: '🔴',
-  גבוהה: '🟠',
-  בינונית: '🟡',
-  נמוכה: '🟢',
-  'ללא עדיפות': '',
-};
-
 const statusColors: Record<TaskStatus, string> = {
   בהמתנה: 'opacity-90',
   בעבודה: 'opacity-100 ring-2 ring-white ring-offset-1',

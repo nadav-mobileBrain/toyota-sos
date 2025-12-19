@@ -53,7 +53,6 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (checkError) {
-      console.error('Error checking active break:', checkError);
       return NextResponse.json(
         { error: 'Failed to check break status' },
         { status: 500 }
@@ -72,7 +71,6 @@ export async function POST(req: NextRequest) {
       driver_id: driverId,
       started_at: new Date().toISOString(),
     };
-    console.log('[API] Creating break:', breakData);
     const { data: newBreak, error: insertError } = await admin
       .from('driver_breaks')
       .insert(breakData)
@@ -80,17 +78,14 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertError) {
-      console.error('[API] Error creating break:', insertError);
       return NextResponse.json(
         { error: 'Failed to start break' },
         { status: 500 }
       );
     }
 
-    console.log('[API] ✅ Break created successfully:', newBreak);
     return NextResponse.json({ ok: true, data: newBreak });
   } catch (error) {
-    console.error('Error in POST /api/driver/break:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -138,7 +133,6 @@ export async function PATCH(req: NextRequest) {
       .maybeSingle();
 
     if (findError) {
-      console.error('Error finding active break:', findError);
       return NextResponse.json(
         { error: 'Failed to find break' },
         { status: 500 }
@@ -154,7 +148,6 @@ export async function PATCH(req: NextRequest) {
 
     // End the break
     const endedAt = new Date().toISOString();
-    console.log('[API] Ending break:', { breakId: activeBreak.id, ended_at: endedAt });
     const { data: updatedBreak, error: updateError } = await admin
       .from('driver_breaks')
       .update({ ended_at: endedAt })
@@ -163,17 +156,14 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (updateError) {
-      console.error('[API] Error ending break:', updateError);
       return NextResponse.json(
         { error: 'Failed to end break' },
         { status: 500 }
       );
     }
 
-    console.log('[API] ✅ Break ended successfully:', updatedBreak);
     return NextResponse.json({ ok: true, data: updatedBreak });
   } catch (error) {
-    console.error('Error in PATCH /api/driver/break:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -211,7 +201,6 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
 
     if (findError) {
-      console.error('Error finding active break:', findError);
       return NextResponse.json(
         { error: 'Failed to check break status' },
         { status: 500 }
@@ -226,7 +215,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error in GET /api/driver/break:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

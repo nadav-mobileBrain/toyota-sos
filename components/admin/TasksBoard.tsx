@@ -138,12 +138,60 @@ export function TasksBoard({
   useEffect(() => {
     if (Object.keys(driverBreaks).length > 0) {
       setDriverBreaksState(driverBreaks);
-      console.log(
-        '[DriverBreaks] Initial state loaded from props:',
-        driverBreaks
-      );
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fallback: Poll driver breaks every 30 seconds as backup to realtime
+  useEffect(() => {
+    let cancelled = false;
+    let pollInterval: NodeJS.Timeout;
+
+    const pollDriverBreaks = async () => {
+      if (cancelled) return;
+      
+      try {
+        const { createBrowserClient } = await import('@/lib/auth');
+        const client = createBrowserClient();
+        
+        const { data, error } = await client
+          .from('driver_breaks')
+          .select('driver_id, ended_at')
+          .is('ended_at', null);
+
+        if (!error && data && !cancelled) {
+          const activeBreaks: Record<string, boolean> = {};
+          data.forEach((breakRecord) => {
+            activeBreaks[breakRecord.driver_id] = true;
+          });
+          
+          setDriverBreaksState((prev) => {
+            const hasChanges = 
+              Object.keys(prev).length !== Object.keys(activeBreaks).length ||
+              Object.keys(activeBreaks).some((id) => !prev[id]) ||
+              Object.keys(prev).some((id) => prev[id] && !activeBreaks[id]);
+            
+            return hasChanges ? activeBreaks : prev;
+          });
+        }
+      } catch (error) {
+        // Silent error handling
+      }
+    };
+
+    // Start polling after 10 seconds (give realtime a chance first)
+    const startPolling = setTimeout(() => {
+      if (!cancelled) {
+        pollDriverBreaks();
+        pollInterval = setInterval(pollDriverBreaks, 30000);
+      }
+    }, 10000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(startPolling);
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, []);
 
   useEffect(() => {
     setAssignees(taskAssignees);
@@ -881,7 +929,6 @@ export function TasksBoard({
       try {
         const { createBrowserClient } = await import('@/lib/auth');
         supa = createBrowserClient();
-        console.log('[DriverBreaks] Supabase client created');
         channel = supa
           .channel('realtime:admin-tasks')
           .on(
@@ -985,43 +1032,15 @@ export function TasksBoard({
               filter: undefined, // Subscribe to all changes
             },
             (payload: PostgresChangePayload) => {
-              console.log(
-                '[DriverBreaks] ✅ Real-time event received:',
-                payload.eventType,
-                payload
-              );
-              console.log(
-                '[DriverBreaks] Full payload.new:',
-                JSON.stringify(payload.new, null, 2)
-              );
-              console.log(
-                '[DriverBreaks] Full payload.old:',
-                JSON.stringify(payload.old, null, 2)
-              );
               setDriverBreaksState((prev) => {
-                console.log(
-                  '[DriverBreaks] Current state before update:',
-                  prev
-                );
                 const newState = { ...prev };
                 if (payload.eventType === 'INSERT') {
                   const row = payload.new as {
                     driver_id: string;
                     ended_at: string | null;
                   };
-                  console.log(
-                    '[DriverBreaks] INSERT - driver_id:',
-                    row.driver_id,
-                    'ended_at:',
-                    row.ended_at
-                  );
-                  // Only mark as on break if ended_at is null
                   if (!row.ended_at) {
                     newState[row.driver_id] = true;
-                    console.log(
-                      '[DriverBreaks] ✅ Driver started break:',
-                      row.driver_id
-                    );
                   }
                 }
                 if (payload.eventType === 'UPDATE') {
@@ -1029,74 +1048,33 @@ export function TasksBoard({
                     driver_id: string;
                     ended_at: string | null;
                   };
-                  console.log(
-                    '[DriverBreaks] UPDATE - driver_id:',
-                    row.driver_id
-                  );
-                  console.log(
-                    '[DriverBreaks] UPDATE - new ended_at:',
-                    row.ended_at
-                  );
-
-                  // Don't depend on payload.old (replica identity might omit columns).
-                  // ended_at set => break ended; ended_at null => break active.
                   if (row.ended_at) {
                     delete newState[row.driver_id];
-                    console.log(
-                      '[DriverBreaks] ✅ Driver ended break:',
-                      row.driver_id
-                    );
                   } else {
                     newState[row.driver_id] = true;
-                    console.log(
-                      '[DriverBreaks] ✅ Driver started break:',
-                      row.driver_id
-                    );
                   }
                 }
                 if (payload.eventType === 'DELETE') {
                   const row = payload.old as { driver_id: string };
                   delete newState[row.driver_id];
-                  console.log(
-                    '[DriverBreaks] ✅ Break deleted:',
-                    row.driver_id
-                  );
                 }
-                console.log(
-                  '[DriverBreaks] 🎯 New state after update:',
-                  newState
-                );
                 return newState;
               });
             }
           )
-          .subscribe((status, err) => {
-            console.log('[DriverBreaks] 📡 Subscription status:', status);
-            if (err) {
-              console.error('[DriverBreaks] ❌ Subscription error:', err);
-            }
-            if (status === 'SUBSCRIBED') {
-              console.log(
-                '[DriverBreaks] ✅ Successfully subscribed to driver_breaks changes'
-              );
-              console.log(
-                '[DriverBreaks] Waiting for events... Make sure migration 20250109000000_grant_driver_breaks_realtime.sql is applied'
-              );
-            } else if (status === 'CHANNEL_ERROR') {
-              console.error(
-                '[DriverBreaks] ❌ Channel error - check RLS policies and grants'
-              );
-            } else if (status === 'TIMED_OUT') {
-              console.error('[DriverBreaks] ❌ Subscription timed out');
-            } else if (status === 'CLOSED') {
-              console.warn('[DriverBreaks] ⚠️ Subscription closed');
+          .subscribe((status) => {
+            if (status === 'TIMED_OUT' || status === 'CLOSED') {
+              // Auto-reconnect on timeout or close
+              setTimeout(() => {
+                if (status === 'TIMED_OUT') {
+                  channel?.unsubscribe();
+                }
+                channel?.subscribe();
+              }, 1000);
             }
           });
       } catch (error) {
-        console.error(
-          '[DriverBreaks] Error setting up real-time subscription:',
-          error
-        );
+        // Silent error handling
       }
     })();
     // Cleanup

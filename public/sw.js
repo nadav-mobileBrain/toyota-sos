@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 // Basic app shell + API caching with versioning
-const VERSION = 'v2'; // Bumped version to force cache refresh
+const VERSION = 'v4'; // Bumped version for realtime + polling fallback
 const APP_SHELL_CACHE = `app-shell-${VERSION}`;
 const RUNTIME_CACHE = `runtime-${VERSION}`;
 
