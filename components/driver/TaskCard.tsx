@@ -3,7 +3,7 @@
 import dayjs from '@/lib/dayjs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
-import { MapPinIcon } from 'lucide-react';
+import { MapPinIcon, PhoneIcon } from 'lucide-react';
 import { TaskAttachments } from '@/components/admin/TaskAttachments';
 import {
   getAdvisorColorBgClass,
@@ -23,12 +23,14 @@ export type TaskCardProps = {
   address?: string | null;
   distanceFromGarage?: number | null;
   clientName?: string | null;
+  clientPhone?: string | null;
   advisorName?: string | null;
   advisorColor?: AdvisorColor | null;
   stops?: {
     address: string;
     distanceFromGarage?: number | null;
     clientName?: string | null;
+    clientPhone?: string | null;
     advisorName?: string | null;
     advisorColor?: AdvisorColor | null;
   }[];
@@ -47,6 +49,7 @@ export function TaskCard(props: TaskCardProps) {
     address,
     distanceFromGarage,
     clientName,
+    clientPhone,
     advisorName,
     advisorColor,
     stops,
@@ -169,43 +172,61 @@ export function TaskCard(props: TaskCardProps) {
         <div>חלון זמן: {timeWindow}</div>
         {stops && stops.length > 0 ? (
           <div className="space-y-1 rounded border border-gray-200 bg-gray-50 p-2">
-            {stops.map((s, idx) => (
-              <div key={`${s.address}-${idx}`} className="space-y-0.5">
-                <div className="text-xs font-semibold text-gray-600">
-                  עצירה {idx + 1}
-                </div>
-                {s.address ? (
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex-1">כתובת: {s.address}</div>
-                    {s.distanceFromGarage !== null &&
-                      s.distanceFromGarage !== undefined && (
-                        <span
-                          className="shrink-0 text-[10px] text-gray-400 font-medium"
-                          dir="ltr"
+            {stops.map((s, idx) => {
+              return (
+                <div key={`${s.address}-${idx}`} className="space-y-0.5">
+                  <div className="text-xs font-semibold text-gray-600">
+                    עצירה {idx + 1}
+                  </div>
+                  {s.address ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1">כתובת: {s.address}</div>
+                      {s.distanceFromGarage !== null &&
+                        s.distanceFromGarage !== undefined && (
+                          <span
+                            className="shrink-0 text-[10px] text-gray-400 font-medium"
+                            dir="ltr"
+                          >
+                            ({formatDistance(s.distanceFromGarage)})
+                          </span>
+                        )}
+                    </div>
+                  ) : null}
+                  {s.clientName ? (
+                    <div className="flex items-center gap-2">
+                      <span>לקוח: {s.clientName}</span>
+                      {s.clientPhone && (
+                        <a
+                          href={`tel:${s.clientPhone}`}
+                          className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
                         >
-                          ({formatDistance(s.distanceFromGarage)})
+                          <PhoneIcon className="w-3 h-3" />
+                          <span className="text-xs" dir="ltr">
+                            {s.clientPhone}
+                          </span>
+                        </a>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {(s.advisorName || s.advisorColor) && (
+                    <div className="flex items-center gap-2">
+                      <span>יועץ:</span>
+                      {s.advisorName && <span>{s.advisorName}</span>}
+                      {s.advisorColor && (
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getAdvisorColorBgClass(
+                            s.advisorColor
+                          )} ${getAdvisorColorTextClass(s.advisorColor)}`}
+                        >
+                          {s.advisorColor}
                         </span>
                       )}
-                  </div>
-                ) : null}
-                {s.clientName ? <div>לקוח: {s.clientName}</div> : null}
-                {(s.advisorName || s.advisorColor) && (
-                  <div className="flex items-center gap-2">
-                    <span>יועץ:</span>
-                    {s.advisorName && <span>{s.advisorName}</span>}
-                    {s.advisorColor && (
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getAdvisorColorBgClass(
-                          s.advisorColor
-                        )} ${getAdvisorColorTextClass(s.advisorColor)}`}
-                      >
-                        {s.advisorColor}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <>
@@ -223,7 +244,22 @@ export function TaskCard(props: TaskCardProps) {
                   )}
               </div>
             ) : null}
-            {clientName ? <div>לקוח: {clientName}</div> : null}
+            {clientName ? (
+              <div className="flex items-center gap-2">
+                <span>לקוח: {clientName}</span>
+                {clientPhone && (
+                  <a
+                    href={`tel:${clientPhone}`}
+                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                  >
+                    <PhoneIcon className="w-3 h-3" />
+                    <span className="text-xs" dir="ltr">
+                      {clientPhone}
+                    </span>
+                  </a>
+                )}
+              </div>
+            ) : null}
             {(advisorName || advisorColor) && (
               <div className="flex items-center gap-2">
                 <span>יועץ:</span>

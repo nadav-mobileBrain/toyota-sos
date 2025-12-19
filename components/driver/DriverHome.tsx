@@ -174,6 +174,7 @@ export function DriverHome() {
     estimated_end: string | null;
     address: string | null;
     client_name: string | null;
+    client_phone: string | null;
     vehicle_license_plate: string | null;
     vehicle_model: string | null;
     distance_from_garage: number | null;
@@ -234,6 +235,7 @@ export function DriverHome() {
         address: t.address,
         distanceFromGarage: t.distance_from_garage,
         clientName: t.client_name,
+        clientPhone: t.client_phone,
         advisorName: t.advisor_name || null,
         advisorColor: (t.advisor_color as AdvisorColor) || null,
         vehicle: t.vehicle_license_plate
@@ -250,7 +252,7 @@ export function DriverHome() {
         const { data: stopRows, error: stopsError } = await client
           .from('task_stops')
           .select(
-            'task_id, address, advisor_name, advisor_color, sort_order, distance_from_garage, client:clients(id,name)'
+            'task_id, address, advisor_name, advisor_color, sort_order, distance_from_garage, client:clients(id,name,phone)'
           )
           .in('task_id', taskIds)
           .order('sort_order', { ascending: true });
@@ -268,6 +270,7 @@ export function DriverHome() {
               address: row.address || '',
               distanceFromGarage: row.distance_from_garage || null,
               clientName: clientData?.name || null,
+              clientPhone: clientData?.phone || null,
               advisorName: row.advisor_name || null,
               advisorColor: (row.advisor_color as AdvisorColor) || null,
             });
@@ -279,6 +282,7 @@ export function DriverHome() {
             if (task.stops.length > 0) {
               task.address = task.stops[0].address;
               task.clientName = task.stops[0].clientName || task.clientName;
+              task.clientPhone = task.stops[0].clientPhone || task.clientPhone;
             }
           }
         }
