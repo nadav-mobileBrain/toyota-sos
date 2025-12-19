@@ -9,19 +9,41 @@ import { CalendarDays } from 'lucide-react';
 export default async function AdminCalendarPage() {
   const admin = getSupabaseAdmin();
 
-  // Fetch tasks
+  // Fetch tasks with stops
   let tasks: Task[] = [];
   let tasksError: string | null = null;
   try {
     const { data, error } = await admin
       .from('tasks')
-      .select('*')
+      .select(
+        `
+        *,
+        task_stops(id, task_id, client_id, address, advisor_name, advisor_color, sort_order, created_at, updated_at)
+      `
+      )
       .order('estimated_start', { ascending: true });
 
     if (error) {
       tasksError = error.message;
     } else {
-      tasks = data || [];
+      tasks = (data || []).map((task: any) => ({
+        ...task,
+        stops: task.task_stops
+          ? task.task_stops
+              .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+              .map((stop: any) => ({
+                id: stop.id,
+                task_id: task.id,
+                client_id: stop.client_id,
+                address: stop.address,
+                advisor_name: stop.advisor_name,
+                advisor_color: stop.advisor_color,
+                sort_order: stop.sort_order,
+                created_at: stop.created_at,
+                updated_at: stop.updated_at,
+              }))
+          : undefined,
+      }));
     }
   } catch {
     tasksError = 'שגיאה בטעינת משימות';

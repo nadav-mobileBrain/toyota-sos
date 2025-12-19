@@ -167,13 +167,31 @@ export function TaskCard({
         </div>
       )}
 
-      {/* Address info */}
-      <div className="mb-2 flex items-center gap-1 text-xs text-gray-600">
-        <span className="font-medium">📍</span>
-        <span className="truncate" title={task.address || 'לא הוכנסה כתובת'}>
-          {task.address || 'לא הוכנסה כתובת'}
-        </span>
-      </div>
+      {/* Address(es) info */}
+      {task.stops && task.stops.length > 0 ? (
+        <div className="mb-2 space-y-1">
+          {task.stops
+            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+            .map((stop, index) => (
+              <div
+                key={stop.id}
+                className="flex items-center gap-1 text-xs text-gray-600"
+              >
+                <span className="font-medium">📍</span>
+                <span className="truncate" title={stop.address}>
+                  {index + 1}. {stop.address}
+                </span>
+              </div>
+            ))}
+        </div>
+      ) : (
+        <div className="mb-2 flex items-center gap-1 text-xs text-gray-600">
+          <span className="font-medium">📍</span>
+          <span className="truncate" title={task.address || 'לא הוכנסה כתובת'}>
+            {task.address || 'לא הוכנסה כתובת'}
+          </span>
+        </div>
+      )}
 
       {/* Advisor info */}
       {(task.advisor_name || task.advisor_color) && (

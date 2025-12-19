@@ -140,12 +140,30 @@ export function CalendarTask({
         </span>
       </div>
 
-      {/* Address */}
-      {task.address && (
-        <div className="flex items-start gap-1.5 text-xs opacity-90 mb-1">
-          <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-          <span className="line-clamp-1">{task.address}</span>
+      {/* Address(es) */}
+      {task.stops && task.stops.length > 0 ? (
+        <div className="space-y-1 mb-1">
+          {task.stops
+            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+            .map((stop, index) => (
+              <div
+                key={stop.id}
+                className="flex items-start gap-1.5 text-xs opacity-90"
+              >
+                <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span className="line-clamp-1">
+                  {index + 1}. {stop.address}
+                </span>
+              </div>
+            ))}
         </div>
+      ) : (
+        task.address && (
+          <div className="flex items-start gap-1.5 text-xs opacity-90 mb-1">
+            <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <span className="line-clamp-1">{task.address}</span>
+          </div>
+        )
       )}
 
       {/* Driver */}
@@ -192,11 +210,29 @@ export function CalendarTaskOverlay({ task }: { task: Task }) {
           {task.type}
         </span>
       </div>
-      {task.address && (
-        <div className="flex items-start gap-1.5 text-xs opacity-90">
-          <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-          <span className="line-clamp-1">{task.address}</span>
+      {task.stops && task.stops.length > 0 ? (
+        <div className="space-y-1">
+          {task.stops
+            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+            .map((stop, index) => (
+              <div
+                key={stop.id}
+                className="flex items-start gap-1.5 text-xs opacity-90"
+              >
+                <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span className="line-clamp-1">
+                  {index + 1}. {stop.address}
+                </span>
+              </div>
+            ))}
         </div>
+      ) : (
+        task.address && (
+          <div className="flex items-start gap-1.5 text-xs opacity-90">
+            <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <span className="line-clamp-1">{task.address}</span>
+          </div>
+        )
       )}
     </div>
   );
