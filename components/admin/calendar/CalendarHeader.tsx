@@ -112,14 +112,14 @@ export function CalendarHeader({
         >
           <ToggleGroupItem
             value="week"
-            className="data-[state=on]:bg-blue-600 data-[state=on]:shadow-sm data-[state=on]:text-primary px-3 py-1.5 text-sm rounded-md text-black"
+            className="data-[state=on]:bg-blue-600 data-[state=on]:shadow-sm data-[state=on]:text-white px-3 py-1.5 text-sm rounded-md text-black"
           >
-            <Calendar className="h-4 w-4 ml-1.5" />
+            <Calendar className="h-4 w-4 ml-1.5 " />
             שבוע
           </ToggleGroupItem>
           <ToggleGroupItem
             value="month"
-            className="data-[state=on]:bg-blue-600 data-[state=on]:shadow-sm data-[state=on]:text-primary px-3 py-1.5 text-sm rounded-md text-black"
+            className="data-[state=on]:bg-blue-600 data-[state=on]:shadow-sm data-[state=on]:text-white px-3 py-1.5 text-sm rounded-md text-black"
           >
             <CalendarDays className="h-4 w-4 ml-1.5" />
             חודש
@@ -145,7 +145,7 @@ export function CalendarHeader({
         {/* Create task button */}
         <Button
           onClick={onCreateTask}
-          className="bg-toyota-red hover:bg-toyota-red/90"
+          className="bg-toyota-red hover:bg-toyota-red/90 text-white"
         >
           <Plus className="h-4 w-4 ml-1.5" />
           משימה חדשה
