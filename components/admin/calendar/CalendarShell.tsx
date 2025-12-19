@@ -416,7 +416,7 @@ export function CalendarShell({
         </div>
 
         {/* Calendar view */}
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-x-auto custom-scrollbar">
           {view === 'week' ? (
             <WeekView
               tasks={filteredTasks}

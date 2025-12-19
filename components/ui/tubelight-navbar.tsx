@@ -39,7 +39,7 @@ export function NavBar({ items, className }: NavBarProps) {
 
   return (
     <div className={cn('w-full flex justify-center my-4', className)}>
-      <div className="flex items-center gap-3 bg-background/5 border border-border backdrop-blur-lg py-1 px-1 rounded-full shadow-lg">
+      <div className="flex items-center gap-1 md:gap-3 bg-background/5 border border-border backdrop-blur-lg py-1 px-1 rounded-full shadow-lg">
         {items.map((item) => {
           const Icon =
             typeof item.icon === 'string'
@@ -54,7 +54,7 @@ export function NavBar({ items, className }: NavBarProps) {
               key={item.name}
               href={item.url}
               className={cn(
-                'relative cursor-pointer text-sm font-semibold px-6 py-2 rounded-full transition-colors',
+                'relative cursor-pointer text-sm font-semibold px-3 md:px-6 py-2 rounded-full transition-colors',
                 'text-foreground/80 hover:text-primary',
                 isActive && 'bg-muted text-primary'
               )}
@@ -84,8 +84,8 @@ export function NavBar({ items, className }: NavBarProps) {
             </Link>
           );
         })}
-        <div className="h-6 w-px bg-border mx-1" />
-        <div className="px-1">
+        <div className="h-6 w-px bg-border mx-0.5 md:mx-1" />
+        <div className="px-0.5 md:px-1">
              <AdminSignOutButton />
         </div>
       </div>

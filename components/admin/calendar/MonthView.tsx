@@ -249,7 +249,7 @@ export function MonthView({
   }, [days]);
 
   return (
-    <div dir="ltr" className="w-full">
+    <div dir="ltr" className="w-full min-w-[800px] md:min-w-0">
       {/* Day names header - Google Calendar style */}
       <div className="grid grid-cols-7 border-b border-slate-200 bg-white sticky top-0 z-10">
         {dayNames.map((name, index) => (

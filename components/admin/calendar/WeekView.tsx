@@ -147,7 +147,7 @@ function DayColumn({
         {dayTasks.length === 0 && (
           <button
             onClick={() => onDayClick(date)}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 p-6 text-sm text-slate-400 transition-all hover:border-toyota-red hover:text-toyota-red hover:bg-toyota-red/5 group"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 p-4 sm:p-6 text-sm text-slate-400 transition-all hover:border-toyota-red hover:text-toyota-red hover:bg-toyota-red/5 group"
           >
             <Plus className="h-5 w-5 group-hover:scale-110 transition-transform" />
             <span>הוסף משימה</span>
@@ -186,7 +186,7 @@ export function WeekView({
   }, [dateRange]);
 
   return (
-    <div dir="ltr" className="grid grid-cols-7 divide-x divide-slate-200 bg-white">
+    <div dir="ltr" className="grid grid-cols-7 divide-x divide-slate-200 bg-white min-w-[700px] md:min-w-0">
       {days.map((day) => (
         <DayColumn
           key={format(day, 'yyyy-MM-dd')}
