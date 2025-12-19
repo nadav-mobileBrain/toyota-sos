@@ -11,7 +11,12 @@ export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
     const roleCookie = cookieStore.get('toyota_role')?.value;
-    if (!roleCookie || (roleCookie !== 'admin' && roleCookie !== 'manager')) {
+    if (
+      !roleCookie ||
+      (roleCookie !== 'admin' &&
+        roleCookie !== 'manager' &&
+        roleCookie !== 'viewer')
+    ) {
       return NextResponse.json(
         { ok: false, error: 'Unauthorized' },
         { status: 401 }
@@ -33,7 +38,7 @@ export async function GET(request: NextRequest) {
         {
           ok: false,
           error: 'Invalid parameters',
-          details: validation.error.format()
+          details: validation.error.format(),
         },
         { status: 400 }
       );

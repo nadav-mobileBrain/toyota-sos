@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const userIdCookie = cookieStore.get('toyota_user_id')?.value;
     const roleCookie = cookieStore.get('toyota_role')?.value;
 
-    if (!userIdCookie || (roleCookie !== 'admin' && roleCookie !== 'manager')) {
+    if (!userIdCookie || (roleCookie !== 'admin' && roleCookie !== 'manager' && roleCookie !== 'viewer')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -57,7 +57,7 @@ export async function PATCH(request: NextRequest) {
     const userIdCookie = cookieStore.get('toyota_user_id')?.value;
     const roleCookie = cookieStore.get('toyota_role')?.value;
 
-    if (!userIdCookie || (roleCookie !== 'admin' && roleCookie !== 'manager')) {
+    if (!userIdCookie || (roleCookie !== 'admin' && roleCookie !== 'manager' && roleCookie !== 'viewer')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -105,7 +105,7 @@ export async function DELETE(request: NextRequest) {
     const userIdCookie = cookieStore.get('toyota_user_id')?.value;
     const roleCookie = cookieStore.get('toyota_role')?.value;
 
-    if (!userIdCookie || (roleCookie !== 'admin' && roleCookie !== 'manager')) {
+    if (!userIdCookie || (roleCookie !== 'admin' && roleCookie !== 'manager' && roleCookie !== 'viewer')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

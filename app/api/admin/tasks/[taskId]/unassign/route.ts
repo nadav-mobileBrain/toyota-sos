@@ -15,12 +15,14 @@ export async function DELETE(
     // Check authentication via cookie
     const cookieStore = await cookies();
     const roleCookie = cookieStore.get('toyota_role')?.value;
-    
-    if (!roleCookie || (roleCookie !== 'admin' && roleCookie !== 'manager')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+
+    if (
+      !roleCookie ||
+      (roleCookie !== 'admin' &&
+        roleCookie !== 'manager' &&
+        roleCookie !== 'viewer')
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { taskId } = await params;
@@ -35,10 +37,7 @@ export async function DELETE(
 
     if (error) {
       console.error('Error unassigning drivers:', error);
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     // Update task's updated_at timestamp
@@ -58,4 +57,3 @@ export async function DELETE(
     );
   }
 }
-

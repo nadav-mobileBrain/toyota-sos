@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 // Define route access by role
 const PROTECTED_ROUTES: Record<string, string[]> = {
   '/driver': ['driver'],
-  '/admin': ['admin'],
-  '/manager': ['admin', 'manager'],
+  '/admin': ['admin', 'viewer'],
+  '/manager': ['admin', 'manager', 'viewer'],
   '/viewer': ['admin', 'viewer'],
 };
 
@@ -55,9 +55,11 @@ export function proxy(request: NextRequest) {
     const defaultHome =
       roleCookie === 'driver'
         ? '/driver'
-        : roleCookie === 'admin' || roleCookie === 'manager'
+        : roleCookie === 'admin' ||
+          roleCookie === 'manager' ||
+          roleCookie === 'viewer'
         ? '/admin/dashboard'
-        : '/viewer';
+        : '/admin/dashboard';
     const url = new URL(defaultHome, request.url);
     return NextResponse.redirect(url);
   }
@@ -78,4 +80,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|api).*)',
   ],
 };
-

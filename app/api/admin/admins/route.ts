@@ -14,7 +14,7 @@ export async function GET() {
   try {
     const cookieStore = await cookies();
     const roleCookie = cookieStore.get('toyota_role')?.value;
-    if (!roleCookie || roleCookie !== 'admin') {
+    if (!roleCookie || (roleCookie !== 'admin' && roleCookie !== 'manager' && roleCookie !== 'viewer')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
     const roleCookie = cookieStore.get('toyota_role')?.value;
-    if (!roleCookie || roleCookie !== 'admin') {
+    if (!roleCookie || (roleCookie !== 'admin' && roleCookie !== 'manager' && roleCookie !== 'viewer')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
