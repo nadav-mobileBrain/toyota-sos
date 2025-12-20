@@ -148,11 +148,11 @@ export function TasksBoard({
 
     const pollDriverBreaks = async () => {
       if (cancelled) return;
-      
+
       try {
         const { createBrowserClient } = await import('@/lib/auth');
         const client = createBrowserClient();
-        
+
         const { data, error } = await client
           .from('driver_breaks')
           .select('driver_id, ended_at')
@@ -163,13 +163,13 @@ export function TasksBoard({
           data.forEach((breakRecord) => {
             activeBreaks[breakRecord.driver_id] = true;
           });
-          
+
           setDriverBreaksState((prev) => {
-            const hasChanges = 
+            const hasChanges =
               Object.keys(prev).length !== Object.keys(activeBreaks).length ||
               Object.keys(activeBreaks).some((id) => !prev[id]) ||
               Object.keys(prev).some((id) => prev[id] && !activeBreaks[id]);
-            
+
             return hasChanges ? activeBreaks : prev;
           });
         }
@@ -497,7 +497,7 @@ export function TasksBoard({
 
   // Track tasks that are being updated via handleUpdated to prevent realtime from overwriting
   const updatingTasksRef = React.useRef<Set<string>>(new Set());
-  
+
   const handleUpdated = useCallback(
     (updated: Task, leadId?: string, coIds?: string[]) => {
       console.log('[TasksBoard] handleUpdated called:', {
@@ -506,10 +506,10 @@ export function TasksBoard({
         advisor_name: updated.advisor_name,
         fullTask: updated,
       });
-      
+
       // Mark this task as being updated manually
       updatingTasksRef.current.add(updated.id);
-      
+
       setTasks((prev) => {
         return prev.map((t) => {
           if (t.id === updated.id) {
@@ -529,12 +529,12 @@ export function TasksBoard({
               updated_advisor_name: updated.advisor_name,
               hasStops: !!merged.stops,
             });
-            
+
             // Clear the flag after a short delay to allow realtime updates again
             setTimeout(() => {
               updatingTasksRef.current.delete(updated.id);
             }, 1000);
-            
+
             return merged;
           }
           return t;
@@ -952,13 +952,15 @@ export function TasksBoard({
                     hasAdvisorName: 'advisor_name' in row,
                     isManuallyUpdating: updatingTasksRef.current.has(row.id),
                   });
-                  
+
                   // Skip realtime update if this task is being manually updated
                   if (updatingTasksRef.current.has(row.id)) {
-                    console.log('[TasksBoard] Skipping realtime update - task is being manually updated');
+                    console.log(
+                      '[TasksBoard] Skipping realtime update - task is being manually updated'
+                    );
                     return prev;
                   }
-                  
+
                   return prev.map((t) => {
                     if (t.id === row.id) {
                       // Merge only the fields that exist in the update payload
@@ -979,13 +981,7 @@ export function TasksBoard({
                       if ('advisor_name' in row) {
                         updated.advisor_name = row.advisor_name ?? null;
                       }
-                      console.log('[TasksBoard] After realtime merge:', {
-                        taskId: updated.id,
-                        advisor_color: updated.advisor_color,
-                        advisor_name: updated.advisor_name,
-                        original_advisor_color: t.advisor_color,
-                        original_advisor_name: t.advisor_name,
-                      });
+
                       return updated;
                     }
                     return t;
@@ -1074,6 +1070,7 @@ export function TasksBoard({
             }
           });
       } catch (error) {
+        console.log('🚀 ~ TasksBoard ~ error:', error);
         // Silent error handling
       }
     })();

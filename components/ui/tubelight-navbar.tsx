@@ -43,7 +43,6 @@ export function NavBar({ items, className }: NavBarProps) {
         {items.map((item) => {
           const Icon =
             typeof item.icon === 'string'
-              // @ts-ignore
               ? iconMap[item.icon] || Icons.LayoutDashboard
               : item.icon;
           const isActive =
@@ -59,7 +58,7 @@ export function NavBar({ items, className }: NavBarProps) {
                 isActive && 'bg-muted text-primary'
               )}
             >
-              <span className="hidden md:inline">{item.name}</span>
+              <span className="hidden md:inline text-lg">{item.name}</span>
               <span className="md:hidden">
                 <Icon size={18} strokeWidth={2.5} />
               </span>
@@ -86,7 +85,7 @@ export function NavBar({ items, className }: NavBarProps) {
         })}
         <div className="h-6 w-px bg-border mx-0.5 md:mx-1" />
         <div className="px-0.5 md:px-1">
-             <AdminSignOutButton />
+          <AdminSignOutButton />
         </div>
       </div>
     </div>
