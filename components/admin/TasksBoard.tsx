@@ -1025,9 +1025,12 @@ export function TasksBoard({
               event: '*',
               schema: 'public',
               table: 'driver_breaks',
-              filter: undefined, // Subscribe to all changes
             },
             (payload: PostgresChangePayload) => {
+              console.log(
+                '[TasksBoard] driver_breaks event received:',
+                payload
+              );
               setDriverBreaksState((prev) => {
                 const newState = { ...prev };
                 if (payload.eventType === 'INSERT') {
@@ -1035,6 +1038,10 @@ export function TasksBoard({
                     driver_id: string;
                     ended_at: string | null;
                   };
+                  console.log(
+                    '[TasksBoard] Driver started break:',
+                    row.driver_id
+                  );
                   if (!row.ended_at) {
                     newState[row.driver_id] = true;
                   }
@@ -1044,6 +1051,12 @@ export function TasksBoard({
                     driver_id: string;
                     ended_at: string | null;
                   };
+                  console.log(
+                    '[TasksBoard] Driver break updated:',
+                    row.driver_id,
+                    'ended_at:',
+                    row.ended_at
+                  );
                   if (row.ended_at) {
                     delete newState[row.driver_id];
                   } else {
@@ -1052,7 +1065,13 @@ export function TasksBoard({
                 }
                 if (payload.eventType === 'DELETE') {
                   const row = payload.old as { driver_id: string };
-                  delete newState[row.driver_id];
+                  console.log(
+                    '[TasksBoard] Driver break deleted:',
+                    row.driver_id
+                  );
+                  if (row.driver_id) {
+                    delete newState[row.driver_id];
+                  }
                 }
                 return newState;
               });

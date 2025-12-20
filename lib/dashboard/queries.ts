@@ -136,7 +136,6 @@ export function clearCacheForRange(range: DateRange) {
   keysToDelete.forEach((key) => cache.delete(key));
 }
 
-
 function getClient(client?: SupabaseClient) {
   if (client) return client;
   // Default to server client; callers can pass a cookie-bound server client from page/route
@@ -572,10 +571,12 @@ export async function getActiveDriversCount(
     // Fallback: try the task estimated_start approach if assignment query fails
     const { data: taskAssignments, error: taskError } = await supa
       .from('task_assignees')
-      .select(`
+      .select(
+        `
         driver_id,
         tasks!inner(estimated_start)
-      `)
+      `
+      )
       .gte('tasks.estimated_start', range.start)
       .lt('tasks.estimated_start', range.end);
 
@@ -595,7 +596,6 @@ export async function getActiveDriversCount(
     const ttl = isRecentRange(range) ? THIRTY_SECONDS_MS : FIVE_MINUTES_MS;
     setCached(key, 0, ttl);
     return 0;
-
   } catch (error) {
     const ttl = isRecentRange(range) ? THIRTY_SECONDS_MS : FIVE_MINUTES_MS;
     setCached(key, 0, ttl);
@@ -743,7 +743,9 @@ export async function fetchDashboardDataWithTrends(
   previousRange: DateRange,
   client?: SupabaseClient
 ): Promise<DashboardDataWithTrends> {
-  const { calculatePercentageChange, getTrendDirection } = await import('./period-utils');
+  const { calculatePercentageChange, getTrendDirection } = await import(
+    './period-utils'
+  );
 
   // Fetch current and previous period data in parallel
   const [currentData, previousData] = await Promise.all([
@@ -755,8 +757,14 @@ export async function fetchDashboardDataWithTrends(
   const previous = previousData.summary;
 
   // Calculate trends for each metric
-  const createTrendData = (currentValue: number, previousValue: number): TrendData => {
-    const percentageChange = calculatePercentageChange(currentValue, previousValue);
+  const createTrendData = (
+    currentValue: number,
+    previousValue: number
+  ): TrendData => {
+    const percentageChange = calculatePercentageChange(
+      currentValue,
+      previousValue
+    );
     return {
       percentageChange,
       direction: getTrendDirection(percentageChange),
@@ -766,15 +774,39 @@ export async function fetchDashboardDataWithTrends(
   };
 
   const trends = {
-    scheduledTasks: createTrendData(current.scheduledTasks, previous.scheduledTasks),
-    completedTasks: createTrendData(current.completedTasks, previous.completedTasks),
-    completedLate: createTrendData(current.completedLate, previous.completedLate),
-    completedOnTime: createTrendData(current.completedOnTime, previous.completedOnTime),
+    scheduledTasks: createTrendData(
+      current.scheduledTasks,
+      previous.scheduledTasks
+    ),
+    completedTasks: createTrendData(
+      current.completedTasks,
+      previous.completedTasks
+    ),
+    completedLate: createTrendData(
+      current.completedLate,
+      previous.completedLate
+    ),
+    completedOnTime: createTrendData(
+      current.completedOnTime,
+      previous.completedOnTime
+    ),
     pendingTasks: createTrendData(current.pendingTasks, previous.pendingTasks),
-    inProgressTasks: createTrendData(current.inProgressTasks, previous.inProgressTasks),
-    cancelledTasks: createTrendData(current.cancelledTasks, previous.cancelledTasks),
-    driverUtilizationPct: createTrendData(current.driverUtilizationPct, previous.driverUtilizationPct),
-    activeDrivers: createTrendData(current.activeDrivers, previous.activeDrivers),
+    inProgressTasks: createTrendData(
+      current.inProgressTasks,
+      previous.inProgressTasks
+    ),
+    cancelledTasks: createTrendData(
+      current.cancelledTasks,
+      previous.cancelledTasks
+    ),
+    driverUtilizationPct: createTrendData(
+      current.driverUtilizationPct,
+      previous.driverUtilizationPct
+    ),
+    activeDrivers: createTrendData(
+      current.activeDrivers,
+      previous.activeDrivers
+    ),
   };
 
   return {
