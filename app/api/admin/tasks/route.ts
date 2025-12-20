@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
       client_id,
       vehicle_id,
       distance_from_garage,
+      lat,
+      lng,
       lead_driver_id,
       co_driver_ids,
       stops,
@@ -142,6 +144,14 @@ export async function POST(request: NextRequest) {
           ? advisor_color
           : null) ?? null;
     
+    const effectiveLat = isMulti
+      ? firstStop?.lat ?? null
+      : (typeof lat === 'number' ? lat : null);
+
+    const effectiveLng = isMulti
+      ? firstStop?.lng ?? null
+      : (typeof lng === 'number' ? lng : null);
+    
     // Validation for "Drive Client Home" - must have advisor name or color
     if (type === 'הסעת לקוח הביתה') {
       if (!effectiveAdvisorName && !effectiveAdvisorColor) {
@@ -168,6 +178,8 @@ export async function POST(request: NextRequest) {
         client_id: effectiveClientId ?? null,
         vehicle_id: vehicle_id ?? null,
         distance_from_garage: distance_from_garage ?? null,
+        lat: effectiveLat,
+        lng: effectiveLng,
       })
       .select('*')
       .single();

@@ -1,4 +1,3 @@
-
 export interface Coordinates {
   lat: number;
   lng: number;
@@ -11,16 +10,25 @@ export interface GeocodedAddress {
   originalIndex: number;
 }
 
+export interface AddressSearchResult {
+  display_name: string;
+  lat: number;
+  lng: number;
+}
+
 // Garage Location: Rehov Kombe 12, Hadera
 export const GARAGE_LOCATION: Coordinates = {
   lat: 32.4618,
-  lng: 34.9390,
+  lng: 34.939,
 };
 
 /**
  * Calculates the distance between two coordinates in kilometers using the Haversine formula.
  */
-export function calculateDistance(coord1: Coordinates, coord2: Coordinates): number {
+export function calculateDistance(
+  coord1: Coordinates,
+  coord2: Coordinates
+): number {
   const R = 6371; // Earth's radius in km
   const dLat = toRad(coord2.lat - coord1.lat);
   const dLng = toRad(coord2.lng - coord1.lng);
@@ -41,12 +49,15 @@ function toRad(value: number): number {
 /**
  * Geocodes an address using OpenStreetMap (Nominatim).
  */
-export async function geocodeAddress(address: string): Promise<Coordinates | null> {
+export async function geocodeAddress(
+  address: string
+): Promise<Coordinates | null> {
   try {
-    const query = address.toLowerCase().includes('israel') || address.includes('ישראל')
-      ? address
-      : `${address}, ישראל`;
-      
+    const query =
+      address.toLowerCase().includes('israel') || address.includes('ישראל')
+        ? address
+        : `${address}, ישראל`;
+
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
       query
     )}&limit=1`;
@@ -75,6 +86,108 @@ export async function geocodeAddress(address: string): Promise<Coordinates | nul
 }
 
 /**
+ * Searches for addresses using OpenStreetMap (Nominatim).
+ * Returns a list of potential matches.
+ */
+export async function searchAddresses(
+  query: string,
+  limit: number = 5
+): Promise<AddressSearchResult[]> {
+  try {
+    if (!query || query.length < 3) return [];
+
+    const searchQuery =
+      query.toLowerCase().includes('israel') || query.includes('ישראל')
+        ? query
+        : `${query}, ישראל`;
+
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+      searchQuery
+    )}&limit=${limit}&addressdetails=1`;
+
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'ToyotaSOS-DriverApp/1.0',
+        'Accept-Language': 'he,en',
+      },
+    });
+
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      const uniqueResults = new Map<string, AddressSearchResult>();
+
+      data.forEach((item: any) => {
+        let formattedName = item.display_name;
+
+        // Custom formatting if address details are available
+        if (item.address) {
+          const road = (
+            item.address.road ||
+            item.address.pedestrian ||
+            item.address.footway ||
+            item.address.street ||
+            ''
+          ).trim();
+          const city = (
+            item.address.city ||
+            item.address.town ||
+            item.address.village ||
+            item.address.municipality ||
+            item.address.hamlet ||
+            ''
+          ).trim();
+          const houseNumber = (item.address.house_number || '').trim();
+
+          if (road && city) {
+            // Format: "Street HouseNumber, City" or "Street, City"
+            // Note: Nominatim usually returns house_number as a separate field
+            // We want "Street HouseNumber, City" format if house number exists
+            if (houseNumber) {
+              formattedName = `${road} ${houseNumber}, ${city}`;
+            } else {
+              formattedName = `${road}, ${city}`;
+            }
+          } else if (city) {
+            // Fallback: if only city is found (e.g. search for city name)
+            formattedName = city;
+          } else if (road) {
+            formattedName = road;
+          }
+        }
+
+        const normalizedName = formattedName.trim();
+        if (!uniqueResults.has(normalizedName)) {
+          uniqueResults.set(normalizedName, {
+            display_name: normalizedName,
+            lat: parseFloat(item.lat),
+            lng: parseFloat(item.lon),
+          });
+        }
+      });
+
+      return Array.from(uniqueResults.values()).sort((a, b) => {
+        const aIsHadera =
+          a.display_name.includes('חדרה') ||
+          a.display_name.toLowerCase().includes('hadera');
+        const bIsHadera =
+          b.display_name.includes('חדרה') ||
+          b.display_name.toLowerCase().includes('hadera');
+
+        if (aIsHadera && !bIsHadera) return -1;
+        if (!aIsHadera && bIsHadera) return 1;
+        return 0;
+      });
+    }
+    return [];
+  } catch (error) {
+    console.error('Address search error:', error);
+    return [];
+  }
+}
+
+/**
  * Sorts stops based on their proximity to a reference point.
  * Returns the sorted items with geocoding metadata (lat, lng, distance).
  */
@@ -88,7 +201,7 @@ export async function optimizeRoute<T>(
     stops.map(async (item, index) => {
       const address = addressExtractor(item);
       if (!address) return { item, geocode: null };
-      
+
       const coords = await geocodeAddress(address);
       if (coords) {
         return {
@@ -106,7 +219,9 @@ export async function optimizeRoute<T>(
   );
 
   // Separate valid and invalid
-  const valid = results.filter((r): r is { item: T; geocode: GeocodedAddress } => r.geocode !== null);
+  const valid = results.filter(
+    (r): r is { item: T; geocode: GeocodedAddress } => r.geocode !== null
+  );
   const invalid = results.filter((r) => r.geocode === null);
 
   // Sort valid by distance

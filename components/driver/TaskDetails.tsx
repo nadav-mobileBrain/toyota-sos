@@ -168,7 +168,7 @@ export function TaskDetails({ taskId }: { taskId: string }) {
                   href={wazeHref}
                   className="inline-flex mt-2 items-center justify-center rounded-md bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600 w-full"
                 >
-                  ךךך ניווט עם Waze
+                  ניווט עם Waze
                 </a>
               )}
             </div>

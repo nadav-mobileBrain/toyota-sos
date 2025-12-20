@@ -135,6 +135,8 @@ export async function PATCH(
       'advisor_name',
       'advisor_color',
       'distance_from_garage',
+      'lat',
+      'lng',
     ];
     const updatePayload: Record<string, any> = {};
 
@@ -205,6 +207,8 @@ export async function PATCH(
       updatePayload.address = firstStop.address;
       updatePayload.advisor_name = firstStop.advisor_name;
       updatePayload.advisor_color = firstStop.advisor_color;
+      updatePayload.lat = firstStop.lat;
+      updatePayload.lng = firstStop.lng;
     }
     
     // Validation for "Drive Client Home" - must have advisor name or color
