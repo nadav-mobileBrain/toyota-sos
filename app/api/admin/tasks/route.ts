@@ -72,6 +72,9 @@ export async function POST(request: NextRequest) {
       advisor_name: string | null;
       advisor_color: string | null;
       sort_order: number;
+      distance_from_garage?: number | null;
+      lat?: number | null;
+      lng?: number | null;
     }[] = [];
 
     if (isMulti) {
