@@ -66,30 +66,36 @@ export function PermissionPrompt() {
     }
   };
 
-  if (status === 'granted') {
-    return null;
-  }
-
   return (
     <div dir="rtl" className="rounded-md border p-3 bg-white">
       <h3 className="text-sm font-medium">התראות</h3>
-      <p className="mt-1 text-xs text-gray-700">
-        קבל התראות על משימות חדשות ועדכונים בזמן אמת.
-      </p>
-      <div className="mt-2 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onEnable}
-          disabled={status === 'requesting'}
-          className="rounded-md bg-primary px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50 min-h-[44px]"
-          aria-busy={status === 'requesting' ? 'true' : undefined}
-        >
-          הפעל התראות
-        </button>
-        {message ? (
-          <span className="text-xs text-gray-700">{message}</span>
-        ) : null}
-      </div>
+      {status === 'granted' ? (
+        <div className="mt-1">
+          <p className="text-xs text-green-600 font-medium">
+            {message || 'התראות מופעלות'}
+          </p>
+        </div>
+      ) : (
+        <>
+          <p className="mt-1 text-xs text-gray-700">
+            קבל התראות על משימות חדשות ועדכונים בזמן אמת.
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onEnable}
+              disabled={status === 'requesting'}
+              className="rounded-md bg-primary px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50 min-h-[44px]"
+              aria-busy={status === 'requesting' ? 'true' : undefined}
+            >
+              {status === 'requesting' ? 'מפעיל...' : 'הפעל התראות'}
+            </button>
+            {message ? (
+              <span className="text-xs text-gray-700">{message}</span>
+            ) : null}
+          </div>
+        </>
+      )}
     </div>
   );
 }

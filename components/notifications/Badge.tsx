@@ -26,15 +26,44 @@ export function NotificationsBadge({
 
   const fetchUnreadCount = async () => {
     try {
-      const { count } = await supa
+      // Get current user ID from cookies
+      const getUserIdFromCookies = () => {
+        if (typeof document === 'undefined') return null;
+        const cookies = document.cookie.split(';');
+        for (const cookie of cookies) {
+          const [name, value] = cookie.trim().split('=');
+          if (name === 'toyota_user_id') return value;
+        }
+        return null;
+      };
+      
+      const userId = getUserIdFromCookies();
+      
+      // Check Supabase session as fallback
+      const { data: { user } } = await supa.auth.getUser();
+      const effectiveUserId = userId || user?.id;
+      
+      let query = supa
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('read', false)
-        .not('payload->>deleted', 'eq', 'true');
-      setCount(count || 0);
+        .or('payload->>deleted.is.null,payload->>deleted.neq.true');
+      
+      if (effectiveUserId) {
+        query = query.eq('user_id', effectiveUserId);
+      }
+      
+      const { count, error } = await query;
+      
+      if (error) {
+        throw error;
+      }
+      
+      const finalCount = count || 0;
+      setCount(finalCount);
       // broadcast to other tabs
-      bcRef.current?.postMessage({ type: 'badge:update', count: count || 0 });
-    } catch {
+      bcRef.current?.postMessage({ type: 'badge:update', count: finalCount });
+    } catch (err: any) {
       // ignore
     }
   };
@@ -63,9 +92,32 @@ export function NotificationsBadge({
         'postgres_changes',
         { event: '*', schema: 'public', table: 'notifications' },
         (payload: PostgresChangePayload) => {
+          // Get current user ID to filter events
+          const getUserIdFromCookies = () => {
+            if (typeof document === 'undefined') return null;
+            const cookies = document.cookie.split(';');
+            for (const cookie of cookies) {
+              const [name, value] = cookie.trim().split('=');
+              if (name === 'toyota_user_id') return value;
+            }
+            return null;
+          };
+          const currentUserId = getUserIdFromCookies();
+          
           // Heuristics: if refreshOnEvents, just refetch; otherwise do a cheap local update
           if (refreshOnEvents) {
-            fetchUnreadCount();
+            // Only refetch if the event is relevant to the current user
+            const isRelevantEvent = 
+              payload.eventType === 'INSERT' && payload.new?.user_id === currentUserId ||
+              payload.eventType === 'UPDATE' && (payload.new?.user_id === currentUserId || payload.old?.user_id === currentUserId) ||
+              payload.eventType === 'DELETE' && payload.old?.user_id === currentUserId;
+            
+            if (isRelevantEvent || !currentUserId) {
+              // Add small delay to ensure DB commit completes before querying
+              setTimeout(() => {
+                fetchUnreadCount();
+              }, 500);
+            }
             return;
           }
           if (payload.eventType === 'INSERT') {
