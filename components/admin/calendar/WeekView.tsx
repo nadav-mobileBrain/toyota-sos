@@ -18,6 +18,7 @@ import type { Driver } from '@/types/user';
 import type { Client } from '@/types/entity';
 import { CalendarTask } from './CalendarTask';
 import { cn } from '@/lib/utils';
+import dayjs from '@/lib/dayjs';
 
 interface WeekViewProps {
   tasks: Task[];
@@ -52,10 +53,14 @@ function DayColumn({
 
   // Get tasks for this day
   const dayTasks = useMemo(() => {
+    // Normalize the calendar date to Israel timezone for comparison
+    const dayDateStr = dayjs(date).tz('Asia/Jerusalem').format('YYYY-MM-DD');
+    
     return tasks
       .filter((task) => {
-        const taskDate = startOfDay(parseISO(task.estimated_start));
-        return isSameDay(taskDate, date);
+        // Parse task date and normalize to Israel timezone for consistent comparison
+        const taskIsraelDate = dayjs(task.estimated_start).tz('Asia/Jerusalem').format('YYYY-MM-DD');
+        return taskIsraelDate === dayDateStr;
       })
       .sort((a, b) => {
         const aTime = parseISO(a.estimated_start).getTime();

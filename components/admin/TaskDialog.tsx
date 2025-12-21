@@ -479,16 +479,20 @@ export function TaskDialog(props: TaskDialogProps) {
 
     if (isMultiStopType) {
       if (stops.length === 0) {
+        toastError('חובה להוסיף לפחות לקוח אחד עבור סוג משימה זה');
         return 'חובה להוסיף לפחות לקוח אחד עבור סוג משימה זה';
       }
       for (const stop of stops) {
         if (!(stop.clientId || stop.clientQuery.trim())) {
+          toastError('חובה לבחור לקוח עבור כל עצירה');
           return 'חובה לבחור לקוח עבור כל עצירה';
         }
         if (!stop.address.trim()) {
+          toastError('חובה להזין כתובת עבור כל עצירה');
           return 'חובה להזין כתובת עבור כל עצירה';
         }
         if (!stop.advisorName.trim() && !stop.advisorColor) {
+          toastError('חובה להזין שם יועץ או לבחור צבע יועץ עבור כל עצירה');
           return 'חובה להזין שם יועץ או לבחור צבע יועץ עבור כל עצירה';
         }
       }

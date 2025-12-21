@@ -6,6 +6,10 @@ import type { Driver } from '@/types/user';
 import type { Client, Vehicle } from '@/types/entity';
 import { CalendarDays } from 'lucide-react';
 
+// Disable caching to ensure fresh data on every page load
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AdminCalendarPage() {
   const admin = getSupabaseAdmin();
 

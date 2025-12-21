@@ -153,7 +153,7 @@ export default function Home() {
         <p>
           &copy; {new Date().getFullYear()} Toyota S.O.S. All rights reserved.
         </p>
-        <p>Version 1.0.1</p>
+        <p>Version 1.0.2</p>
         <p>Developed By Nadav Galili</p>
       </div>
 
