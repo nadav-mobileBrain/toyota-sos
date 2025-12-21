@@ -40,13 +40,14 @@ export async function DELETE(
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    // Update task's updated_at timestamp
+    // Update task's updated_at timestamp (only if not deleted)
     await admin
       .from('tasks')
       .update({
         updated_at: new Date().toISOString(),
       })
-      .eq('id', taskId);
+      .eq('id', taskId)
+      .is('deleted_at', null);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {

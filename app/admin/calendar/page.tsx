@@ -25,6 +25,7 @@ export default async function AdminCalendarPage() {
         task_stops(id, task_id, client_id, address, advisor_name, advisor_color, sort_order, distance_from_garage, created_at, updated_at)
       `
       )
+      .is('deleted_at', null)
       .order('estimated_start', { ascending: true });
 
     if (error) {

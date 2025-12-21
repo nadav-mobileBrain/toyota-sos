@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
       .select(
         'id,title,type,status,priority,created_at,updated_at,estimated_end,task_assignees!left(driver_id,profiles!task_assignees_driver_id_fkey(name))'
       )
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (metric === 'scheduled') {

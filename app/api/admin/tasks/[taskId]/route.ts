@@ -73,6 +73,7 @@ export async function GET(
       .from('tasks')
       .select('*, task_stops(*)')
       .eq('id', taskId)
+      .is('deleted_at', null)
       .single();
 
     if (error || !data) {
@@ -155,6 +156,7 @@ export async function PATCH(
       .from('tasks')
       .select('type, client_id, address, advisor_name, advisor_color')
       .eq('id', taskId)
+      .is('deleted_at', null)
       .single();
 
     if (existingError || !currentTask) {
@@ -232,6 +234,7 @@ export async function PATCH(
       .from('tasks')
       .update(updatePayload)
       .eq('id', taskId)
+      .is('deleted_at', null)
       .select('*')
       .single();
 

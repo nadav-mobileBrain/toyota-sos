@@ -72,19 +72,21 @@ export async function PATCH(
       );
     }
 
-    // Update task's updated_at timestamp
+    // Update task's updated_at timestamp (only if not deleted)
     await admin
       .from('tasks')
       .update({
         updated_at: new Date().toISOString(),
       })
-      .eq('id', taskId);
+      .eq('id', taskId)
+      .is('deleted_at', null);
 
-    // Get task details for notification
+    // Get task details for notification (only if not deleted)
     const { data: taskData } = await admin
       .from('tasks')
       .select('id, type, title')
       .eq('id', taskId)
+      .is('deleted_at', null)
       .single();
 
     // Send notification to newly assigned driver
