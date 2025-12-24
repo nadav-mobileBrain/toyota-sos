@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+globs: *.tsx
+alwaysApply: false
 ---
 
 when creating a new component like button , form , dashboard, input , dropdown , etc
