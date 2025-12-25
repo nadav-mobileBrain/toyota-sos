@@ -3,9 +3,9 @@
 /**
  * Script to sync user roles from profiles table to Supabase auth.users metadata
  * This fixes login redirects where role wasn't properly set in user_metadata
- * 
+ *
  * Requires: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env
- * 
+ *
  * Usage:
  *   npx ts-node scripts/sync-user-roles.ts                    # Sync all users
  *   npx ts-node scripts/sync-user-roles.ts --email=user@example.com # Sync specific user
@@ -13,10 +13,6 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
-
-// Load environment variables from .env
-dotenv.config({ path: '.env' });
 
 interface SyncOptions {
   email?: string;
@@ -48,7 +44,10 @@ async function syncUserRoles() {
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error('❌ Missing Supabase credentials in .env');
     console.error('   NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✓' : '✗');
-    console.error('   SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '✓' : '✗');
+    console.error(
+      '   SUPABASE_SERVICE_ROLE_KEY:',
+      supabaseServiceKey ? '✓' : '✗'
+    );
     process.exit(1);
   }
 
@@ -68,12 +67,16 @@ async function syncUserRoles() {
   }
 }
 
-async function syncByEmail(admin: ReturnType<typeof createClient>, email: string) {
+async function syncByEmail(
+  admin: ReturnType<typeof createClient>,
+  email: string
+) {
   console.log(`\n🔄 Syncing user: ${email}`);
 
   try {
     // Get user from auth
-    const { data: authListData, error: listError } = await admin.auth.admin.listUsers();
+    const { data: authListData, error: listError } =
+      await admin.auth.admin.listUsers();
 
     if (listError || !authListData.users) {
       throw new Error(listError?.message || 'Failed to list users');
@@ -99,11 +102,14 @@ async function syncByEmail(admin: ReturnType<typeof createClient>, email: string
     const newRole = profile.role || 'viewer';
 
     // Update user metadata
-    const { error: updateError } = await admin.auth.admin.updateUserById(user.id, {
-      user_metadata: {
-        role: newRole,
-      },
-    });
+    const { error: updateError } = await admin.auth.admin.updateUserById(
+      user.id,
+      {
+        user_metadata: {
+          role: newRole,
+        },
+      }
+    );
 
     if (updateError) {
       throw new Error(updateError.message);
@@ -124,7 +130,8 @@ async function syncById(admin: ReturnType<typeof createClient>, id: string) {
 
   try {
     // Get user from auth
-    const { data: authData, error: authError } = await admin.auth.admin.getUserById(id);
+    const { data: authData, error: authError } =
+      await admin.auth.admin.getUserById(id);
 
     if (authError || !authData.user) {
       throw new Error(authError?.message || 'User not found');
@@ -187,11 +194,14 @@ async function syncAll(admin: ReturnType<typeof createClient>) {
     // Sync each user
     for (const profile of profiles) {
       try {
-        const { error: updateError } = await admin.auth.admin.updateUserById(profile.id, {
-          user_metadata: {
-            role: profile.role,
-          },
-        });
+        const { error: updateError } = await admin.auth.admin.updateUserById(
+          profile.id,
+          {
+            user_metadata: {
+              role: profile.role,
+            },
+          }
+        );
 
         if (updateError) {
           failed++;
@@ -199,7 +209,9 @@ async function syncAll(admin: ReturnType<typeof createClient>) {
             email: profile.email,
             error: updateError.message,
           });
-          console.log(`   ❌ ${profile.email} (${profile.role}): ${updateError.message}`);
+          console.log(
+            `   ❌ ${profile.email} (${profile.role}): ${updateError.message}`
+          );
         } else {
           synced++;
           console.log(`   ✅ ${profile.email} (${profile.role})`);
@@ -235,4 +247,3 @@ async function syncAll(admin: ReturnType<typeof createClient>) {
 
 // Run the script
 syncUserRoles();
-
