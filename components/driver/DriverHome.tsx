@@ -178,6 +178,7 @@ export function DriverHome() {
     vehicle_license_plate: string | null;
     vehicle_model: string | null;
     distance_from_garage: number | null;
+    details: string | null;
     updated_at: string;
   };
 
@@ -244,6 +245,7 @@ export function DriverHome() {
               model: t.vehicle_model,
             }
           : null,
+        details: t.details || null,
       }));
 
       const taskIds = mapped.map((t) => t.id);

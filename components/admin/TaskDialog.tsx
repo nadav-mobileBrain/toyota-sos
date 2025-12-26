@@ -873,6 +873,29 @@ export function TaskDialog(props: TaskDialogProps) {
         }
       }
 
+      // Validation for "Test Execution" (ביצוע טסט) - must have client and vehicle
+      if (type === 'ביצוע טסט') {
+        if (!finalClientId) {
+          throw new Error('חובה לבחור לקוח עבור משימת ביצוע טסט');
+        }
+        if (!finalVehicleId) {
+          throw new Error('חובה לבחור רכב עבור משימת ביצוע טסט');
+        }
+      }
+
+      // Validation for "Vehicle Rescue" (חילוץ רכב תקוע) - must have client, vehicle, and address
+      if (type === 'חילוץ רכב תקוע') {
+        if (!finalClientId) {
+          throw new Error('חובה לבחור לקוח עבור משימת חילוץ רכב תקוע');
+        }
+        if (!finalVehicleId) {
+          throw new Error('חובה לבחור רכב עבור משימת חילוץ רכב תקוע');
+        }
+        if (!addressForTask.trim()) {
+          throw new Error('חובה להזין כתובת עבור משימת חילוץ רכב תקוע');
+        }
+      }
+
       if (mode === 'create') {
         const estimatedStartDatetime = dayjs(estimatedDate)
           .set('hour', parseInt(estimatedStartTime.split(':')[0]))
@@ -1105,7 +1128,8 @@ export function TaskDialog(props: TaskDialogProps) {
                 <label className="flex flex-col gap-1">
                   <span className="text-sm font-medium text-primary">
                     שם יועץ{' '}
-                    {type === 'הסעת לקוח הביתה' && (
+                    {(type === 'הסעת לקוח הביתה' ||
+                      type === 'איסוף רכב/שינוע') && (
                       <span className="text-red-500">*</span>
                     )}
                   </span>
@@ -1119,7 +1143,8 @@ export function TaskDialog(props: TaskDialogProps) {
                 <label className="flex flex-col gap-1">
                   <span className="text-sm font-medium text-primary">
                     צבע יועץ{' '}
-                    {type === 'הסעת לקוח הביתה' && (
+                    {(type === 'הסעת לקוח הביתה' ||
+                      type === 'איסוף רכב/שינוע') && (
                       <span className="text-red-500">*</span>
                     )}
                   </span>
@@ -1231,7 +1256,14 @@ export function TaskDialog(props: TaskDialogProps) {
 
             {!isMultiStopType && (
               <label className="col-span-1 md:col-span-2 flex flex-col gap-1">
-                <span className="text-sm font-medium text-primary">כתובת</span>
+                <span className="text-sm font-medium text-primary">
+                  כתובת
+                  {(type === 'חילוץ רכב תקוע' ||
+                    type === 'איסוף רכב/שינוע' ||
+                    type === 'החזרת רכב/שינוע') && (
+                    <span className="text-red-500"> *</span>
+                  )}
+                </span>
                 <AddressAutocomplete
                   value={addressQuery}
                   onChange={(val) => {
@@ -1317,7 +1349,13 @@ export function TaskDialog(props: TaskDialogProps) {
                       </div>
                       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                         <div className="flex flex-col gap-1">
-                          <Label className="text-primary">לקוח</Label>
+                          <Label className="text-primary">
+                            לקוח
+                            {(type === 'הסעת לקוח הביתה' ||
+                              type === 'הסעת לקוח למוסך') && (
+                              <span className="text-red-500"> *</span>
+                            )}
+                          </Label>
                           <Input
                             type="text"
                             placeholder="שם לקוח"
@@ -1370,7 +1408,13 @@ export function TaskDialog(props: TaskDialogProps) {
                           )}
                         </div>
                         <div className="flex flex-col gap-1">
-                          <Label className="text-primary">כתובת</Label>
+                          <Label className="text-primary">
+                            כתובת
+                            {(type === 'הסעת לקוח הביתה' ||
+                              type === 'הסעת לקוח למוסך') && (
+                              <span className="text-red-500"> *</span>
+                            )}
+                          </Label>
                           <AddressAutocomplete
                             value={stop.address}
                             onChange={(val) =>
@@ -1525,6 +1569,14 @@ export function TaskDialog(props: TaskDialogProps) {
                   <div className="grid w-full max-w-sm items-center gap-1">
                     <Label htmlFor="client" className="text-primary">
                       לקוח
+                      {(type === 'ביצוע טסט' ||
+                        type === 'חילוץ רכב תקוע' ||
+                        type === 'מסירת רכב חלופי' ||
+                        type === 'הסעת לקוח הביתה' ||
+                        type === 'איסוף רכב/שינוע' ||
+                        type === 'החזרת רכב/שינוע') && (
+                        <span className="text-red-500"> *</span>
+                      )}
                     </Label>
                     <Input
                       type="text"
@@ -1615,6 +1667,14 @@ export function TaskDialog(props: TaskDialogProps) {
                 <div className="grid w-full max-w-sm items-center gap-1">
                   <Label htmlFor="vehicle" className="text-primary">
                     רכב
+                    {(type === 'ביצוע טסט' ||
+                      type === 'חילוץ רכב תקוע' ||
+                      type === 'מסירת רכב חלופי' ||
+                      type === 'הסעת לקוח הביתה' ||
+                      type === 'איסוף רכב/שינוע' ||
+                      type === 'החזרת רכב/שינוע') && (
+                      <span className="text-red-500"> *</span>
+                    )}
                   </Label>
                   <Input
                     type="text"
