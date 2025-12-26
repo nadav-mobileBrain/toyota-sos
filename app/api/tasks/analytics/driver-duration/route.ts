@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await admin
       .from('task_assignees')
       .select(
-        'driver_id, assigned_at, tasks(id,status,updated_at,estimated_start), profiles:driver_id(name)'
+        'driver_id, assigned_at, tasks(id,status,updated_at,estimated_start), profiles:driver_id(name,employee_id)'
       )
       .eq('is_lead', true)
       .gte('assigned_at', rangeStart)
@@ -79,13 +79,20 @@ export async function GET(request: NextRequest) {
       if (!Number.isFinite(durationMs) || durationMs <= 0) return;
 
       const key = driverId;
-      const name =
-        (row.profiles && (row.profiles.name as string)) || '—';
+      const profiles = row.profiles;
+      const profileArray = Array.isArray(profiles)
+        ? profiles
+        : profiles
+        ? [profiles]
+        : [];
+      const name = (profileArray[0]?.name as string) || '—';
+      const employeeId = (profileArray[0]?.employee_id as string) || null;
 
       const existing =
         byDriver.get(key) || {
           driver_id: key,
           driver_name: name,
+          employee_id: employeeId,
           totalDurationMs: 0,
           count: 0,
         };
@@ -105,7 +112,7 @@ export async function GET(request: NextRequest) {
             ? 0
             : Math.round(d.totalDurationMs / d.count / 60000);
         return {
-          driverId: d.driver_id,
+          driverId: d.employee_id || d.driver_id,
           driverName: d.driver_name,
           avgDurationMinutes: avgMinutes,
           taskCount: d.count,

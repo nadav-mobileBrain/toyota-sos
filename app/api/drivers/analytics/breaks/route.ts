@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 interface DriverBreakAgg {
   driver_id: string;
   driver_name: string | null;
+  employee_id: string | null;
   totalDurationMinutes: number;
   count: number;
 }
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     // We want breaks where started_at < rangeEnd AND (ended_at > rangeStart OR ended_at is null)
     const { data, error } = await admin
       .from('driver_breaks')
-      .select('driver_id, started_at, ended_at, profiles:driver_id(name)')
+      .select('driver_id, started_at, ended_at, profiles:driver_id(name,employee_id)')
       .lt('started_at', rangeEnd.toISOString())
       .or(`ended_at.gt.${rangeStart.toISOString()},ended_at.is.null`);
 
@@ -76,11 +77,19 @@ export async function GET(request: NextRequest) {
       const durationMs = endAt.getTime() - startedAt.getTime();
       const durationMinutes = Math.round(durationMs / 60000);
 
-      const name = row.profiles?.name || 'Unknown';
+      const profiles = row.profiles;
+      const profileArray = Array.isArray(profiles)
+        ? profiles
+        : profiles
+        ? [profiles]
+        : [];
+      const name = (profileArray[0]?.name as string) || 'Unknown';
+      const employeeId = (profileArray[0]?.employee_id as string) || null;
       
       const existing = byDriver.get(driverId) || {
         driver_id: driverId,
         driver_name: name,
+        employee_id: employeeId,
         totalDurationMinutes: 0,
         count: 0
       };
@@ -91,6 +100,12 @@ export async function GET(request: NextRequest) {
     });
 
     const drivers = Array.from(byDriver.values())
+      .map((d) => ({
+        driver_id: d.employee_id || d.driver_id,
+        driver_name: d.driver_name,
+        totalDurationMinutes: d.totalDurationMinutes,
+        count: d.count,
+      }))
       .sort((a, b) => b.totalDurationMinutes - a.totalDurationMinutes);
 
     return NextResponse.json(

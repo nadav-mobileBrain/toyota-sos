@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     // Get task assignees for these tasks
     const { data: assigneesData, error: assigneesError } = await admin
       .from('task_assignees')
-      .select('driver_id, task_id, profiles:driver_id(name)')
+      .select('driver_id, task_id, profiles:driver_id(name,employee_id)')
       .eq('is_lead', true)
       .in('task_id', taskIds)
       .limit(10000);
@@ -86,7 +86,13 @@ export async function GET(request: NextRequest) {
     (assigneesData || []).forEach((row: any) => {
       const driverId = row.driver_id as string | null;
       const taskId = row.task_id as string | null;
-      const profile = row.profiles as { name?: string } | null;
+      const profiles = row.profiles;
+      const profileArray = Array.isArray(profiles)
+        ? profiles
+        : profiles
+        ? [profiles]
+        : [];
+      const profile = profileArray[0] as { name?: string; employee_id?: string } | null;
 
       if (!driverId || !taskId) return;
 
@@ -94,15 +100,16 @@ export async function GET(request: NextRequest) {
       if (!taskType) return;
 
       const driverName = profile?.name || '—';
+      const employeeId = profile?.employee_id || driverId;
 
-      const driver = byDriver.get(driverId) || {
+      const driver = byDriver.get(employeeId) || {
         name: driverName,
         types: new Map<string, number>(),
       };
 
       const currentCount = driver.types.get(taskType) || 0;
       driver.types.set(taskType, currentCount + 1);
-      byDriver.set(driverId, driver);
+      byDriver.set(employeeId, driver);
     });
 
     // Convert to array format

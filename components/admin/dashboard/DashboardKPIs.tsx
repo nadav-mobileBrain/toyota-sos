@@ -3,28 +3,15 @@
 import React from 'react';
 import { usePeriod } from './PeriodContext';
 import { KpiCard } from './KpiCard';
-import { toCsv, downloadCsv, makeCsvFilename } from '@/utils/csv';
 import { cn } from '@/lib/utils';
 // fetch from server API to avoid RLS issues and ensure service-role-backed metrics
 import dynamic from 'next/dynamic';
 import { useConnectivity } from '@/components/ConnectivityProvider';
-import type {
-  DashboardData,
-  DashboardDataWithTrends,
-  CreatedCompletedPoint,
-  OverdueByDriverPoint,
-  FunnelStep,
-} from '@/lib/dashboard/queries';
+import type { DashboardDataWithTrends } from '@/lib/dashboard/queries';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { DownloadIcon } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { exportDashboardCsv } from '@/lib/dashboard/exportDashboardCsv';
 
 // lazy drilldown modal (client-only)
 const DrilldownModal = dynamic(
@@ -67,9 +54,6 @@ export function DashboardKPIs() {
   >([]);
   const [ddLoading, setDdLoading] = React.useState(false);
   const [ddError, setDdError] = React.useState<string | null>(null);
-  const [breakdownView, setBreakdownView] = React.useState<'late' | 'on_time'>(
-    'on_time'
-  );
 
   React.useEffect(() => {
     let cancelled = false;
@@ -168,79 +152,10 @@ export function DashboardKPIs() {
 
   const summary = data?.summary;
 
-  const exportAllCsv = React.useCallback(() => {
+  const exportAllCsv = React.useCallback(async () => {
     if (!data) return;
-    const secs: string[] = [];
-    const bom = '\uFEFF';
-    // Summary section
-    const summaryRows = [
-      { metric: 'scheduledTasks', value: data.summary.scheduledTasks },
-      { metric: 'completedTasks', value: data.summary.completedTasks },
-      { metric: 'completedLate', value: data.summary.completedLate },
-      { metric: 'completedOnTime', value: data.summary.completedOnTime },
-      { metric: 'slaViolations', value: data.summary.slaViolations },
-      {
-        metric: 'driverUtilizationPct',
-        value: data.summary.driverUtilizationPct,
-      },
-    ];
-    const summaryCsv = (toCsv(summaryRows, ['metric', 'value']) || '').slice(1); // strip BOM, we add once at the end
-    secs.push('Section,Summary');
-    secs.push(summaryCsv);
-
-    // Created/Completed time series
-    const seriesRows = data.datasets.createdCompletedSeries.map(
-      (p: CreatedCompletedPoint) => ({
-        date: p.date,
-        created: p.created,
-        completed: p.completed,
-      })
-    );
-    const seriesCsv = (
-      toCsv(seriesRows, ['date', 'created', 'completed']) || ''
-    ).slice(1);
-    secs.push('');
-    secs.push('Section,CreatedCompletedSeries');
-    secs.push(seriesCsv);
-
-    // Overdue by driver
-    const overdueRows = data.datasets.overdueByDriver.map(
-      (p: OverdueByDriverPoint) => ({
-        driver_id: p.driver_id,
-        driver_name: p.driver_name,
-        overdue: p.overdue,
-      })
-    );
-    const overdueCsv = (
-      toCsv(overdueRows, ['driver_id', 'driver_name', 'overdue']) || ''
-    ).slice(1);
-    secs.push('');
-    secs.push('Section,OverdueByDriver');
-    secs.push(overdueCsv);
-
-    // OnTime vs Late
-    const otRows = [
-      { label: 'onTime', count: data.datasets.onTimeVsLate.onTime },
-      { label: 'late', count: data.datasets.onTimeVsLate.late },
-    ];
-    const otCsv = (toCsv(otRows, ['label', 'count']) || '').slice(1);
-    secs.push('');
-    secs.push('Section,OnTimeVsLate');
-    secs.push(otCsv);
-
-    // Funnel
-    const funnelRows = data.datasets.funnel.map((p: FunnelStep) => ({
-      step: p.step,
-      count: p.count,
-    }));
-    const funnelCsv = (toCsv(funnelRows, ['step', 'count']) || '').slice(1);
-    secs.push('');
-    secs.push('Section,Funnel');
-    secs.push(funnelCsv);
-
-    const joined = bom + secs.join('\n');
-    downloadCsv(makeCsvFilename('dashboard_all', range.timezone), joined);
-  }, [data, range.timezone]);
+    await exportDashboardCsv(data, range);
+  }, [data, range]);
 
   const openDrilldown = React.useCallback(
     async (
@@ -290,18 +205,18 @@ export function DashboardKPIs() {
 
   const scheduled = summary?.scheduledTasks ?? 0;
   const completed = summary?.completedTasks ?? 0;
-  const late = summary?.completedLate ?? 0;
-  const onTime = summary?.completedOnTime ?? 0;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-toyota-red rounded-full animate-pulse-glow" />
-          <span className="text-sm font-medium text-slate-600">נתונים בזמן אמת</span>
+          <span className="text-sm font-medium text-slate-600">
+            נתונים בזמן אמת
+          </span>
         </div>
         <button
-          className="group flex items-center gap-2 rounded-lg border border-slate-200/60 bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-2 text-sm font-semibold text-primary hover:from-primary/20 hover:to-primary/10 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105 interactive-lift"
+          className="group flex items-center gap-2 rounded-lg border border-slate-200/60 bg-linear-to-r from-green-600 to-green-500 px-4 py-2 text-sm font-semibold text-primary hover:from-green-400/20 hover:to-green-500/10 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105 interactive-lift"
           onClick={exportAllCsv}
         >
           <DownloadIcon className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
@@ -311,7 +226,7 @@ export function DashboardKPIs() {
       </div>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-blue-400/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300 animate-gradient-shift" />
+          <div className="absolute -inset-1 bg-linear-to-r from-blue-600/20 to-blue-400/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300 animate-gradient-shift" />
           <KpiCard
             title="משימות מתוכננות"
             value={scheduled}
@@ -336,14 +251,16 @@ export function DashboardKPIs() {
 
         <div className="flex flex-col gap-6">
           <div className="relative group">
-            <div className={cn(
-              "absolute -inset-1 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300",
-              getPct(completed, scheduled) >= 80
-                ? "bg-gradient-to-r from-green-600/20 to-emerald-400/20"
-                : getPct(completed, scheduled) >= 50
-                ? "bg-gradient-to-r from-yellow-600/20 to-amber-400/20"
-                : "bg-gradient-to-r from-red-600/20 to-red-400/20"
-            )} />
+            <div
+              className={cn(
+                'absolute -inset-1 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300',
+                getPct(completed, scheduled) >= 80
+                  ? 'bg-linear-to-r from-green-600/20 to-emerald-400/20'
+                  : getPct(completed, scheduled) >= 50
+                  ? 'bg-linear-to-r from-yellow-600/20 to-amber-400/20'
+                  : 'bg-linear-to-r from-red-600/20 to-red-400/20'
+              )}
+            />
             <KpiCard
               title="משימות שבוצעו"
               value={completed}
@@ -354,12 +271,16 @@ export function DashboardKPIs() {
               error={error}
               actionArea={
                 <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "w-1.5 h-1.5 rounded-full group-hover:scale-125 transition-transform duration-200",
-                    getPct(completed, scheduled) >= 80 ? "bg-green-500" :
-                    getPct(completed, scheduled) >= 50 ? "bg-yellow-500" :
-                    "bg-red-500"
-                  )} />
+                  <div
+                    className={cn(
+                      'w-1.5 h-1.5 rounded-full group-hover:scale-125 transition-transform duration-200',
+                      getPct(completed, scheduled) >= 80
+                        ? 'bg-green-500'
+                        : getPct(completed, scheduled) >= 50
+                        ? 'bg-yellow-500'
+                        : 'bg-red-500'
+                    )}
+                  />
                   <button
                     className="text-xs text-slate-600 hover:text-green-600 hover:underline transition-colors duration-200 font-medium"
                     onClick={() => openDrilldown('completed', 'משימות שהושלמו')}
@@ -418,7 +339,7 @@ export function DashboardKPIs() {
         {/* Row 2 */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:col-span-2 lg:col-span-2">
           <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-orange-600/20 to-orange-400/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300" />
+            <div className="absolute -inset-1 bg-linear-to-r from-orange-600/20 to-orange-400/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300" />
             <KpiCard
               title="ממתינות לביצוע"
               value={summary?.pendingTasks ?? 0}
@@ -441,7 +362,7 @@ export function DashboardKPIs() {
             />
           </div>
           <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-blue-400/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300" />
+            <div className="absolute -inset-1 bg-linear-to-r from-blue-600/20 to-blue-400/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300" />
             <KpiCard
               title="בביצוע"
               value={summary?.inProgressTasks ?? 0}
@@ -466,7 +387,7 @@ export function DashboardKPIs() {
         </div>
 
         <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-red-600/20 to-red-400/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300" />
+          <div className="absolute -inset-1 bg-linear-to-r from-red-600/20 to-red-400/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300" />
           <KpiCard
             title="חסומות"
             value={summary?.cancelledTasks ?? 0}
@@ -490,14 +411,16 @@ export function DashboardKPIs() {
         </div>
 
         <div className="relative group">
-          <div className={cn(
-            "absolute -inset-1 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300",
-            (summary?.driverUtilizationPct ?? 0) >= 80
-              ? "bg-gradient-to-r from-green-600/20 to-emerald-400/20"
-              : (summary?.driverUtilizationPct ?? 0) >= 50
-              ? "bg-gradient-to-r from-yellow-600/20 to-amber-400/20"
-              : "bg-gradient-to-r from-red-600/20 to-red-400/20"
-          )} />
+          <div
+            className={cn(
+              'absolute -inset-1 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300',
+              (summary?.driverUtilizationPct ?? 0) >= 80
+                ? 'bg-linear-to-r from-green-600/20 to-emerald-400/20'
+                : (summary?.driverUtilizationPct ?? 0) >= 50
+                ? 'bg-linear-to-r from-yellow-600/20 to-amber-400/20'
+                : 'bg-linear-to-r from-red-600/20 to-red-400/20'
+            )}
+          />
           <KpiCard
             title="ניצולת נהגים"
             value={`${summary?.driverUtilizationPct ?? 0}%`}
@@ -508,19 +431,23 @@ export function DashboardKPIs() {
             secondary="אחוז נהגים עם משימות פעילות"
             actionArea={
               <div className="flex items-center gap-2">
-                <div className={cn(
-                  "w-1.5 h-1.5 rounded-full group-hover:scale-125 transition-transform duration-200",
-                  (summary?.driverUtilizationPct ?? 0) >= 80 ? "bg-green-500" :
-                  (summary?.driverUtilizationPct ?? 0) >= 50 ? "bg-yellow-500" :
-                  "bg-red-500"
-                )} />
+                <div
+                  className={cn(
+                    'w-1.5 h-1.5 rounded-full group-hover:scale-125 transition-transform duration-200',
+                    (summary?.driverUtilizationPct ?? 0) >= 80
+                      ? 'bg-green-500'
+                      : (summary?.driverUtilizationPct ?? 0) >= 50
+                      ? 'bg-yellow-500'
+                      : 'bg-red-500'
+                  )}
+                />
               </div>
             }
           />
         </div>
 
         <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600/20 to-green-400/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300" />
+          <div className="absolute -inset-1 bg-linear-to-r from-emerald-600/20 to-green-400/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300" />
           <KpiCard
             title="נהגים פעילים"
             value={summary?.activeDrivers ?? 0}

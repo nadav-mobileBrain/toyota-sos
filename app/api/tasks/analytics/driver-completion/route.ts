@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 interface DriverCompletionRow {
   driver_id: string;
   driver_name: string | null;
+  employee_id: string | null;
   completed: number;
   total: number;
 }
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await admin
       .from('task_assignees')
       .select(
-        'driver_id, assigned_at, tasks(id,status,updated_at), profiles:driver_id(name)'
+        'driver_id, assigned_at, tasks(id,status,updated_at), profiles:driver_id(name,employee_id)'
       )
       .eq('is_lead', true)
       .gte('assigned_at', rangeStart)
@@ -51,13 +52,20 @@ export async function GET(request: NextRequest) {
       if (!driverId || !task) return;
 
       const key = driverId;
-      const name =
-        (row.profiles && (row.profiles.name as string)) || '—';
+      const profiles = row.profiles;
+      const profileArray = Array.isArray(profiles)
+        ? profiles
+        : profiles
+        ? [profiles]
+        : [];
+      const name = (profileArray[0]?.name as string) || '—';
+      const employeeId = (profileArray[0]?.employee_id as string) || null;
 
       const existing =
         byDriver.get(key) || {
           driver_id: key,
           driver_name: name,
+          employee_id: employeeId,
           completed: 0,
           total: 0,
         };
@@ -81,7 +89,7 @@ export async function GET(request: NextRequest) {
         const completionRate =
           d.total === 0 ? 0 : Math.round((d.completed / d.total) * 100);
         return {
-          driverId: d.driver_id,
+          driverId: d.employee_id || d.driver_id,
           driverName: d.driver_name,
           completionRate,
           completed: d.completed,

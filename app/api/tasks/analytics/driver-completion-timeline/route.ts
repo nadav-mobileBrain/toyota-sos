@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await admin
       .from('task_assignees')
       .select(
-        'driver_id, tasks!inner(id, status, updated_at), profiles:driver_id(name)'
+        'driver_id, tasks!inner(id, status, updated_at), profiles:driver_id(name,employee_id)'
       )
       .eq('is_lead', true)
       .eq('tasks.status', 'הושלמה')
@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
         ? [profiles]
         : [];
       const driverName = (profileArray[0]?.name as string) || '—';
+      const employeeId = (profileArray[0]?.employee_id as string) || driverId;
 
       // Get or create date entry
       let dateMap = byDate.get(date);
@@ -98,11 +99,14 @@ export async function GET(request: NextRequest) {
         byDate.set(date, dateMap);
       }
 
+      // Use employee_id as key if available, otherwise driver_id
+      const driverKey = employeeId;
+
       // Get or create driver entry for this date
-      let driverEntry = dateMap.get(driverId);
+      let driverEntry = dateMap.get(driverKey);
       if (!driverEntry) {
         driverEntry = { name: driverName, completed: 0 };
-        dateMap.set(driverId, driverEntry);
+        dateMap.set(driverKey, driverEntry);
       }
 
       driverEntry.completed += 1;

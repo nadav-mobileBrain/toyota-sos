@@ -18,6 +18,7 @@ export interface CreatedCompletedPoint {
 export interface OverdueByDriverPoint {
   driver_id: string;
   driver_name: string;
+  employee_id?: string | null;
   overdue: number;
 }
 
@@ -495,7 +496,7 @@ export async function getOverdueByDriver(
   const { data, error } = await supa
     .from('task_assignees')
     .select(
-      'driver_id, is_lead, tasks(id, status, estimated_end, deleted_at), profiles:driver_id(name)'
+      'driver_id, is_lead, tasks(id, status, estimated_end, deleted_at), profiles:driver_id(name,employee_id)'
     )
     .eq('is_lead', true)
     .limit(5000);
@@ -529,7 +530,8 @@ export async function getOverdueByDriver(
       ? [profiles]
       : [];
     const name = (profileArray[0]?.name as string) || '—';
-    const prev = counts.get(id) || { name, count: 0 };
+    const employeeId = (profileArray[0]?.employee_id as string) || null;
+    const prev = counts.get(id) || { name, employeeId, count: 0 };
     prev.count += 1;
     counts.set(id, prev);
   });
@@ -537,6 +539,7 @@ export async function getOverdueByDriver(
     ([driver_id, v]) => ({
       driver_id,
       driver_name: v.name,
+      employee_id: v.employeeId,
       overdue: v.count,
     })
   );
