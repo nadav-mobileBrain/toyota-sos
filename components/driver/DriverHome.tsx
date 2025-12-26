@@ -39,9 +39,9 @@ function getChecklistInfo(type: string) {
         title: 'צ׳ק-ליסט החזרת רכב',
         description: 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני ההחזרה.',
       };
-    case 'הסעת רכב חלופי':
+    case 'מסירת רכב חלופי':
       return {
-        title: 'צ׳ק-ליסט הסעת רכב חלופי',
+        title: 'צ׳ק-ליסט מסירת רכב חלופי',
         description: 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני תחילת העבודה.',
       };
     default:
@@ -639,8 +639,8 @@ export function DriverHome() {
                         completionChecklist &&
                         completionChecklist.length > 0
                       ) {
-                        // For "הסעת רכב חלופי", check if attachments already exist
-                        if (task.type === 'הסעת רכב חלופי') {
+                        // For "מסירת רכב חלופי", check if attachments already exist
+                        if (task.type === 'מסירת רכב חלופי') {
                           const existingAttachments =
                             await checkExistingAttachments(task.id);
                           if (existingAttachments.hasAllRequired) {
@@ -808,14 +808,14 @@ export function DriverHome() {
             ) ?? []
           }
           title={
-            completionChecklistState.task.type === 'הסעת רכב חלופי'
+            completionChecklistState.task.type === 'מסירת רכב חלופי'
               ? 'צ׳ק-ליסט לפני מסירת רכב חלופי'
               : completionChecklistState.task.type === 'ביצוע טסט'
               ? 'צ׳ק-ליסט השלמת טסט'
               : 'צ׳ק-ליסט השלמת איסוף רכב'
           }
           description={
-            completionChecklistState.task.type === 'הסעת רכב חלופי'
+            completionChecklistState.task.type === 'מסירת רכב חלופי'
               ? completionChecklistState.allowSkip
                 ? 'נמצאו תמונות וחתימה קיימות. ניתן לדלג על הצ׳ק-ליסט ולהשתמש בתמונות הקיימות, או להעלות תמונות נוספות.'
                 : 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני המשך למסירת הרכב.'
@@ -829,7 +829,7 @@ export function DriverHome() {
           forceCompletion={!completionChecklistState.allowSkip}
           onSkip={
             completionChecklistState.allowSkip &&
-            completionChecklistState.task.type === 'הסעת רכב חלופי'
+            completionChecklistState.task.type === 'מסירת רכב חלופי'
               ? async () => {
                   if (!completionChecklistState) return;
                   setCompletionChecklistState(null);
@@ -847,7 +847,7 @@ export function DriverHome() {
           onSubmit={async () => {
             if (!completionChecklistState) return;
 
-            // For "הסעת רכב חלופי", after checklist completion, proceed to the special form
+            // For "מסירת רכב חלופי", after checklist completion, proceed to the special form
             const completionFlow = getCompletionFlowForTaskType(
               completionChecklistState.task.type
             );

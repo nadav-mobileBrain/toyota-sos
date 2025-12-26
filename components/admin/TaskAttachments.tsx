@@ -27,7 +27,7 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
     setAttachments([]);
     setLoading(true);
     
-    if (taskType !== 'הסעת רכב חלופי') {
+    if (taskType !== 'מסירת רכב חלופי') {
       setLoading(false);
       return;
     }
@@ -229,7 +229,7 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
     loadAttachments();
   }, [taskId, taskType]);
 
-  if (taskType !== 'הסעת רכב חלופי' || loading) {
+  if (taskType !== 'מסירת רכב חלופי' || loading) {
     return null;
   }
 

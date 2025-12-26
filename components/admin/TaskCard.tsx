@@ -11,6 +11,7 @@ import {
   getAdvisorColorTextClass,
 } from '@/lib/advisorColors';
 import { formatDistance } from '@/lib/geocoding';
+import { formatLicensePlate } from '@/lib/vehicleLicensePlate';
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -162,7 +163,7 @@ export function TaskCard({
         <div className="mb-2 flex items-center gap-1 text-xs text-gray-600">
           <span className="font-medium">🚗</span>
           <span className="font-mono font-bold">
-            {vehicle.license_plate}
+            {formatLicensePlate(vehicle.license_plate)}
             {vehicle.model ? ` · ${vehicle.model}` : ''}
           </span>
         </div>
@@ -184,11 +185,15 @@ export function TaskCard({
                     {index + 1}. {stop.address}
                   </span>
                 </div>
-                {stop.distance_from_garage !== null && stop.distance_from_garage !== undefined && (
-                  <span className="shrink-0 text-[10px] text-gray-400 font-medium" dir="ltr">
-                    ({formatDistance(stop.distance_from_garage)})
-                  </span>
-                )}
+                {stop.distance_from_garage !== null &&
+                  stop.distance_from_garage !== undefined && (
+                    <span
+                      className="shrink-0 text-[10px] text-gray-400 font-medium"
+                      dir="ltr"
+                    >
+                      ({formatDistance(stop.distance_from_garage)})
+                    </span>
+                  )}
               </div>
             ))}
         </div>
@@ -196,15 +201,22 @@ export function TaskCard({
         <div className="mb-2 flex items-center justify-between gap-1 text-xs text-gray-600">
           <div className="flex items-center gap-1 truncate">
             <span className="font-medium">📍</span>
-            <span className="truncate" title={task.address || 'לא הוכנסה כתובת'}>
+            <span
+              className="truncate"
+              title={task.address || 'לא הוכנסה כתובת'}
+            >
               {task.address || 'לא הוכנסה כתובת'}
             </span>
           </div>
-          {task.distance_from_garage !== null && task.distance_from_garage !== undefined && (
-            <span className="shrink-0 text-[10px] text-gray-400 font-medium" dir="ltr">
-              ({formatDistance(task.distance_from_garage)})
-            </span>
-          )}
+          {task.distance_from_garage !== null &&
+            task.distance_from_garage !== undefined && (
+              <span
+                className="shrink-0 text-[10px] text-gray-400 font-medium"
+                dir="ltr"
+              >
+                ({formatDistance(task.distance_from_garage)})
+              </span>
+            )}
         </div>
       )}
 
@@ -219,7 +231,9 @@ export function TaskCard({
           )}
           {task.advisor_color && (
             <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getAdvisorColorBgClass(task.advisor_color)} ${getAdvisorColorTextClass(task.advisor_color)}`}
+              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getAdvisorColorBgClass(
+                task.advisor_color
+              )} ${getAdvisorColorTextClass(task.advisor_color)}`}
             >
               {task.advisor_color}
             </span>
@@ -348,7 +362,7 @@ export function typeLabel(type: TaskType): string {
   const labels: Record<TaskType, string> = {
     'איסוף רכב/שינוע': 'איסוף רכב/שינוע',
     'החזרת רכב/שינוע': 'החזרת רכב/שינוע',
-    'הסעת רכב חלופי': 'הסעת רכב חלופי',
+    'מסירת רכב חלופי': 'מסירת רכב חלופי',
     'הסעת לקוח הביתה': 'הסעת לקוח הביתה',
     'הסעת לקוח למוסך': 'הסעת לקוח למוסך',
     'ביצוע טסט': 'ביצוע טסט',

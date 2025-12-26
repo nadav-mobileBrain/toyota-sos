@@ -9,6 +9,7 @@ import type {
 import type { Driver } from '@/types/user';
 import type { Client, Vehicle } from '@/types/entity';
 import type { GroupBy } from '@/types/board';
+import { formatLicensePlate } from '@/lib/vehicleLicensePlate';
 
 export function buildDriverMap(drivers: Driver[]): Map<string, Driver> {
   const map = new Map<string, Driver>();
@@ -117,7 +118,7 @@ export function filterTasks(params: {
         ? clientMap.get(t.client_id)?.name || ''
         : '';
       const vehiclePlate = t.vehicle_id
-        ? vehicleMap.get(t.vehicle_id)?.license_plate || ''
+        ? formatLicensePlate(vehicleMap.get(t.vehicle_id)?.license_plate || '')
         : '';
       const hay = `${t.title} ${clientName} ${vehiclePlate}`.toLowerCase();
       if (!hay.includes(normalized)) return false;

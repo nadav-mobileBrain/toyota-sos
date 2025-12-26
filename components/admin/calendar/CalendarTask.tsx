@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 const typeColors: Record<TaskType, string> = {
   'איסוף רכב/שינוע': 'bg-blue-500 hover:bg-blue-600',
   'החזרת רכב/שינוע': 'bg-green-500 hover:bg-green-600',
-  'הסעת רכב חלופי': 'bg-purple-500 hover:bg-purple-600',
+  'מסירת רכב חלופי': 'bg-purple-500 hover:bg-purple-600',
   'הסעת לקוח הביתה': 'bg-teal-500 hover:bg-teal-600',
   'הסעת לקוח למוסך': 'bg-orange-500 hover:bg-orange-600',
   'ביצוע טסט': 'bg-yellow-500 hover:bg-yellow-600',

@@ -13,6 +13,7 @@ import SignaturePad from 'signature_pad';
 import { Loader2 } from 'lucide-react';
 import { trackSignatureCaptured } from '@/lib/events';
 import type { ExistingAttachments } from '@/lib/taskAttachments';
+import { formatLicensePlate } from '@/lib/vehicleLicensePlate';
 
 interface Props {
   open: boolean;
@@ -288,7 +289,9 @@ export function ReplacementCarDeliveryForm({
                   <div>
                     <span className="text-gray-500 block">מספר רכב:</span>
                     <span className="font-mono font-medium">
-                      {task.vehicle?.licensePlate || 'לא ידוע'}
+                      {task.vehicle?.licensePlate
+                        ? formatLicensePlate(task.vehicle.licensePlate)
+                        : 'לא ידוע'}
                     </span>
                   </div>
                   <div>

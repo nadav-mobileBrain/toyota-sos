@@ -43,6 +43,11 @@ import {
   GARAGE_LOCATION,
 } from '@/lib/geocoding';
 import { AddressAutocomplete } from './AddressAutocomplete';
+import {
+  formatLicensePlate,
+  isValidLicensePlate,
+  normalizeLicensePlate,
+} from '@/lib/vehicleLicensePlate';
 
 type Mode = 'create' | 'edit';
 type StopForm = {
@@ -106,7 +111,7 @@ interface TaskDialogProps {
 const types: TaskType[] = [
   'איסוף רכב/שינוע',
   'החזרת רכב/שינוע',
-  'הסעת רכב חלופי',
+  'מסירת רכב חלופי',
   'הסעת לקוח הביתה',
   'הסעת לקוח למוסך',
   'ביצוע טסט',
@@ -289,7 +294,7 @@ export function TaskDialog(props: TaskDialogProps) {
         const existingVehicle = vehicles.find((v) => v.id === task.vehicle_id);
         setVehicleQuery(
           existingVehicle
-            ? `${existingVehicle.license_plate}${
+            ? `${formatLicensePlate(existingVehicle.license_plate)}${
                 existingVehicle.model ? ` · ${existingVehicle.model}` : ''
               }`
             : ''
@@ -436,11 +441,19 @@ export function TaskDialog(props: TaskDialogProps) {
   const vehicleSuggestions = useMemo(() => {
     const q = vehicleQuery.trim().toLowerCase();
     if (!q) return [];
+    // Normalize search query (remove dashes/spaces) to match normalized plates in DB
+    const normalizedQuery = q.replace(/\D/g, '');
     return vehiclesLocal
       .filter((v) => {
         const plate = v.license_plate?.toLowerCase() ?? '';
+        const normalizedPlate = plate.replace(/\D/g, ''); // Normalize plate for comparison
         const model = v.model?.toLowerCase() ?? '';
-        return plate.includes(q) || model.includes(q);
+        // Search in both formatted and normalized plate, and in model
+        return (
+          plate.includes(q) ||
+          normalizedPlate.includes(normalizedQuery) ||
+          model.includes(q)
+        );
       })
       .slice(0, 8);
   }, [vehiclesLocal, vehicleQuery]);
@@ -562,13 +575,43 @@ export function TaskDialog(props: TaskDialogProps) {
 
   const createVehicle = async () => {
     const license_plate = newVehiclePlate.trim();
-    if (!license_plate) return;
+    if (!license_plate) {
+      setError('חובה להזין מספר רישוי');
+      return;
+    }
+
+    // Validate license plate format
+    const digitsOnly = license_plate.replace(/\D/g, '');
+    const digitCount = digitsOnly.length;
+
+    if (digitCount < 7) {
+      setError(
+        `מספר רישוי חייב להכיל לפחות 7 ספרות (נמצאו ${digitCount} ספרות)`
+      );
+      return;
+    }
+
+    if (digitCount > 8) {
+      setError(
+        `מספר רישוי חייב להכיל לכל היותר 8 ספרות (נמצאו ${digitCount} ספרות)`
+      );
+      return;
+    }
+
+    if (!isValidLicensePlate(license_plate)) {
+      setError('מספר רישוי חייב להכיל בדיוק 7 או 8 ספרות');
+      return;
+    }
+
+    // Normalize license plate (remove dashes/spaces) before sending to API
+    const normalizedPlate = normalizeLicensePlate(license_plate);
+
     try {
       const res = await fetch('/api/admin/vehicles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          license_plate,
+          license_plate: normalizedPlate,
           model: newVehicleModel || null,
         }),
       });
@@ -579,7 +622,9 @@ export function TaskDialog(props: TaskDialogProps) {
       onVehicleCreated?.(created);
       setVehicleId(created.id);
       setVehicleQuery(
-        `${created.license_plate}${created.model ? ` · ${created.model}` : ''}`
+        `${formatLicensePlate(created.license_plate)}${
+          created.model ? ` · ${created.model}` : ''
+        }`
       );
       setShowAddVehicle(false);
       setNewVehiclePlate('');
@@ -624,13 +669,20 @@ export function TaskDialog(props: TaskDialogProps) {
       let finalVehicleId = vehicleId;
       if (!finalVehicleId && vehicleQuery.trim()) {
         const normalizedQuery = vehicleQuery.trim().toLowerCase();
+        // Normalize query (remove dashes/spaces) for comparison
+        const normalizedQueryDigits = normalizedQuery.replace(/\D/g, '');
         const match = vehiclesLocal.find((v) => {
           const plate = v.license_plate.toLowerCase();
-          // Check against plate only, or the formatted "plate · model" string
-          const formatted = `${v.license_plate}${
+          const normalizedPlate = plate.replace(/\D/g, ''); // Normalize plate
+          // Check against plate (formatted or normalized), or the formatted "plate · model" string
+          const formatted = `${formatLicensePlate(v.license_plate)}${
             v.model ? ` · ${v.model}` : ''
           }`.toLowerCase();
-          return plate === normalizedQuery || formatted === normalizedQuery;
+          return (
+            plate === normalizedQuery ||
+            normalizedPlate === normalizedQueryDigits ||
+            formatted === normalizedQuery
+          );
         });
         if (match) {
           finalVehicleId = match.id;
@@ -749,12 +801,12 @@ export function TaskDialog(props: TaskDialogProps) {
       }
 
       // Validation for "Replacement Car Delivery" - must have client and vehicle
-      if (type === 'הסעת רכב חלופי') {
+      if (type === 'מסירת רכב חלופי') {
         if (!finalClientId) {
-          throw new Error('חובה לבחור לקוח עבור משימת הסעת רכב חלופי');
+          throw new Error('חובה לבחור לקוח עבור משימת מסירת רכב חלופי');
         }
         if (!finalVehicleId) {
-          throw new Error('חובה לבחור רכב עבור משימת הסעת רכב חלופי');
+          throw new Error('חובה לבחור רכב עבור משימת מסירת רכב חלופי');
         }
       }
 
@@ -779,6 +831,24 @@ export function TaskDialog(props: TaskDialogProps) {
         } else if (!advisorName.trim() && !advisorColor) {
           throw new Error(
             'חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת הסעת לקוח הביתה'
+          );
+        }
+      }
+
+      // Validation for "Pickup Vehicle / Transport" (איסוף רכב/שינוע)
+      if (type === 'איסוף רכב/שינוע') {
+        if (!finalVehicleId) {
+          throw new Error('חובה לבחור רכב עבור משימת איסוף רכב/שינוע');
+        }
+        if (!finalClientId) {
+          throw new Error('חובה לבחור לקוח עבור משימת איסוף רכב/שינוע');
+        }
+        if (!addressForTask.trim()) {
+          throw new Error('חובה להזין כתובת עבור משימת איסוף רכב/שינוע');
+        }
+        if (!finalAdvisorForTask.trim() && !finalAdvisorColor) {
+          throw new Error(
+            'חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת איסוף רכב/שינוע'
           );
         }
       }
@@ -1566,14 +1636,14 @@ export function TaskDialog(props: TaskDialogProps) {
                           onClick={() => {
                             setVehicleId(v.id);
                             setVehicleQuery(
-                              `${v.license_plate}${
+                              `${formatLicensePlate(v.license_plate)}${
                                 v.model ? ` · ${v.model}` : ''
                               }`
                             );
                           }}
                         >
                           <span>
-                            {v.license_plate}
+                            {formatLicensePlate(v.license_plate)}
                             {v.model ? ` · ${v.model}` : ''}
                           </span>
                         </button>
@@ -1592,18 +1662,63 @@ export function TaskDialog(props: TaskDialogProps) {
               </div>
               {showAddVehicle && (
                 <div className="mt-2 grid grid-cols-3 gap-2">
-                  <input
-                    className="rounded border border-gray-300 p-2 col-span-1"
-                    placeholder="מספר רישוי"
-                    value={newVehiclePlate}
-                    onChange={(e) => setNewVehiclePlate(e.target.value)}
-                  />
-                  <input
-                    className="rounded border border-gray-300 p-2 col-span-1"
-                    placeholder="דגם"
-                    value={newVehicleModel}
-                    onChange={(e) => setNewVehicleModel(e.target.value)}
-                  />
+                  <div className="col-span-1 flex flex-col gap-1">
+                    <label className="text-sm font-medium text-primary">
+                      מספר רישוי <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      className="rounded border border-gray-300 p-2"
+                      placeholder="מספר רישוי (7 או 8 ספרות)"
+                      value={newVehiclePlate}
+                      onChange={(e) => {
+                        const input = e.target.value;
+                        // Allow digits and dashes only
+                        const cleaned = input.replace(/[^\d-]/g, '');
+                        // Format as user types
+                        const formatted = formatLicensePlate(cleaned);
+                        setNewVehiclePlate(formatted);
+                        // Clear error when user starts typing
+                        if (error && error.includes('מספר רישוי')) {
+                          setError(null);
+                        }
+                      }}
+                      maxLength={10} // Max length for formatted plate (e.g., "123-45-678")
+                    />
+                    {newVehiclePlate &&
+                      (() => {
+                        const digitsOnly = newVehiclePlate.replace(/\D/g, '');
+                        const digitCount = digitsOnly.length;
+                        if (digitCount === 0) return null;
+                        if (digitCount < 7) {
+                          return (
+                            <p className="text-xs text-red-600">
+                              מספר רישוי חייב להכיל לפחות 7 ספרות (נמצאו{' '}
+                              {digitCount} ספרות)
+                            </p>
+                          );
+                        }
+                        if (digitCount > 8) {
+                          return (
+                            <p className="text-xs text-red-600">
+                              מספר רישוי חייב להכיל לכל היותר 8 ספרות (נמצאו{' '}
+                              {digitCount} ספרות)
+                            </p>
+                          );
+                        }
+                        return null;
+                      })()}
+                  </div>
+                  <div className="col-span-1 flex flex-col gap-1">
+                    <label className="text-sm font-medium text-primary">
+                      דגם
+                    </label>
+                    <input
+                      className="rounded border border-gray-300 p-2"
+                      placeholder="דגם"
+                      value={newVehicleModel}
+                      onChange={(e) => setNewVehicleModel(e.target.value)}
+                    />
+                  </div>
                   <div className="col-span-3 flex justify-end gap-2">
                     <button
                       type="button"

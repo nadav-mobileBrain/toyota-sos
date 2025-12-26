@@ -12,6 +12,7 @@ import {
 } from '@/lib/advisorColors';
 import { formatDistance } from '@/lib/geocoding';
 import type { AdvisorColor } from '@/types/task';
+import { formatLicensePlate } from '@/lib/vehicleLicensePlate';
 
 export type TaskCardProps = {
   id: string;
@@ -309,7 +310,7 @@ export function TaskCard(props: TaskCardProps) {
         )}
         {vehicle?.licensePlate ? (
           <div>
-            רכב: {vehicle.licensePlate}
+            רכב: {formatLicensePlate(vehicle.licensePlate)}
             {vehicle.model ? ` • ${vehicle.model}` : ''}
           </div>
         ) : null}

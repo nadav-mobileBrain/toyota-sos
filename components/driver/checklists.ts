@@ -96,7 +96,7 @@ export function getStartChecklistForTaskType(
     ];
   }
 
-  if (taskType === 'הסעת רכב חלופי') {
+  if (taskType === 'מסירת רכב חלופי') {
     return [
       {
         id: 'signed_at_desk',
@@ -141,7 +141,7 @@ export function getCompletionChecklistForTaskType(
     ];
   }
 
-  if (taskType === 'הסעת רכב חלופי') {
+  if (taskType === 'מסירת רכב חלופי') {
     // Pre-step before the 3-step ReplacementCarDeliveryForm
     return [
       {
@@ -175,7 +175,7 @@ export function getCompletionChecklistForTaskType(
 export function getCompletionFlowForTaskType(
   taskType: string | null | undefined
 ): 'replacement_car_delivery' | 'test_completion' | null {
-  if (taskType === 'הסעת רכב חלופי') {
+  if (taskType === 'מסירת רכב חלופי') {
     return 'replacement_car_delivery';
   }
   if (taskType === 'ביצוע טסט') {

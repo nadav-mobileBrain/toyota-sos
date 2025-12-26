@@ -65,7 +65,7 @@ describe('TaskDialog Validation for Replacement Car Delivery', () => {
       />
     );
 
-    // 1. Select type 'הסעת רכב חלופי'
+    // 1. Select type 'מסירת רכב חלופי'
     // Radix UI Select typically uses a button trigger
     // We can try finding by label text if associated, or just by the placeholder text "בחר סוג משימה" or current value.
     // The label is "סוג משימה".
@@ -73,7 +73,7 @@ describe('TaskDialog Validation for Replacement Car Delivery', () => {
     await userEvent.click(typeTrigger);
     
     // The options are usually in a portal. We need to find the option.
-    const typeOption = await screen.findByText('הסעת רכב חלופי');
+    const typeOption = await screen.findByText('מסירת רכב חלופי');
     await userEvent.click(typeOption);
 
     // 2. Try to submit
@@ -81,7 +81,7 @@ describe('TaskDialog Validation for Replacement Car Delivery', () => {
     await userEvent.click(submitBtn);
 
     // 3. Expect error toast
-    expect(toastError).toHaveBeenCalledWith('חובה לבחור לקוח עבור משימת הסעת רכב חלופי');
+    expect(toastError).toHaveBeenCalledWith('חובה לבחור לקוח עבור משימת מסירת רכב חלופי');
     
     // 4. Select Client
     // Assuming the client input is accessible by label "לקוח"
@@ -93,7 +93,7 @@ describe('TaskDialog Validation for Replacement Car Delivery', () => {
     
     // Try submit again
     await userEvent.click(submitBtn);
-    expect(toastError).toHaveBeenCalledWith('חובה לבחור רכב עבור משימת הסעת רכב חלופי');
+    expect(toastError).toHaveBeenCalledWith('חובה לבחור רכב עבור משימת מסירת רכב חלופי');
 
     // 5. Select Vehicle
     const vehicleInput = screen.getByLabelText('רכב');

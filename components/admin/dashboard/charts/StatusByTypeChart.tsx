@@ -42,7 +42,7 @@ const STATUS_DISPLAY_NAMES: Record<TaskStatus, string> = {
 const TYPE_COLORS: Record<string, string> = {
   'איסוף רכב/שינוע': 'hsl(221 83% 53%)', // Blue
   'החזרת רכב/שינוע': 'hsl(142 76% 36%)', // Green
-  'הסעת רכב חלופי': 'hsl(280 65% 60%)', // Purple
+  'מסירת רכב חלופי': 'hsl(280 65% 60%)', // Purple
   'הסעת לקוח הביתה': 'hsl(38 92% 50%)', // Orange
   'הסעת לקוח למוסך': 'hsl(340 82% 52%)', // Pink/Red
   'ביצוע טסט': 'hsl(199 89% 48%)', // Cyan
