@@ -210,6 +210,10 @@ export function TaskDialog(props: TaskDialogProps) {
   );
   const [stops, setStops] = useState<StopForm[]>([]);
   const [activeStopIndex, setActiveStopIndex] = useState(0);
+  const [occupiedVehicleIds, setOccupiedVehicleIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [checkingConflicts, setCheckingConflicts] = useState(false);
 
   useEffect(() => {
     setClientsLocal(clients);
@@ -295,13 +299,14 @@ export function TaskDialog(props: TaskDialogProps) {
       setVehicleId(task?.vehicle_id ?? '');
       if (task?.vehicle_id) {
         const existingVehicle = vehicles.find((v) => v.id === task.vehicle_id);
-        setVehicleQuery(
-          existingVehicle
-            ? `${formatLicensePlate(existingVehicle.license_plate)}${
-                existingVehicle.model ? ` · ${existingVehicle.model}` : ''
-              }`
-            : ''
-        );
+        if (existingVehicle) {
+          const plateDisplay = formatLicensePlate(existingVehicle.license_plate);
+          const modelDisplay = existingVehicle.model ? ` · ${existingVehicle.model}` : '';
+          const unavailableDisplay = existingVehicle.is_available === false ? ' (מושבת)' : '';
+          setVehicleQuery(`${plateDisplay}${modelDisplay}${unavailableDisplay}`);
+        } else {
+          setVehicleQuery('');
+        }
       } else {
         setVehicleQuery('');
       }
@@ -354,6 +359,91 @@ export function TaskDialog(props: TaskDialogProps) {
   }, [assignees, task, mode, open]);
 
   const isMultiStopType = useMemo(() => isMultiStopTaskType(type), [type]);
+
+  // Check for vehicle conflicts when date/time/vehicle changes
+  useEffect(() => {
+    let cancelled = false;
+    const checkVehicleConflicts = async () => {
+      // Only check if we have a date and times set
+      if (!estimatedDate || !estimatedStartTime || !estimatedEndTime) {
+        setOccupiedVehicleIds(new Set());
+        return;
+      }
+
+      // Build datetime strings
+      const startDatetime = dayjs(estimatedDate)
+        .set('hour', parseInt(estimatedStartTime.split(':')[0]))
+        .set('minute', parseInt(estimatedStartTime.split(':')[1]))
+        .toISOString();
+      const endDatetime = dayjs(estimatedDate)
+        .set('hour', parseInt(estimatedEndTime.split(':')[0]))
+        .set('minute', parseInt(estimatedEndTime.split(':')[1]))
+        .toISOString();
+
+      setCheckingConflicts(true);
+      try {
+        // Check all vehicles for conflicts
+        const conflictChecks = await Promise.all(
+          vehiclesLocal.map(async (vehicle) => {
+            try {
+              const params = new URLSearchParams({
+                vehicle_id: vehicle.id,
+                estimated_start: startDatetime,
+                estimated_end: endDatetime,
+                ...(mode === 'edit' && task?.id
+                  ? { task_id: task.id }
+                  : {}),
+              });
+              const res = await fetch(
+                `/api/admin/tasks/check-vehicle-conflict?${params}`
+              );
+              if (!res.ok) return { vehicleId: vehicle.id, hasConflict: false };
+              const json = await res.json();
+              return {
+                vehicleId: vehicle.id,
+                hasConflict: json.hasConflict || false,
+              };
+            } catch {
+              return { vehicleId: vehicle.id, hasConflict: false };
+            }
+          })
+        );
+
+        if (!cancelled) {
+          const occupied = new Set<string>();
+          conflictChecks.forEach((check) => {
+            if (check.hasConflict) {
+              occupied.add(check.vehicleId);
+            }
+          });
+          setOccupiedVehicleIds(occupied);
+        }
+      } catch (err) {
+        console.error('Failed to check vehicle conflicts', err);
+        if (!cancelled) {
+          setOccupiedVehicleIds(new Set());
+        }
+      } finally {
+        if (!cancelled) {
+          setCheckingConflicts(false);
+        }
+      }
+    };
+
+    // Debounce the check
+    const timeoutId = setTimeout(checkVehicleConflicts, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [
+    estimatedDate,
+    estimatedStartTime,
+    estimatedEndTime,
+    vehiclesLocal,
+    mode,
+    task?.id,
+  ]);
 
   useEffect(() => {
     if (isMultiStopType) {
@@ -463,8 +553,13 @@ export function TaskDialog(props: TaskDialogProps) {
           model.includes(q)
         );
       })
-      .slice(0, 8);
-  }, [vehiclesLocal, vehicleQuery]);
+      .slice(0, 8)
+      .map((v) => ({
+        ...v,
+        isOccupied: occupiedVehicleIds.has(v.id),
+        isUnavailable: v.is_available === false,
+      }));
+  }, [vehiclesLocal, vehicleQuery, occupiedVehicleIds]);
 
   const getClientSuggestions = React.useCallback(
     (query: string) => {
@@ -729,6 +824,13 @@ export function TaskDialog(props: TaskDialogProps) {
         if (match) {
           finalVehicleId = match.id;
         }
+      }
+
+      // Validate vehicle conflict before submission
+      if (finalVehicleId && occupiedVehicleIds.has(finalVehicleId)) {
+        throw new Error(
+          'רכב זה כבר משוייך למשימה אחרת באותו יום ובאותו טווח זמן'
+        );
       }
 
       let finalClientId = clientId;
@@ -1764,26 +1866,60 @@ export function TaskDialog(props: TaskDialogProps) {
                   />
                   {vehicleSuggestions.length > 0 && !vehicleId && (
                     <div className="mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-300 bg-white text-sm shadow-sm">
-                      {vehicleSuggestions.map((v) => (
-                        <button
-                          key={v.id}
-                          type="button"
-                          className="flex w-full items-center justify-between px-2 py-1 text-right hover:bg-blue-50"
-                          onClick={() => {
-                            setVehicleId(v.id);
-                            setVehicleQuery(
-                              `${formatLicensePlate(v.license_plate)}${
-                                v.model ? ` · ${v.model}` : ''
-                              }`
-                            );
-                          }}
-                        >
-                          <span>
-                            {formatLicensePlate(v.license_plate)}
-                            {v.model ? ` · ${v.model}` : ''}
-                          </span>
-                        </button>
-                      ))}
+                      {vehicleSuggestions.map((v) => {
+                        // Don't mark as occupied if it's the currently selected vehicle
+                        const isOccupied =
+                          (v.isOccupied || false) && v.id !== vehicleId;
+                        const isUnavailable = v.isUnavailable || false;
+                        const isDisabled = isOccupied || isUnavailable;
+                        return (
+                          <button
+                            key={v.id}
+                            type="button"
+                            disabled={isDisabled}
+                            className={`flex w-full items-center justify-between px-2 py-1 text-right ${
+                              isDisabled
+                                ? 'cursor-not-allowed bg-gray-100 text-gray-400 opacity-60'
+                                : 'hover:bg-blue-50'
+                            }`}
+                            onClick={() => {
+                              if (isOccupied) {
+                                toastError(
+                                  'רכב זה כבר משוייך למשימה אחרת באותו יום ובאותו טווח זמן'
+                                );
+                                return;
+                              }
+                              if (isUnavailable) {
+                                toastError('רכב זה מושבת ולא זמין לשימוש');
+                                return;
+                              }
+                              setVehicleId(v.id);
+                              setVehicleQuery(
+                                `${formatLicensePlate(v.license_plate)}${
+                                  v.model ? ` · ${v.model}` : ''
+                                }`
+                              );
+                            }}
+                          >
+                            <span
+                              className={isDisabled ? 'text-gray-400' : ''}
+                            >
+                              {formatLicensePlate(v.license_plate)}
+                              {v.model ? ` · ${v.model}` : ''}
+                              {isOccupied && (
+                                <span className="mr-2 text-xs">
+                                  (תפוס)
+                                </span>
+                              )}
+                              {isUnavailable && (
+                                <span className="mr-2 text-xs">
+                                  (מושבת)
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

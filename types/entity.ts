@@ -12,6 +12,8 @@ export interface Client {
 export interface Vehicle {
   id: string;
   license_plate: string;
-  model: string;
+  model: string | null;
+  is_available?: boolean;
+  unavailability_reason?: string | null;
 }
 

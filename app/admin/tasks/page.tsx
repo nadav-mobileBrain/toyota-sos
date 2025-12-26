@@ -160,12 +160,12 @@ export default async function AdminTasksPage() {
     // silently ignore client fetch errors
   }
 
-  // Fetch vehicles
+  // Fetch vehicles (include all vehicles, TaskDialog will filter unavailable ones)
   let vehicles: Vehicle[] = [];
   try {
     const { data, error } = await admin
       .from('vehicles')
-      .select('id, license_plate, model');
+      .select('id, license_plate, model, is_available, unavailability_reason');
 
     if (!error) {
       vehicles = data || [];
@@ -181,6 +181,7 @@ export default async function AdminTasksPage() {
     { name: 'יומן', url: '/admin/calendar', icon: 'Calendar' },
     { name: 'נהגים', url: '/admin/drivers', icon: 'Users' },
     { name: 'מנהלים', url: '/admin/admins', icon: 'ShieldCheck' },
+    { name: 'רכבים', url: '/admin/vehicles', icon: 'Car' },
   ];
 
   return (

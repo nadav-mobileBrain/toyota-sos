@@ -124,6 +124,7 @@ export default async function AdminCalendarPage() {
     { name: 'יומן', url: '/admin/calendar', icon: 'Calendar' },
     { name: 'נהגים', url: '/admin/drivers', icon: 'Users' },
     { name: 'מנהלים', url: '/admin/admins', icon: 'ShieldCheck' },
+    { name: 'רכבים', url: '/admin/vehicles', icon: 'Car' },
   ];
 
   return (

@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { vehicleSchema } from '@/lib/schemas/vehicle';
 import {
   isValidLicensePlate,
   normalizeLicensePlate,
 } from '@/lib/vehicleLicensePlate';
-import { vehicleSchema } from '@/lib/schemas/vehicle';
 
-export async function GET() {
+type Params = {
+  id: string;
+};
+
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<Params> }
+) {
   try {
     const cookieStore = await cookies();
     const roleCookie = cookieStore.get('toyota_role')?.value;
@@ -20,40 +27,9 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const admin = getSupabaseAdmin();
-    const { data, error } = await admin
-      .from('vehicles')
-      .select('id, license_plate, model, is_available, unavailability_reason, created_at')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      {
-        ok: true,
-        data: data ?? [],
-      },
-      { status: 200 }
-    );
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message || 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const cookieStore = await cookies();
-    const roleCookie = cookieStore.get('toyota_role')?.value;
-    if (
-      !roleCookie ||
-      (roleCookie !== 'admin' && roleCookie !== 'manager' && roleCookie !== 'viewer')
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { id } = await context.params;
+    if (!id) {
+      return NextResponse.json({ error: 'Missing vehicle id' }, { status: 400 });
     }
 
     const body = await request.json().catch(() => ({}));
@@ -92,11 +68,12 @@ export async function POST(request: NextRequest) {
 
     const admin = getSupabaseAdmin();
 
-    // Check for duplicate license plate
+    // Ensure license_plate stays unique across vehicles (excluding this vehicle)
     const { data: existing, error: existingErr } = await admin
       .from('vehicles')
       .select('id')
       .eq('license_plate', normalizedPlate)
+      .neq('id', id)
       .maybeSingle();
 
     if (existingErr && existingErr.code !== 'PGRST116') {
@@ -118,20 +95,30 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await admin
       .from('vehicles')
-      .insert({
+      .update({
         license_plate: normalizedPlate,
         model: model || null,
         is_available,
         unavailability_reason: is_available ? null : unavailability_reason || null,
       })
+      .eq('id', id)
       .select('id, license_plate, model, is_available, unavailability_reason, created_at')
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json(
+        { error: error.message || 'Failed to update vehicle' },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({ ok: true, data }, { status: 201 });
+    return NextResponse.json(
+      {
+        ok: true,
+        data,
+      },
+      { status: 200 }
+    );
   } catch (err: any) {
     return NextResponse.json(
       { error: err?.message || 'Internal server error' },
@@ -140,4 +127,50 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function DELETE(
+  _request: NextRequest,
+  context: { params: Promise<Params> }
+) {
+  try {
+    const cookieStore = await cookies();
+    const roleCookie = cookieStore.get('toyota_role')?.value;
+    if (
+      !roleCookie ||
+      (roleCookie !== 'admin' &&
+        roleCookie !== 'manager' &&
+        roleCookie !== 'viewer')
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await context.params;
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Missing vehicle id' },
+        { status: 400 }
+      );
+    }
+
+    const admin = getSupabaseAdmin();
+
+    const { error: deleteErr } = await admin
+      .from('vehicles')
+      .delete()
+      .eq('id', id);
+
+    if (deleteErr) {
+      return NextResponse.json(
+        { error: deleteErr.message || 'Failed to delete vehicle' },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err?.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
 
