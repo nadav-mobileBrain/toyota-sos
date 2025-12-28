@@ -89,11 +89,15 @@ exports[`TaskCard matches snapshot 1`] = `
         </div>
       </div>
     </div>
-    <p
-      class="text-md py-2 text-black font-bold"
+    <div
+      class="flex items-center gap-2 py-2"
     >
-      pickup_or_dropoff_car
-    </p>
+      <p
+        class="text-md text-black font-bold"
+      >
+        pickup_or_dropoff_car
+      </p>
+    </div>
     <div
       class="mt-3 space-y-2 text-sm text-gray-700"
     >

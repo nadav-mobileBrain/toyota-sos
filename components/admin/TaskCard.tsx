@@ -116,6 +116,29 @@ export function TaskCard({
         </div>
       )}
 
+      {/* Secondary drivers */}
+      {(() => {
+        const secondaryAssignees = assignees.filter((a) => !a.is_lead);
+        if (secondaryAssignees.length === 0) return null;
+
+        return (
+          <div className="mb-2 flex flex-col gap-1">
+            {secondaryAssignees.map((assignee) => {
+              const secondaryDriver = driverMap.get(assignee.driver_id);
+              if (!secondaryDriver) return null;
+
+              return (
+                <div key={assignee.id} className="flex items-center gap-1 text-xs text-gray-600">
+                  <span className="font-medium">👨‍🚗</span>
+                  <span className="truncate">{secondaryDriver.name || 'Unknown'}</span>
+                  <span className="text-[10px] text-gray-400 font-medium">(משני)</span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       {/* Client info - show all clients for multi-stop tasks */}
       {(() => {
         const multiStopTypes: TaskType[] = [

@@ -41,7 +41,9 @@ describe('TaskCard', () => {
 
   test('creates Waze deeplink with encoded address', () => {
     render(<TaskCard {...baseProps} />);
-    const link = screen.getByRole('link', { name: 'Waze' }) as HTMLAnchorElement;
+    const link = screen.getByRole('link', {
+      name: 'Waze',
+    }) as HTMLAnchorElement;
     expect(link).toBeInTheDocument();
     expect(link.href.startsWith('waze://?navigate=yes&q=')).toBe(true);
     const encoded = link.href.split('q=')[1];
@@ -52,6 +54,17 @@ describe('TaskCard', () => {
     const { container } = render(<TaskCard {...baseProps} />);
     expect(container).toMatchSnapshot();
   });
+
+  test('shows secondary driver badge when isSecondaryDriver is true', () => {
+    render(<TaskCard {...baseProps} isSecondaryDriver={true} />);
+    expect(screen.getByText('נהג משני')).toBeInTheDocument();
+  });
+
+  test('does not show secondary driver badge when isSecondaryDriver is false or undefined', () => {
+    const { rerender } = render(<TaskCard {...baseProps} />);
+    expect(screen.queryByText('נהג משני')).not.toBeInTheDocument();
+
+    rerender(<TaskCard {...baseProps} isSecondaryDriver={false} />);
+    expect(screen.queryByText('נהג משני')).not.toBeInTheDocument();
+  });
 });
-
-

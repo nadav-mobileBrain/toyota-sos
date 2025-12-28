@@ -62,14 +62,14 @@ export function computeColumns(params: {
       label: driverMap.get(driverId)?.name || 'Unknown Driver',
       type: 'driver' as const,
     }));
-    
+
     // Add unassigned column at the beginning
     columns.unshift({
       id: 'unassigned',
       label: 'לא משוייך',
       type: 'driver' as const,
     });
-    
+
     return columns;
   }
 

@@ -180,6 +180,7 @@ export function DriverHome() {
     distance_from_garage: number | null;
     details: string | null;
     updated_at: string;
+    is_lead_driver: boolean;
   };
 
   const fetchPageRef = useRef<(reset: boolean) => Promise<void>>(
@@ -246,6 +247,7 @@ export function DriverHome() {
             }
           : null,
         details: t.details || null,
+        isSecondaryDriver: !t.is_lead_driver,
       }));
 
       const taskIds = mapped.map((t) => t.id);

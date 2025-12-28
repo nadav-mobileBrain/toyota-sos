@@ -38,6 +38,7 @@ export type TaskCardProps = {
   }[];
   vehicle?: { licensePlate?: string | null; model?: string | null } | null;
   details?: string | null;
+  isSecondaryDriver?: boolean;
   onStatusChange?: (next: TaskCardProps['status']) => void;
 };
 
@@ -58,6 +59,7 @@ export function TaskCard(props: TaskCardProps) {
     stops,
     vehicle,
     details,
+    isSecondaryDriver,
     onStatusChange,
   } = props;
 
@@ -199,7 +201,14 @@ export function TaskCard(props: TaskCardProps) {
         </div>
       </div>
 
-      <p className="text-md py-2 text-black font-bold">{type}</p>
+      <div className="flex items-center gap-2 py-2">
+        <p className="text-md text-black font-bold">{type}</p>
+        {isSecondaryDriver && (
+          <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+            נהג משני
+          </span>
+        )}
+      </div>
 
       <div className="mt-3 space-y-2 text-sm text-gray-700">
         <div>חלון זמן: {timeWindow}</div>
