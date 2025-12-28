@@ -9,7 +9,10 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const multiStopTypes = new Set(['הסעת לקוח הביתה', 'הסעת לקוח למוסך']);
-const multiStopAliases = new Set(['drive_client_home', 'drive_client_to_dealership']);
+const multiStopAliases = new Set([
+  'drive_client_home',
+  'drive_client_to_dealership',
+]);
 const isMultiStopType = (val: string | null | undefined) => {
   const normalized = (val || '').trim();
   return multiStopTypes.has(normalized) || multiStopAliases.has(normalized);
@@ -27,7 +30,12 @@ export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
     const roleCookie = cookieStore.get('toyota_role')?.value;
-    if (!roleCookie || (roleCookie !== 'admin' && roleCookie !== 'manager' && roleCookie !== 'viewer')) {
+    if (
+      !roleCookie ||
+      (roleCookie !== 'admin' &&
+        roleCookie !== 'manager' &&
+        roleCookie !== 'viewer')
+    ) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -156,20 +164,27 @@ export async function POST(request: NextRequest) {
         ['צהוב', 'ירוק', 'כתום', 'סגול בהיר'].includes(advisor_color)
           ? advisor_color
           : null) ?? null;
-    
+
     const effectiveLat = isMulti
       ? firstStop?.lat ?? null
-      : (typeof lat === 'number' ? lat : null);
+      : typeof lat === 'number'
+      ? lat
+      : null;
 
     const effectiveLng = isMulti
       ? firstStop?.lng ?? null
-      : (typeof lng === 'number' ? lng : null);
-    
+      : typeof lng === 'number'
+      ? lng
+      : null;
+
     // Validation for "Drive Client Home" - must have advisor name or color
     if (type === 'הסעת לקוח הביתה') {
       if (!effectiveAdvisorName && !effectiveAdvisorColor) {
         return NextResponse.json(
-          { error: 'חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת הסעת לקוח הביתה' },
+          {
+            error:
+              'חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת הסעת לקוח הביתה',
+          },
           { status: 400 }
         );
       }
@@ -267,10 +282,13 @@ export async function POST(request: NextRequest) {
         await notify({
           type: 'assigned',
           task_id: created.id,
+          task_date: created.estimated_start,
           recipients,
           payload: {
             title: 'משימה חדשה',
-            body: `הוקצתה לך משימה חדשה: ${created.type || created.title || 'ללא כותרת'}`,
+            body: `הוקצתה לך משימה חדשה: ${
+              created.type || created.title || 'ללא כותרת'
+            }`,
             taskId: created.id,
             taskType: created.type,
             url: `/driver/tasks/${created.id}`,
@@ -291,9 +309,10 @@ export async function POST(request: NextRequest) {
       {
         status: 200,
         headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
+          'Cache-Control':
+            'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
         },
       }
     );

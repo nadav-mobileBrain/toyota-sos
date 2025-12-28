@@ -1,10 +1,11 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import type { VehicleRow } from '@/utils/admin/vehicles/types';
 import { formatVehicleTimestamp } from '@/utils/admin/vehicles/dialogs';
 import { formatLicensePlate } from '@/lib/vehicleLicensePlate';
-import { PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import { PencilIcon, PlusIcon, SearchIcon, Trash2Icon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 type VehicleListViewProps = {
@@ -15,6 +16,8 @@ type VehicleListViewProps = {
   canNext: boolean;
   loading: boolean;
   error: string | null;
+  searchQuery: string;
+  onSearchChange: (val: string) => void;
   onRefresh: () => void;
   onOpenCreate: () => void;
   onOpenEdit: (vehicle: VehicleRow) => void;
@@ -30,6 +33,8 @@ export function VehicleListView({
   canNext,
   loading,
   error,
+  searchQuery,
+  onSearchChange,
   onOpenCreate,
   onOpenEdit,
   onPageChange,
@@ -41,7 +46,7 @@ export function VehicleListView({
       className="mt-4 space-y-4 container mx-auto max-w-5xl"
       aria-label="ניהול רכבים"
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Button
             type="button"
@@ -52,6 +57,17 @@ export function VehicleListView({
             <PlusIcon className="w-4 h-4" />
             הוסף רכב חדש
           </Button>
+        </div>
+
+        <div className="relative w-full sm:w-1/4">
+          <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="חיפוש..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pr-9 h-9 text-sm"
+          />
         </div>
       </div>
       <div className="space-y-3">
@@ -64,71 +80,77 @@ export function VehicleListView({
             {error}
           </div>
         ) : null}
-        <div className="overflow-x-auto rounded border bg-white">
+        <div className="overflow-x-auto rounded border bg-white shadow-sm">
           <table className="min-w-full text-sm rtl:text-right">
             <thead className="bg-gray-50">
-              <tr className="text-xs font-semibold text-gray-600">
-                <th className="px-3 py-2 text-right">מספר רישוי</th>
-                <th className="px-3 py-2 text-right">מודל</th>
-                <th className="px-3 py-2 text-right">סטטוס</th>
-                <th className="px-3 py-2 text-right">סיבת אי זמינות</th>
-                <th className="px-3 py-2 text-right">נוצר</th>
-                <th className="px-3 py-2 text-right">פעולות</th>
+              <tr className="text-xs font-semibold text-gray-600 border-b">
+                <th className="px-3 py-3 text-right">מספר רישוי</th>
+                <th className="px-3 py-3 text-right">מודל</th>
+                <th className="px-3 py-3 text-right">סטטוס</th>
+                <th className="px-3 py-3 text-right">סיבת אי זמינות</th>
+                <th className="px-3 py-3 text-right">נוצר</th>
+                <th className="px-3 py-3 text-right">עודכן</th>
+                <th className="px-3 py-3 text-center">פעולות</th>
               </tr>
             </thead>
             <tbody>
               {pagedVehicles.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
-                    className="px-3 py-4 text-center text-xs text-gray-500"
+                    colSpan={7}
+                    className="px-3 py-8 text-center text-xs text-gray-500"
                   >
-                    אין רכבים להצגה.
+                    {searchQuery.length >= 2 ? 'לא נמצאו רכבים תואמים לחיפוש.' : 'אין רכבים להצגה.'}
                   </td>
                 </tr>
               ) : (
                 pagedVehicles.map((v) => (
-                  <tr key={v.id} className="border-t text-xs">
-                    <td className="px-3 py-2 font-mono">
+                  <tr key={v.id} className="border-b last:border-0 hover:bg-gray-50/50 transition-colors text-xs">
+                    <td className="px-3 py-3 font-mono font-medium">
                       {formatLicensePlate(v.license_plate)}
                     </td>
-                    <td className="px-3 py-2">{v.model || '—'}</td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-3 text-gray-700">{v.model || '—'}</td>
+                    <td className="px-3 py-3">
                       {v.is_available ? (
-                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                        <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-100">
                           זמין
                         </Badge>
                       ) : (
-                        <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
+                        <Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-100">
                           לא זמין
                         </Badge>
                       )}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-3 text-gray-600 max-w-[150px] truncate">
                       {v.unavailability_reason || '—'}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-3 text-gray-500">
                       {formatVehicleTimestamp(v.created_at)}
                     </td>
-                    <td className="px-3 py-2">
-                      <div className="flex gap-2">
+                    <td className="px-3 py-3 text-gray-500">
+                      {formatVehicleTimestamp(v.updated_at)}
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex gap-2 justify-center">
                         <Button
                           type="button"
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          className="h-7 px-2 text-[11px]"
+                          className="h-8 w-8 p-0"
                           onClick={() => onOpenEdit(v)}
+                          title="ערוך"
                         >
-                          <PencilIcon className="w-4 h-4 text-blue-500 hover:text-blue-600" />
+                          <PencilIcon className="w-4 h-4 text-blue-500" />
                         </Button>
                         <Button
                           type="button"
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          className="h-7 px-2 text-[11px]"
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
                           onClick={() => onStartDelete(v.id)}
+                          title="מחק"
                         >
-                          <Trash2Icon className="w-4 h-4 text-red-500 hover:text-red-600" />
+                          <Trash2Icon className="w-4 h-4" />
                         </Button>
                       </div>
                     </td>

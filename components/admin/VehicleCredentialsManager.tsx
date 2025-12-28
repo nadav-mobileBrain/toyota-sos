@@ -34,6 +34,15 @@ export function VehicleCredentialsManager({
   );
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredVehicles = useMemo(() => {
+    if (searchQuery.length < 2) return vehicles;
+    const normalizedQuery = searchQuery.replace(/-/g, '').toLowerCase();
+    return vehicles.filter((v) =>
+      v.license_plate.replace(/-/g, '').toLowerCase().includes(normalizedQuery)
+    );
+  }, [vehicles, searchQuery]);
 
   const {
     register,
@@ -92,12 +101,12 @@ export function VehicleCredentialsManager({
   const pagedVehicles = useMemo(() => {
     const start = page * pageSize;
     const end = start + pageSize;
-    return vehicles.slice(start, end);
-  }, [vehicles, page, pageSize]);
+    return filteredVehicles.slice(start, end);
+  }, [filteredVehicles, page, pageSize]);
 
   const canNext = useMemo(
-    () => (page + 1) * pageSize < vehicles.length,
-    [page, pageSize, vehicles.length]
+    () => (page + 1) * pageSize < filteredVehicles.length,
+    [page, pageSize, filteredVehicles.length]
   );
 
   const openCreateDialog = () => {
@@ -257,13 +266,18 @@ export function VehicleCredentialsManager({
   return (
     <>
       <VehicleListView
-        vehicles={vehicles}
+        vehicles={filteredVehicles}
         pagedVehicles={pagedVehicles}
         page={page}
         pageSize={pageSize}
         canNext={canNext}
         loading={loading}
         error={error}
+        searchQuery={searchQuery}
+        onSearchChange={(val) => {
+          setSearchQuery(val);
+          setPage(0);
+        }}
         onRefresh={loadVehicles}
         onOpenCreate={openCreateDialog}
         onOpenEdit={openEditDialog}

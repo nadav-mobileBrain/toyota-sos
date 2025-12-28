@@ -42,20 +42,24 @@ describe('POST /api/functions/notify (6.4)', () => {
     const result = await notify({
       type: 'task_updated',
       task_id: '00000000-0000-0000-0000-000000000001',
+      task_date: new Date(), // Today - should send push
       payload: { title: 'עודכן', body: 'משימה עודכנה' },
       recipients: [
         {
           user_id: '11111111-1111-1111-1111-111111111111',
-          subscription: { endpoint: 'https://example.com/push/abc', keys: { p256dh: 'k', auth: 'a' } },
+          subscription: {
+            endpoint: 'https://example.com/push/abc',
+            keys: { p256dh: 'k', auth: 'a' },
+          },
         },
       ],
     });
-    
+
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.inserted).toBe(1);
     }
-    
+
     // Check if webpush.sendNotification was called
     expect(webpush.sendNotification).toHaveBeenCalledTimes(1);
   });

@@ -2,6 +2,7 @@
 
 import webpush from 'web-push';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import dayjs, { ISRAEL_TZ } from '@/lib/dayjs';
 
 // Thin wrapper to send Web Push notifications.
 // In a real deployment, use the `web-push` library with your VAPID keys.
@@ -69,6 +70,7 @@ export async function sendWebPush(
 export type NotifyBody = {
   type: string;
   task_id?: string;
+  task_date?: string | Date | null;
   payload?: Record<string, unknown>;
   recipients: Array<{
     user_id: string;
@@ -77,7 +79,7 @@ export type NotifyBody = {
 };
 
 export type NotifyResult =
-  | { ok: true; sent: number; inserted: number }
+  | { ok: true; sent: number; inserted: number; pushSkipped?: boolean }
   | { ok: false; error: string; detail?: string };
 
 export async function notify(body: NotifyBody): Promise<NotifyResult> {
@@ -88,6 +90,33 @@ export async function notify(body: NotifyBody): Promise<NotifyResult> {
   const admin = getSupabaseAdmin();
   
   // No preferences check - send to all recipients
+
+  // Check if we should send push notifications based on task date
+  let shouldSendPush = true;
+  let taskDate = body.task_date;
+
+  if (body.task_id) {
+    // If task_date not provided but task_id is, fetch it
+    if (!taskDate) {
+      const { data: task } = await admin
+        .from('tasks')
+        .select('estimated_start')
+        .eq('id', body.task_id)
+        .single();
+      if (task) {
+        taskDate = task.estimated_start;
+      }
+    }
+
+    if (taskDate) {
+      const taskDay = dayjs(taskDate).tz(ISRAEL_TZ).startOf('day');
+      const today = dayjs().tz(ISRAEL_TZ).startOf('day');
+      
+      // Only send push if task is today or in the past (to handle late tasks)
+      // The requirement was "ביום הנוכחי", but usually it implies "not for future"
+      shouldSendPush = !taskDay.isAfter(today);
+    }
+  }
 
   // Fetch subscriptions for all recipients
   const userIds = body.recipients.map((r) => r.user_id);
@@ -119,30 +148,32 @@ export async function notify(body: NotifyBody): Promise<NotifyResult> {
     },
   };
 
-  // Send push to all recipients
+  // Send push to all recipients (only if shouldSendPush is true)
   let sent = 0;
-  await Promise.all(
-    body.recipients.map(async (r) => {
-      // Use fetched subscriptions + any manually provided subscription
-      const userSubs = subMap.get(r.user_id) || [];
-      if (r.subscription) {
-        userSubs.push(r.subscription);
-      }
+  if (shouldSendPush) {
+    await Promise.all(
+      body.recipients.map(async (r) => {
+        // Use fetched subscriptions + any manually provided subscription
+        const userSubs = subMap.get(r.user_id) || [];
+        if (r.subscription) {
+          userSubs.push(r.subscription);
+        }
 
-      await Promise.all(
-        userSubs.map(async (sub) => {
-          if (sub?.endpoint) {
-            try {
-              await sendWebPush(sub, payload);
-              sent++;
-            } catch {
-              // ignore individual push errors
+        await Promise.all(
+          userSubs.map(async (sub) => {
+            if (sub?.endpoint) {
+              try {
+                await sendWebPush(sub, payload);
+                sent++;
+              } catch {
+                // ignore individual push errors
+              }
             }
-          }
-        })
-      );
-    })
-  );
+          })
+        );
+      })
+    );
+  }
 
   // Insert in-app notifications for all recipients
   const insertRows = body.recipients.map((r) => ({
@@ -158,5 +189,5 @@ export async function notify(body: NotifyBody): Promise<NotifyResult> {
     return { ok: false, error: 'insert-failed', detail: String(insertErr.message || insertErr) };
   }
 
-  return { ok: true, sent, inserted: insertRows.length };
+  return { ok: true, sent, inserted: insertRows.length, pushSkipped: !shouldSendPush };
 }

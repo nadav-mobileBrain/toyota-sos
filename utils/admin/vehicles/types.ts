@@ -5,5 +5,6 @@ export type VehicleRow = {
   is_available: boolean;
   unavailability_reason: string | null;
   created_at: string;
+  updated_at: string;
 };
 

@@ -16,12 +16,14 @@ export async function PATCH(
     // Check authentication via cookie
     const cookieStore = await cookies();
     const roleCookie = cookieStore.get('toyota_role')?.value;
-    
-    if (!roleCookie || (roleCookie !== 'admin' && roleCookie !== 'manager' && roleCookie !== 'viewer')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+
+    if (
+      !roleCookie ||
+      (roleCookie !== 'admin' &&
+        roleCookie !== 'manager' &&
+        roleCookie !== 'viewer')
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { taskId } = await params;
@@ -66,10 +68,7 @@ export async function PATCH(
 
     if (error) {
       console.error('Error assigning driver:', error);
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     // Update task's updated_at timestamp (only if not deleted)
@@ -84,28 +83,44 @@ export async function PATCH(
     // Get task details for notification (only if not deleted)
     const { data: taskData } = await admin
       .from('tasks')
-      .select('id, type, title')
+      .select('id, type, title, estimated_start')
       .eq('id', taskId)
       .is('deleted_at', null)
       .single();
 
-    // Send notification to newly assigned driver
+    // Send notification to all assigned drivers
     if (taskData) {
       try {
-        await notify({
-          type: 'assigned',
-          task_id: taskId,
-          recipients: [{ user_id: driver_id, subscription: undefined }],
-          payload: {
-            title: 'משימה חדשה',
-            body: `הוקצתה לך משימה חדשה: ${taskData.type || taskData.title || 'ללא כותרת'}`,
-            taskId: taskId,
-            taskType: taskData.type,
-            url: `/driver/tasks/${taskId}`,
-          },
-        });
+        const { data: allAssignees } = await admin
+          .from('task_assignees')
+          .select('driver_id')
+          .eq('task_id', taskId);
+
+        const recipients =
+          allAssignees?.map((a: any) => ({
+            user_id: a.driver_id,
+            subscription: undefined,
+          })) || [];
+
+        if (recipients.length > 0) {
+          await notify({
+            type: 'assigned',
+            task_id: taskId,
+            task_date: taskData.estimated_start,
+            recipients,
+            payload: {
+              title: 'משימה חדשה',
+              body: `הוקצתה לך משימה חדשה: ${
+                taskData.type || taskData.title || 'ללא כותרת'
+              }`,
+              taskId: taskId,
+              taskType: taskData.type,
+              url: `/driver/tasks/${taskId}`,
+            },
+          });
+        }
       } catch (err) {
-        console.error('Failed to notify driver on reassignment:', err);
+        console.error('Failed to notify drivers on reassignment:', err);
         // Don't fail the request if notification fails
       }
     }
@@ -119,4 +134,3 @@ export async function PATCH(
     );
   }
 }
-

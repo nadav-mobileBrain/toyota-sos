@@ -11,7 +11,13 @@ window.HTMLElement.prototype.releasePointerCapture = jest.fn();
 window.HTMLElement.prototype.hasPointerCapture = jest.fn();
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TaskDialog } from '@/components/admin/TaskDialog';
 import { toastError } from '@/lib/toast';
@@ -46,7 +52,9 @@ global.fetch = jest.fn(() =>
 describe('TaskDialog Validation for Replacement Car Delivery', () => {
   const mockDrivers = [{ id: 'd1', name: 'Driver 1' }];
   const mockClients = [{ id: 'c1', name: 'Client 1' }];
-  const mockVehicles = [{ id: 'v1', license_plate: '11-222-33', model: 'Toyota' }];
+  const mockVehicles = [
+    { id: 'v1', license_plate: '11-222-33', model: 'Toyota' },
+  ];
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -71,7 +79,7 @@ describe('TaskDialog Validation for Replacement Car Delivery', () => {
     // The label is "סוג משימה".
     const typeTrigger = screen.getByLabelText(/סוג משימה/i);
     await userEvent.click(typeTrigger);
-    
+
     // The options are usually in a portal. We need to find the option.
     const typeOption = await screen.findByText('מסירת רכב חלופי');
     await userEvent.click(typeOption);
@@ -81,19 +89,23 @@ describe('TaskDialog Validation for Replacement Car Delivery', () => {
     await userEvent.click(submitBtn);
 
     // 3. Expect error toast
-    expect(toastError).toHaveBeenCalledWith('חובה לבחור לקוח עבור משימת מסירת רכב חלופי');
-    
+    expect(toastError).toHaveBeenCalledWith(
+      'חובה לבחור לקוח עבור משימת מסירת רכב חלופי'
+    );
+
     // 4. Select Client
     // Assuming the client input is accessible by label "לקוח"
     const clientInput = screen.getByLabelText('לקוח');
     await userEvent.type(clientInput, 'Client 1');
-    
+
     // Depending on implementation, we might need to select from suggestions.
     // If TaskDialog matches exact string 'Client 1' to mockClients, it works.
-    
+
     // Try submit again
     await userEvent.click(submitBtn);
-    expect(toastError).toHaveBeenCalledWith('חובה לבחור רכב עבור משימת מסירת רכב חלופי');
+    expect(toastError).toHaveBeenCalledWith(
+      'חובה לבחור רכב עבור משימת מסירת רכב חלופי'
+    );
 
     // 5. Select Vehicle
     const vehicleInput = screen.getByLabelText('רכב סוכנות');
@@ -101,9 +113,9 @@ describe('TaskDialog Validation for Replacement Car Delivery', () => {
 
     // 6. Submit success
     await userEvent.click(submitBtn);
-    
+
     await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalled();
     });
   });
 });

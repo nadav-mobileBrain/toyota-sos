@@ -136,7 +136,7 @@ export function TasksBoard({
   useEffect(() => {
     setClientsState(clients);
   }, [clients]);
-  
+
   useEffect(() => {
     setClientVehiclesState(clientVehicles);
   }, [clientVehicles]);

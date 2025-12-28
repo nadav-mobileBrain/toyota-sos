@@ -8,7 +8,10 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const multiStopTypes = new Set(['הסעת לקוח הביתה', 'הסעת לקוח למוסך']);
-const multiStopAliases = new Set(['drive_client_home', 'drive_client_to_dealership']);
+const multiStopAliases = new Set([
+  'drive_client_home',
+  'drive_client_to_dealership',
+]);
 const isMultiStopType = (val: string | null | undefined) => {
   const normalized = (val || '').trim();
   return multiStopTypes.has(normalized) || multiStopAliases.has(normalized);
@@ -65,7 +68,12 @@ export async function GET(
   try {
     const cookieStore = await cookies();
     const roleCookie = cookieStore.get('toyota_role')?.value;
-    if (!roleCookie || (roleCookie !== 'admin' && roleCookie !== 'manager' && roleCookie !== 'viewer')) {
+    if (
+      !roleCookie ||
+      (roleCookie !== 'admin' &&
+        roleCookie !== 'manager' &&
+        roleCookie !== 'viewer')
+    ) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -90,9 +98,10 @@ export async function GET(
       {
         status: 200,
         headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
+          'Cache-Control':
+            'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
         },
       }
     );
@@ -112,18 +121,20 @@ export async function PATCH(
     // Check authentication via cookie
     const cookieStore = await cookies();
     const roleCookie = cookieStore.get('toyota_role')?.value;
-    
-    if (!roleCookie || (roleCookie !== 'admin' && roleCookie !== 'manager' && roleCookie !== 'viewer')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+
+    if (
+      !roleCookie ||
+      (roleCookie !== 'admin' &&
+        roleCookie !== 'manager' &&
+        roleCookie !== 'viewer')
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { taskId } = await params;
     const body = await request.json();
 
-    // Only allow updating specific fields
+    // Fields that can be updated in the tasks table
     const allowedFields = [
       'title',
       'type',
@@ -151,6 +162,12 @@ export async function PATCH(
       }
     });
 
+    const lead_driver_id = body.lead_driver_id;
+    const co_driver_ids = body.co_driver_ids;
+    const hasDriverUpdate =
+      body.hasOwnProperty('lead_driver_id') ||
+      body.hasOwnProperty('co_driver_ids');
+
     const rawStops = Array.isArray(body?.stops) ? body.stops : [];
     const normalizedStops = rawStops.length ? normalizeStops(rawStops) : [];
 
@@ -174,7 +191,7 @@ export async function PATCH(
     const effectiveType: string | undefined =
       (updatePayload.type as string | undefined) ??
       (currentTask?.type as string | undefined);
-    
+
     const isMulti =
       isMultiStopType(effectiveType) || normalizedStops.length > 0;
 
@@ -228,14 +245,19 @@ export async function PATCH(
       // For regular tasks, trim phone if provided
       updatePayload.phone = updatePayload.phone.trim() || null;
     }
-    
+
     // Validation for "Drive Client Home" - must have advisor name or color
     if (effectiveType === 'הסעת לקוח הביתה') {
-      const effectiveAdvisorName = updatePayload.advisor_name ?? currentTask?.advisor_name;
-      const effectiveAdvisorColor = updatePayload.advisor_color ?? currentTask?.advisor_color;
+      const effectiveAdvisorName =
+        updatePayload.advisor_name ?? currentTask?.advisor_name;
+      const effectiveAdvisorColor =
+        updatePayload.advisor_color ?? currentTask?.advisor_color;
       if (!effectiveAdvisorName && !effectiveAdvisorColor) {
         return NextResponse.json(
-          { error: 'חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת הסעת לקוח הביתה' },
+          {
+            error:
+              'חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת הסעת לקוח הביתה',
+          },
           { status: 400 }
         );
       }
@@ -256,10 +278,7 @@ export async function PATCH(
 
     if (error) {
       console.error('Error updating task:', error);
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     let updatedStops = null;
@@ -296,7 +315,41 @@ export async function PATCH(
     }
 
     const responseData =
-      normalizedStops.length > 0 && updatedStops ? { ...data, stops: updatedStops } : data;
+      normalizedStops.length > 0 && updatedStops
+        ? { ...data, stops: updatedStops }
+        : data;
+
+    // Update assignments if provided
+    if (hasDriverUpdate) {
+      // 1. Remove old assignments
+      await admin.from('task_assignees').delete().eq('task_id', taskId);
+
+      // 2. Insert new ones
+      const inserts: any[] = [];
+      if (lead_driver_id) {
+        inserts.push({
+          task_id: taskId,
+          driver_id: lead_driver_id,
+          is_lead: true,
+          assigned_at: new Date().toISOString(),
+        });
+      }
+      if (Array.isArray(co_driver_ids) && co_driver_ids.length > 0) {
+        for (const id of co_driver_ids) {
+          if (id && id !== lead_driver_id) {
+            inserts.push({
+              task_id: taskId,
+              driver_id: id,
+              is_lead: false,
+              assigned_at: new Date().toISOString(),
+            });
+          }
+        }
+      }
+      if (inserts.length > 0) {
+        await admin.from('task_assignees').insert(inserts);
+      }
+    }
 
     // Notify assigned drivers about the update
     try {
@@ -314,11 +367,14 @@ export async function PATCH(
 
         await notify({
           type: 'updated',
-            task_id: taskId,
-            recipients,
-            payload: {
-              title: 'עדכון משימה',
-              body: `עודכנו פרטי משימה: ${data.type || data.title || 'ללא כותרת'}`,
+          task_id: taskId,
+          task_date: data.estimated_start,
+          recipients,
+          payload: {
+            title: 'עדכון משימה',
+            body: `עודכנו פרטי משימה: ${
+              data.type || data.title || 'ללא כותרת'
+            }`,
             taskId: taskId,
             taskType: data.type,
             url: `/driver/tasks/${taskId}`,
@@ -336,17 +392,24 @@ export async function PATCH(
       {
         status: 200,
         headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
+          'Cache-Control':
+            'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
         },
       }
     );
   } catch (error) {
     console.error('Error in PATCH /api/admin/tasks/[taskId]:', error);
-    console.error('Error details:', error instanceof Error ? error.message : String(error));
+    console.error(
+      'Error details:',
+      error instanceof Error ? error.message : String(error)
+    );
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
@@ -364,7 +427,12 @@ export async function DELETE(
   try {
     const cookieStore = await cookies();
     const roleCookie = cookieStore.get('toyota_role')?.value;
-    if (!roleCookie || (roleCookie !== 'admin' && roleCookie !== 'manager' && roleCookie !== 'viewer')) {
+    if (
+      !roleCookie ||
+      (roleCookie !== 'admin' &&
+        roleCookie !== 'manager' &&
+        roleCookie !== 'viewer')
+    ) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -383,13 +451,17 @@ export async function DELETE(
       {
         status: 200,
         headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
+          'Cache-Control':
+            'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
         },
       }
     );
   } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

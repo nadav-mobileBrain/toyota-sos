@@ -11,7 +11,7 @@ export default async function AdminVehiclesPage() {
   try {
     const { data, error } = await admin
       .from('vehicles')
-      .select('id, license_plate, model, is_available, unavailability_reason, created_at')
+      .select('id, license_plate, model, is_available, unavailability_reason, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (!error && data) {

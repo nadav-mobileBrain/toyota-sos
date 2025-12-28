@@ -102,7 +102,7 @@ export async function PATCH(
         unavailability_reason: is_available ? null : unavailability_reason || null,
       })
       .eq('id', id)
-      .select('id, license_plate, model, is_available, unavailability_reason, created_at')
+      .select('id, license_plate, model, is_available, unavailability_reason, created_at, updated_at')
       .single();
 
     if (error) {

@@ -23,7 +23,7 @@ export async function GET() {
     const admin = getSupabaseAdmin();
     const { data, error } = await admin
       .from('vehicles')
-      .select('id, license_plate, model, is_available, unavailability_reason, created_at')
+      .select('id, license_plate, model, is_available, unavailability_reason, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
         is_available,
         unavailability_reason: is_available ? null : unavailability_reason || null,
       })
-      .select('id, license_plate, model, is_available, unavailability_reason, created_at')
+      .select('id, license_plate, model, is_available, unavailability_reason, created_at, updated_at')
       .single();
 
     if (error) {
