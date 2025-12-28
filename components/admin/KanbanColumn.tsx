@@ -12,6 +12,7 @@ export function KanbanColumn({
   driverMap,
   clientMap,
   vehicleMap,
+  clientVehicleMap,
   conflict,
   onDragStart,
   toggleSelected,
@@ -92,6 +93,7 @@ export function KanbanColumn({
               driverMap={driverMap}
               clientMap={clientMap}
               vehicleMap={vehicleMap}
+              clientVehicleMap={clientVehicleMap}
               conflictInfo={conflict[task.id]}
               onDragStart={onDragStart}
               onEdit={onEdit}

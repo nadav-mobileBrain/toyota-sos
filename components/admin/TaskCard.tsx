@@ -37,6 +37,7 @@ export function TaskCard({
   driverMap,
   clientMap,
   vehicleMap,
+  clientVehicleMap,
   conflictInfo,
   onEdit,
   onDelete,
@@ -46,6 +47,7 @@ export function TaskCard({
 }: TaskCardProps) {
   const client = clientMap.get(task.client_id || '');
   const vehicle = vehicleMap.get(task.vehicle_id || '');
+  const clientVehicle = clientVehicleMap.get(task.client_vehicle_id || '');
   const leadAssignee = assignees.find((a) => a.is_lead);
   const leadDriver = leadAssignee
     ? driverMap.get(leadAssignee.driver_id)
@@ -232,6 +234,19 @@ export function TaskCard({
             {formatLicensePlate(vehicle.license_plate)}
             {vehicle.model ? ` · ${vehicle.model}` : ''}
           </span>
+          <span className="text-[10px] text-gray-400 font-medium">(סוכנות)</span>
+        </div>
+      )}
+
+      {/* Client Vehicle info */}
+      {clientVehicle && (
+        <div className="mb-2 flex items-center gap-1 text-xs text-gray-600">
+          <span className="font-medium">🚗</span>
+          <span className="font-mono font-bold">
+            {formatLicensePlate(clientVehicle.license_plate)}
+            {clientVehicle.model ? ` · ${clientVehicle.model}` : ''}
+          </span>
+          <span className="text-[10px] text-gray-400 font-medium">(לקוח)</span>
         </div>
       )}
 

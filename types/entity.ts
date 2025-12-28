@@ -17,3 +17,12 @@ export interface Vehicle {
   unavailability_reason?: string | null;
 }
 
+export interface ClientVehicle {
+  id: string;
+  client_id: string;
+  license_plate: string;
+  model: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+

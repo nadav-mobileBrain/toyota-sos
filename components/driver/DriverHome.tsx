@@ -177,6 +177,8 @@ export function DriverHome() {
     client_phone: string | null;
     vehicle_license_plate: string | null;
     vehicle_model: string | null;
+    client_vehicle_plate: string | null;
+    client_vehicle_model: string | null;
     distance_from_garage: number | null;
     details: string | null;
     updated_at: string;
@@ -244,6 +246,12 @@ export function DriverHome() {
           ? {
               licensePlate: t.vehicle_license_plate,
               model: t.vehicle_model,
+            }
+          : null,
+        clientVehicle: t.client_vehicle_plate
+          ? {
+              licensePlate: t.client_vehicle_plate,
+              model: t.client_vehicle_model,
             }
           : null,
         details: t.details || null,

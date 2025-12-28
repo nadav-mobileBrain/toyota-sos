@@ -37,6 +37,7 @@ export type TaskCardProps = {
     advisorColor?: AdvisorColor | null;
   }[];
   vehicle?: { licensePlate?: string | null; model?: string | null } | null;
+  clientVehicle?: { licensePlate?: string | null; model?: string | null } | null;
   details?: string | null;
   isSecondaryDriver?: boolean;
   onStatusChange?: (next: TaskCardProps['status']) => void;
@@ -58,6 +59,7 @@ export function TaskCard(props: TaskCardProps) {
     advisorColor,
     stops,
     vehicle,
+    clientVehicle,
     details,
     isSecondaryDriver,
     onStatusChange,
@@ -321,8 +323,14 @@ export function TaskCard(props: TaskCardProps) {
         )}
         {vehicle?.licensePlate ? (
           <div>
-            רכב: {formatLicensePlate(vehicle.licensePlate)}
+            רכב סוכנות: {formatLicensePlate(vehicle.licensePlate)}
             {vehicle.model ? ` • ${vehicle.model}` : ''}
+          </div>
+        ) : null}
+        {clientVehicle?.licensePlate ? (
+          <div>
+            רכב לקוח: {formatLicensePlate(clientVehicle.licensePlate)}
+            {clientVehicle.model ? ` • ${clientVehicle.model}` : ''}
           </div>
         ) : null}
         {details && details.trim() ? (

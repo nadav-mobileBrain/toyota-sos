@@ -96,7 +96,7 @@ describe('TaskDialog Validation for Replacement Car Delivery', () => {
     expect(toastError).toHaveBeenCalledWith('חובה לבחור רכב עבור משימת מסירת רכב חלופי');
 
     // 5. Select Vehicle
-    const vehicleInput = screen.getByLabelText('רכב');
+    const vehicleInput = screen.getByLabelText('רכב סוכנות');
     await userEvent.type(vehicleInput, '11-222-33');
 
     // 6. Submit success

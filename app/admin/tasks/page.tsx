@@ -42,6 +42,7 @@ export default async function AdminTasksPage() {
         details,
         phone,
         client_id,
+        client_vehicle_id,
         vehicle_id,
         created_by,
         updated_by,
@@ -178,6 +179,21 @@ export default async function AdminTasksPage() {
     // silently ignore vehicle fetch errors
   }
 
+  // Fetch client vehicles
+  let clientVehicles: ClientVehicle[] = [];
+  try {
+    const { data, error } = await admin
+      .from('clients_vehicles')
+      .select('id, client_id, license_plate, model');
+
+    if (!error) {
+      clientVehicles = data || [];
+    }
+  } catch (e) {
+    console.log('🚀 ~ AdminTasksPage ~ e:', e);
+    // silently ignore client vehicle fetch errors
+  }
+
   const navItems = [
     { name: 'דשבורד', url: '/admin/dashboard', icon: 'LayoutDashboard' },
     { name: 'משימות', url: '/admin/tasks', icon: 'ClipboardList' },
@@ -218,6 +234,7 @@ export default async function AdminTasksPage() {
           taskAssignees={taskAssignees}
           clients={clients}
           vehicles={vehicles}
+          clientVehicles={clientVehicles}
           driverBreaks={driverBreaks}
         />
       </div>

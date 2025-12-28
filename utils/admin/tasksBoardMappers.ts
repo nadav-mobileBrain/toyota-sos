@@ -7,7 +7,7 @@ import type {
   TaskAssignee,
 } from '@/types/task';
 import type { Driver } from '@/types/user';
-import type { Client, Vehicle } from '@/types/entity';
+import type { Client, Vehicle, ClientVehicle } from '@/types/entity';
 import type { GroupBy } from '@/types/board';
 import { formatLicensePlate } from '@/lib/vehicleLicensePlate';
 
@@ -38,6 +38,14 @@ export function buildClientMap(clients: Client[]): Map<string, Client> {
 
 export function buildVehicleMap(vehicles: Vehicle[]): Map<string, Vehicle> {
   const map = new Map<string, Vehicle>();
+  vehicles.forEach((v) => map.set(v.id, v));
+  return map;
+}
+
+export function buildClientVehicleMap(
+  vehicles: ClientVehicle[]
+): Map<string, ClientVehicle> {
+  const map = new Map<string, ClientVehicle>();
   vehicles.forEach((v) => map.set(v.id, v));
   return map;
 }
@@ -90,6 +98,7 @@ export function filterTasks(params: {
   now?: number;
   clientMap: Map<string, Client>;
   vehicleMap: Map<string, Vehicle>;
+  clientVehicleMap?: Map<string, ClientVehicle>;
 }): Task[] {
   const {
     tasks,
@@ -100,6 +109,7 @@ export function filterTasks(params: {
     now = Date.now(),
     clientMap,
     vehicleMap,
+    clientVehicleMap,
   } = params;
 
   const normalized = search.trim().toLowerCase();
@@ -120,7 +130,10 @@ export function filterTasks(params: {
       const vehiclePlate = t.vehicle_id
         ? formatLicensePlate(vehicleMap.get(t.vehicle_id)?.license_plate || '')
         : '';
-      const hay = `${t.title} ${clientName} ${vehiclePlate}`.toLowerCase();
+      const clientVehiclePlate = (t.client_vehicle_id && clientVehicleMap)
+        ? formatLicensePlate(clientVehicleMap.get(t.client_vehicle_id)?.license_plate || '')
+        : '';
+      const hay = `${t.title} ${clientName} ${vehiclePlate} ${clientVehiclePlate}`.toLowerCase();
       if (!hay.includes(normalized)) return false;
     }
     return true;

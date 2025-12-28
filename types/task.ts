@@ -32,6 +32,7 @@ export interface Task {
   details: string | null;
   client_id: string | null;
   vehicle_id: string | null;
+  client_vehicle_id?: string | null;
   created_by: string | null;
   updated_by: string | null;
   advisor_name?: string | null;

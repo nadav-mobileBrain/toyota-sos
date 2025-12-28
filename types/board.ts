@@ -5,7 +5,7 @@
 import type { DragStartEvent } from '@dnd-kit/core';
 import type { Task, TaskAssignee } from './task';
 import type { Driver } from './user';
-import type { Client, Vehicle } from './entity';
+import type { Client, Vehicle, ClientVehicle } from './entity';
 
 export type GroupBy = 'driver' | 'status';
 export type SortBy = 'עדיפות' | 'זמן' | 'נהג';
@@ -23,6 +23,7 @@ export interface TasksBoardProps {
   taskAssignees: TaskAssignee[];
   clients: Client[];
   vehicles: Vehicle[];
+  clientVehicles: ClientVehicle[];
   driverBreaks?: Record<string, boolean>;
 }
 
@@ -36,6 +37,7 @@ export interface KanbanColumnProps {
   driverMap: Map<string, Driver>;
   clientMap: Map<string, Client>;
   vehicleMap: Map<string, Vehicle>;
+  clientVehicleMap: Map<string, ClientVehicle>;
   conflict: Record<string, { by?: string | null; at?: string | null }>;
   onDragStart: (event: DragStartEvent) => void;
   toggleSelected: (taskId: string) => void;
@@ -54,6 +56,7 @@ export interface TaskCardProps {
   driverMap: Map<string, Driver>;
   clientMap: Map<string, Client>;
   vehicleMap: Map<string, Vehicle>;
+  clientVehicleMap: Map<string, ClientVehicle>;
   conflictInfo?: { by?: string | null; at?: string | null };
   onDragStart: (event: DragStartEvent) => void;
   onEdit: (task: Task) => void;

@@ -134,6 +134,7 @@ export async function PATCH(
       'estimated_end',
       'address',
       'client_id',
+      'client_vehicle_id',
       'phone',
       'vehicle_id',
       'advisor_name',

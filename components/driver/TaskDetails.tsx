@@ -29,6 +29,8 @@ type TaskDetailsData = {
   client_name: string | null;
   vehicle_plate: string | null;
   vehicle_model: string | null;
+  client_vehicle_plate: string | null;
+  client_vehicle_model: string | null;
   updated_at: string | null;
 };
 
@@ -150,7 +152,7 @@ export function TaskDetails({ taskId }: { taskId: string }) {
               <div className="font-medium">{task.client_name ?? '—'}</div>
             </div>
             <div>
-              <div className="text-xs text-gray-500 mb-1">רכב</div>
+              <div className="text-xs text-gray-500 mb-1">רכב סוכנות</div>
               <div className="font-medium">
                 {task.vehicle_plate ? formatLicensePlate(task.vehicle_plate) : '—'}
                 {task.vehicle_model && (
@@ -160,6 +162,19 @@ export function TaskDetails({ taskId }: { taskId: string }) {
                 )}
               </div>
             </div>
+            {task.client_vehicle_plate && (
+              <div>
+                <div className="text-xs text-gray-500 mb-1">רכב לקוח</div>
+                <div className="font-medium">
+                  {formatLicensePlate(task.client_vehicle_plate)}
+                  {task.client_vehicle_model && (
+                    <span className="block text-xs font-normal text-gray-600">
+                      {task.client_vehicle_model}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="col-span-2">
               <div className="text-xs text-gray-500 mb-1">חלון זמן</div>
               <div className="font-medium">{timeWindow}</div>

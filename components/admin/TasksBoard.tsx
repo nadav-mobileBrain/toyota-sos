@@ -40,7 +40,7 @@ import type {
   TaskAssignee,
 } from '@/types/task';
 import type { Driver } from '@/types/user';
-import type { Client, Vehicle } from '@/types/entity';
+import type { Client, Vehicle, ClientVehicle } from '@/types/entity';
 import type { GroupBy, SortBy, SortDir, TasksBoardProps } from '@/types/board';
 import { usePeriod } from '@/components/admin/dashboard/PeriodContext';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -66,6 +66,7 @@ import {
   buildDriverMap,
   buildTaskAssigneeMap,
   buildVehicleMap,
+  buildClientVehicleMap,
   computeColumns,
   filterTasks,
   getColumnTasks as getColumnTasksUtil,
@@ -107,6 +108,7 @@ export function TasksBoard({
   taskAssignees,
   clients,
   vehicles,
+  clientVehicles,
   driverBreaks = {},
 }: TasksBoardProps) {
   // State management
@@ -114,6 +116,8 @@ export function TasksBoard({
   const [assignees, setAssignees] = useState<TaskAssignee[]>(taskAssignees);
   const [vehiclesState, setVehiclesState] = useState<Vehicle[]>(vehicles);
   const [clientsState, setClientsState] = useState<Client[]>(clients);
+  const [clientVehiclesState, setClientVehiclesState] =
+    useState<ClientVehicle[]>(clientVehicles);
   const [driverBreaksState, setDriverBreaksState] =
     useState<Record<string, boolean>>(driverBreaks);
   // Persisted groupBy via URL query (?groupBy=driver|status) and localStorage
@@ -132,6 +136,10 @@ export function TasksBoard({
   useEffect(() => {
     setClientsState(clients);
   }, [clients]);
+  
+  useEffect(() => {
+    setClientVehiclesState(clientVehicles);
+  }, [clientVehicles]);
 
   // Initialize driverBreaksState only on mount, don't sync from props after that
   // to avoid overriding real-time updates
@@ -323,6 +331,11 @@ export function TasksBoard({
     [vehiclesState]
   );
 
+  const clientVehicleMap = useMemo(
+    () => buildClientVehicleMap(clientVehiclesState),
+    [clientVehiclesState]
+  );
+
   // Compute filtered + sorted tasks snapshot
   const filteredSortedTasks = useMemo(() => {
     const filteredByBasic = filterTasks({
@@ -333,6 +346,7 @@ export function TasksBoard({
       overdueOnly,
       clientMap,
       vehicleMap,
+      clientVehicleMap,
     }).filter((t) => {
       const start = new Date(t.estimated_start).getTime();
       const from = new Date(timeRange.start).getTime();
@@ -392,6 +406,10 @@ export function TasksBoard({
 
   const handleClientCreated = useCallback((client: Client) => {
     setClientsState((prev) => [...prev, client]);
+  }, []);
+
+  const handleClientVehicleCreated = useCallback((vehicle: ClientVehicle) => {
+    setClientVehiclesState((prev) => [...prev, vehicle]);
   }, []);
 
   // Dialog helpers
@@ -1170,7 +1188,7 @@ export function TasksBoard({
           <div className="relative z-50 flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-2 bg-white shrink-0">
             <input
               type="text"
-              placeholder="חפש משימות (כותרת / לקוח / רכב)"
+              placeholder="חפש משימות (כותרת / לקוח / רכב סוכנות)"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-64 rounded border border-gray-300 px-2 py-1 text-sm"
@@ -1451,6 +1469,7 @@ export function TasksBoard({
                       driverMap={driverMap}
                       clientMap={clientMap}
                       vehicleMap={vehicleMap}
+                      clientVehicleMap={clientVehicleMap}
                       conflict={conflictByTaskId}
                       onDragStart={handleDragStart}
                       toggleSelected={toggleSelected}
@@ -1501,11 +1520,13 @@ export function TasksBoard({
             drivers={drivers}
             clients={clientsState}
             vehicles={vehiclesState}
+            clientVehicles={clientVehiclesState}
             assignees={dialogAssignees}
             onCreated={handleCreated}
             onUpdated={handleUpdated}
             onVehicleCreated={handleVehicleCreated}
             onClientCreated={handleClientCreated}
+            onClientVehicleCreated={handleClientVehicleCreated}
           />
         </Suspense>
       )}

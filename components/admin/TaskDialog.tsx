@@ -20,10 +20,10 @@ import {
   getAdvisorColorHex,
 } from '@/lib/advisorColors';
 import type { Driver } from '@/types/user';
-import type { Client, Vehicle } from '@/types/entity';
+import type { Client, Vehicle, ClientVehicle } from '@/types/entity';
 import { trackFormSubmitted } from '@/lib/events';
 import { useFeatureFlag } from '@/lib/useFeatureFlag';
-import { FLAG_MULTI_DRIVER, FLAG_PDF_GENERATION } from '@/lib/flagKeys';
+import { FLAG_MULTI_DRIVER } from '@/lib/flagKeys';
 import { toastSuccess, toastError } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -93,6 +93,7 @@ interface TaskDialogProps {
   drivers: Driver[];
   clients: Client[];
   vehicles: Vehicle[];
+  clientVehicles: ClientVehicle[];
   prefilledDate?: Date | null;
   onOpenChange: (open: boolean) => void;
   onCreated?: (
@@ -107,6 +108,7 @@ interface TaskDialogProps {
   ) => void;
   onClientCreated?: (client: Client) => void;
   onVehicleCreated?: (vehicle: Vehicle) => void;
+  onClientVehicleCreated?: (vehicle: ClientVehicle) => void;
 }
 
 const types: TaskType[] = [
@@ -148,11 +150,13 @@ export function TaskDialog(props: TaskDialogProps) {
     drivers,
     clients,
     vehicles,
+    clientVehicles,
     prefilledDate,
     onCreated,
     onUpdated,
     onClientCreated,
     onVehicleCreated,
+    onClientVehicleCreated,
   } = props;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -163,6 +167,8 @@ export function TaskDialog(props: TaskDialogProps) {
   // Form state
   const [clientsLocal, setClientsLocal] = useState<Client[]>(clients);
   const [vehiclesLocal, setVehiclesLocal] = useState<Vehicle[]>(vehicles);
+  const [clientVehiclesLocal, setClientVehiclesLocal] =
+    useState<ClientVehicle[]>(clientVehicles);
   const [title, setTitle] = useState(task?.title ?? '');
   const [type, setType] = useState<TaskType>(task?.type ?? 'אחר');
   const [priority, setPriority] = useState<TaskPriority>(
@@ -223,6 +229,22 @@ export function TaskDialog(props: TaskDialogProps) {
     }
     return '';
   });
+  const [clientVehicleId, setClientVehicleId] = useState<string>(
+    task?.client_vehicle_id ?? ''
+  );
+  const [clientVehicleQuery, setClientVehicleQuery] = useState<string>(() => {
+    if (task?.client_vehicle_id && clientVehicles.length > 0) {
+      const existing = clientVehicles.find(
+        (v) => v.id === task.client_vehicle_id
+      );
+      if (existing) {
+        return `${formatLicensePlate(existing.license_plate)}${
+          existing.model ? ` · ${existing.model}` : ''
+        }`;
+      }
+    }
+    return '';
+  });
   const [leadDriverId, setLeadDriverId] = useState<string>('');
   const [coDriverIds, setCoDriverIds] = useState<string[]>([]);
   const [showAddClient, setShowAddClient] = useState(false);
@@ -232,6 +254,9 @@ export function TaskDialog(props: TaskDialogProps) {
   const [showAddVehicle, setShowAddVehicle] = useState(false);
   const [newVehiclePlate, setNewVehiclePlate] = useState('');
   const [newVehicleModel, setNewVehicleModel] = useState('');
+  const [showAddClientVehicle, setShowAddClientVehicle] = useState(false);
+  const [newClientVehiclePlate, setNewClientVehiclePlate] = useState('');
+  const [newClientVehicleModel, setNewClientVehicleModel] = useState('');
   const [advisorName, setAdvisorName] = useState(task?.advisor_name ?? '');
   const [advisorColor, setAdvisorColor] = useState<AdvisorColor | null>(
     (task?.advisor_color as AdvisorColor) || null
@@ -241,6 +266,7 @@ export function TaskDialog(props: TaskDialogProps) {
   const [occupiedVehicleIds, setOccupiedVehicleIds] = useState<Set<string>>(
     new Set()
   );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [checkingConflicts, setCheckingConflicts] = useState(false);
 
   useEffect(() => {
@@ -250,6 +276,10 @@ export function TaskDialog(props: TaskDialogProps) {
   useEffect(() => {
     setVehiclesLocal(vehicles);
   }, [vehicles]);
+
+  useEffect(() => {
+    setClientVehiclesLocal(clientVehicles);
+  }, [clientVehicles]);
 
   // Update client and vehicle details when data loads (for edit mode)
   useEffect(() => {
@@ -280,8 +310,22 @@ export function TaskDialog(props: TaskDialogProps) {
           );
         }
       }
+
+      // Update client vehicle details
+      if (task.client_vehicle_id && clientVehiclesLocal.length > 0) {
+        const existing = clientVehiclesLocal.find(
+          (v) => v.id === task.client_vehicle_id
+        );
+        if (existing) {
+          setClientVehicleQuery(
+            `${formatLicensePlate(existing.license_plate)}${
+              existing.model ? ` · ${existing.model}` : ''
+            }`
+          );
+        }
+      }
     }
-  }, [clientsLocal, vehiclesLocal, mode, task, open]);
+  }, [clientsLocal, vehiclesLocal, clientVehiclesLocal, mode, task, open]);
 
   // Track previous open state to detect when dialog opens
   const prevOpenRef = React.useRef(open);
@@ -379,6 +423,23 @@ export function TaskDialog(props: TaskDialogProps) {
       } else {
         setVehicleQuery('');
       }
+      setClientVehicleId(task?.client_vehicle_id ?? '');
+      if (task?.client_vehicle_id) {
+        const existing = clientVehicles.find(
+          (v) => v.id === task.client_vehicle_id
+        );
+        if (existing) {
+          setClientVehicleQuery(
+            `${formatLicensePlate(existing.license_plate)}${
+              existing.model ? ` · ${existing.model}` : ''
+            }`
+          );
+        } else {
+          setClientVehicleQuery('');
+        }
+      } else {
+        setClientVehicleQuery('');
+      }
       // Load driver assignments - check both assignees prop and ensure we have task context
       if (mode === 'edit' && task) {
         // Use assignees prop if available, otherwise empty array
@@ -406,11 +467,21 @@ export function TaskDialog(props: TaskDialogProps) {
       }
       setShowAddClient(false);
       setShowAddVehicle(false);
+      setShowAddClientVehicle(false);
       if (!isMulti) {
         setStops([]);
       }
     }
-  }, [open, task, mode, assignees, clients, vehicles]);
+  }, [
+    open,
+    task,
+    mode,
+    assignees,
+    clients,
+    vehicles,
+    clientVehicles,
+    prefilledDate,
+  ]);
 
   // Also update driver assignments when assignees prop changes (for edit mode)
   useEffect(() => {
@@ -543,6 +614,9 @@ export function TaskDialog(props: TaskDialogProps) {
     clientQuery,
     addressQuery,
     advisorName,
+    advisorColor,
+    clientsLocal,
+    stops,
   ]);
 
   useEffect(() => {
@@ -627,6 +701,31 @@ export function TaskDialog(props: TaskDialogProps) {
         isUnavailable: v.is_available === false,
       }));
   }, [vehiclesLocal, vehicleQuery, occupiedVehicleIds]);
+
+  const clientVehicleSuggestions = useMemo(() => {
+    const q = clientVehicleQuery.trim().toLowerCase();
+    const normalizedQuery = q.replace(/\D/g, '');
+
+    // Filter by selected client if one is selected
+    return clientVehiclesLocal
+      .filter((v) => {
+        // If a client is selected, only show their vehicles
+        if (clientId && v.client_id !== clientId) return false;
+
+        if (!q) return true; // Show all for this client if query is empty
+
+        const plate = v.license_plate?.toLowerCase() ?? '';
+        const normalizedPlate = plate.replace(/\D/g, '');
+        const model = v.model?.toLowerCase() ?? '';
+
+        return (
+          plate.includes(q) ||
+          normalizedPlate.includes(normalizedQuery) ||
+          model.includes(q)
+        );
+      })
+      .slice(0, 8);
+  }, [clientVehiclesLocal, clientVehicleQuery, clientId]);
 
   const getClientSuggestions = React.useCallback(
     (query: string) => {
@@ -856,6 +955,59 @@ export function TaskDialog(props: TaskDialogProps) {
     }
   };
 
+  const createClientVehicle = async () => {
+    const license_plate = newClientVehiclePlate.trim();
+    if (!license_plate) {
+      setError('חובה להזין מספר רישוי');
+      return;
+    }
+
+    if (!clientId) {
+      setError('חובה לבחור לקוח לפני הוספת רכב');
+      return;
+    }
+
+    if (!isValidLicensePlate(license_plate)) {
+      setError('מספר רישוי חייב להכיל בדיוק 7 או 8 ספרות');
+      return;
+    }
+
+    const normalizedPlate = normalizeLicensePlate(license_plate);
+
+    try {
+      const res = await fetch('/api/admin/clients-vehicles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: clientId,
+          license_plate: normalizedPlate,
+          model: newClientVehicleModel || null,
+        }),
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || 'יצירת רכב לקוח נכשלה');
+      }
+      const json = await res.json();
+      const created: ClientVehicle = json.data;
+      setClientVehiclesLocal((prev) => [...prev, created]);
+      onClientVehicleCreated?.(created);
+      setClientVehicleId(created.id);
+      setClientVehicleQuery(
+        `${formatLicensePlate(created.license_plate)}${
+          created.model ? ` · ${created.model}` : ''
+        }`
+      );
+      setShowAddClientVehicle(false);
+      setNewClientVehiclePlate('');
+      setNewClientVehicleModel('');
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || 'יצירת רכב לקוח נכשלה');
+      toastError(error.message || 'יצירת רכב לקוח נכשלה');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const v = validate();
@@ -1071,11 +1223,11 @@ export function TaskDialog(props: TaskDialogProps) {
 
       // Validation for "Pickup Vehicle / Transport" (איסוף רכב/שינוע)
       if (type === 'איסוף רכב/שינוע') {
-        if (!finalVehicleId) {
-          throw new Error('חובה לבחור רכב עבור משימת איסוף רכב/שינוע');
-        }
         if (!finalClientId) {
           throw new Error('חובה לבחור לקוח עבור משימת איסוף רכב/שינוע');
+        }
+        if (!clientVehicleId) {
+          throw new Error('חובה לבחור רכב לקוח עבור משימת איסוף רכב/שינוע');
         }
         if (!addressForTask.trim()) {
           throw new Error('חובה להזין כתובת עבור משימת איסוף רכב/שינוע');
@@ -1089,11 +1241,11 @@ export function TaskDialog(props: TaskDialogProps) {
 
       // Validation for "Return Vehicle / Transport" (החזרת רכב/שינוע)
       if (type === 'החזרת רכב/שינוע') {
-        if (!finalVehicleId) {
-          throw new Error('חובה לבחור רכב עבור משימת החזרת רכב/שינוע');
-        }
         if (!finalClientId) {
           throw new Error('חובה לבחור לקוח עבור משימת החזרת רכב/שינוע');
+        }
+        if (!clientVehicleId) {
+          throw new Error('חובה לבחור רכב לקוח עבור משימת החזרת רכב/שינוע');
         }
         // Check if client has phone
         const selectedClient = clientsLocal.find((c) => c.id === finalClientId);
@@ -1152,6 +1304,7 @@ export function TaskDialog(props: TaskDialogProps) {
           estimated_end: estimatedEndDatetime || null,
           address: addressForTask || '',
           client_id: finalClientId || null,
+          client_vehicle_id: clientVehicleId || null,
           phone: !isMultiStopType && clientPhone ? clientPhone : null,
           vehicle_id: finalVehicleId || null,
           distance_from_garage: finalDistanceFromGarage || null,
@@ -1224,6 +1377,7 @@ export function TaskDialog(props: TaskDialogProps) {
           estimated_end: estimatedEndDatetime || undefined,
           address: addressForTask || '',
           client_id: finalClientId || null,
+          client_vehicle_id: clientVehicleId || null,
           phone: !isMultiStopType && clientPhone ? clientPhone : undefined,
           vehicle_id: finalVehicleId || null,
           distance_from_garage: finalDistanceFromGarage || null,
@@ -1518,13 +1672,11 @@ export function TaskDialog(props: TaskDialogProps) {
 
                 <label className="flex flex-col gap-1">
                   <span className="text-sm font-medium text-primary">
-                    רכב
+                    רכב סוכנות
                     {(type === 'ביצוע טסט' ||
                       type === 'חילוץ רכב תקוע' ||
                       type === 'מסירת רכב חלופי' ||
-                      type === 'הסעת לקוח הביתה' ||
-                      type === 'איסוף רכב/שינוע' ||
-                      type === 'החזרת רכב/שינוע') && (
+                      type === 'הסעת לקוח הביתה') && (
                       <span className="text-red-500"> *</span>
                     )}
                   </span>
@@ -1533,7 +1685,7 @@ export function TaskDialog(props: TaskDialogProps) {
                       <Input
                         type="text"
                         id="vehicle"
-                        placeholder="רכב"
+                        placeholder="רכב סוכנות"
                         value={vehicleQuery}
                         onChange={(e) => {
                           setVehicleQuery(e.target.value);
@@ -1687,6 +1839,116 @@ export function TaskDialog(props: TaskDialogProps) {
                     </div>
                   )}
                 </label>
+
+                {(type === 'איסוף רכב/שינוע' || type === 'החזרת רכב/שינוע') && (
+                  <label className="flex flex-col gap-1">
+                    <span className="text-sm font-medium text-blue-600">
+                      רכב לקוח <span className="text-red-500"> *</span>
+                    </span>
+                    <div className="flex gap-2">
+                      <div className="grid w-full max-w-sm items-center gap-1">
+                        <Input
+                          type="text"
+                          placeholder="רכב לקוח (חפש לפי מספר רישוי או דגם)"
+                          value={clientVehicleQuery}
+                          onChange={(e) => {
+                            setClientVehicleQuery(e.target.value);
+                            setClientVehicleId('');
+                          }}
+                        />
+                        {clientVehicleSuggestions.length > 0 &&
+                          !clientVehicleId && (
+                            <div className="mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-300 bg-white text-sm shadow-sm">
+                              {clientVehicleSuggestions.map((v) => (
+                                <button
+                                  key={v.id}
+                                  type="button"
+                                  className="flex w-full items-center justify-between px-2 py-1 text-right hover:bg-blue-50"
+                                  onClick={() => {
+                                    setClientVehicleId(v.id);
+                                    setClientVehicleQuery(
+                                      `${formatLicensePlate(v.license_plate)}${
+                                        v.model ? ` · ${v.model}` : ''
+                                      }`
+                                    );
+                                  }}
+                                >
+                                  <span>
+                                    {formatLicensePlate(v.license_plate)}
+                                    {v.model ? ` · ${v.model}` : ''}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                      </div>
+                      <button
+                        type="button"
+                        className="rounded border border-gray-300 px-2 text-xs h-9 self-end bg-blue-500 text-white flex items-center justify-center"
+                        onClick={() => setShowAddClientVehicle((v) => !v)}
+                      >
+                        <PlusIcon className="w-4 h-4" />
+                        חדש
+                      </button>
+                    </div>
+                    {showAddClientVehicle && (
+                      <div className="mt-2 grid grid-cols-3 gap-2 p-2 border rounded bg-slate-50">
+                        {!clientId && (
+                          <div className="col-span-3 mb-1 text-[11px] font-bold text-red-600 bg-red-50 p-1 rounded border border-red-100">
+                            ⚠️ חובה לבחור לקוח לפני הוספת רכב
+                          </div>
+                        )}
+                        <div className="col-span-1 flex flex-col gap-1">
+                          <label className="text-xs font-medium text-blue-600">
+                            מספר רישוי
+                          </label>
+                          <input
+                            className="rounded border border-gray-300 p-1 text-sm"
+                            placeholder="7 או 8 ספרות"
+                            value={newClientVehiclePlate}
+                            onChange={(e) => {
+                              const input = e.target.value;
+                              const cleaned = input.replace(/[^\d-]/g, '');
+                              setNewClientVehiclePlate(
+                                formatLicensePlate(cleaned)
+                              );
+                            }}
+                          />
+                        </div>
+                        <div className="col-span-1 flex flex-col gap-1">
+                          <label className="text-xs font-medium text-blue-600">
+                            דגם
+                          </label>
+                          <input
+                            className="rounded border border-gray-300 p-1 text-sm"
+                            placeholder="דגם"
+                            value={newClientVehicleModel}
+                            onChange={(e) =>
+                              setNewClientVehicleModel(e.target.value)
+                            }
+                          />
+                        </div>
+                        <div className="col-span-1 flex items-end gap-1">
+                          <button
+                            type="button"
+                            disabled={!clientId}
+                            className="rounded bg-blue-600 px-2 py-1 text-xs text-white disabled:opacity-50"
+                            onClick={createClientVehicle}
+                          >
+                            הוסף
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded border border-gray-300 px-2 py-1 text-xs"
+                            onClick={() => setShowAddClientVehicle(false)}
+                          >
+                            בטל
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </label>
+                )}
               </div>
             )}
 
