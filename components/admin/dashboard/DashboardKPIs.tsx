@@ -428,7 +428,7 @@ export function DashboardKPIs() {
             isPositiveGood={true}
             loading={loading}
             error={error}
-            secondary="אחוז נהגים עם משימות פעילות"
+            secondary="אחוז נהגים פעילים עם משימות פעילות"
             actionArea={
               <div className="flex items-center gap-2">
                 <div

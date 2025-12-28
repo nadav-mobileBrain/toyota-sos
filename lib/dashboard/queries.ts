@@ -382,21 +382,16 @@ export async function getDriverUtilization(
   const key = makeKey('driverUtilization', range);
   const cached = getCached<number>(key);
   if (cached !== null) return cached;
-  const supa = getClient(client);
 
-  // Get all drivers
-  const { data: allDrivers, error: driversError } = await supa
-    .from('profiles')
-    .select('id')
-    .eq('role', 'driver')
-    .limit(1000);
+  // Get active drivers count (drivers who received tasks in the period)
+  const activeDrivers = await getActiveDriversCount(range, client);
 
-  if (driversError || !allDrivers || allDrivers.length === 0) {
+  if (activeDrivers === 0) {
     setCached(key, 0);
     return 0;
   }
 
-  const totalDrivers = allDrivers.length;
+  const supa = getClient(client);
 
   // Get drivers with active tasks (assigned tasks that are not completed) in the range
   const { data: activeAssignments, error: assignmentsError } = await supa
@@ -427,12 +422,10 @@ export async function getDriverUtilization(
     }
   });
 
-  const utilizationPct =
-    totalDrivers === 0
-      ? 0
-      : Math.round((driversWithActiveTasks.size / totalDrivers) * 100);
+  const utilizationPct = Math.round((driversWithActiveTasks.size / activeDrivers) * 100);
 
-  setCached(key, utilizationPct);
+  const ttl = isRecentRange(range) ? THIRTY_SECONDS_MS : FIVE_MINUTES_MS;
+  setCached(key, utilizationPct, ttl);
   return utilizationPct;
 }
 

@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await admin
       .from('task_assignees')
       .select(
-        'driver_id, assigned_at, tasks(id,status,updated_at), profiles:driver_id(name,employee_id)'
+        'driver_id, assigned_at, tasks(id,status,updated_at,deleted_at), profiles:driver_id(name,employee_id)'
       )
       .eq('is_lead', true)
       .gte('assigned_at', rangeStart)
@@ -48,8 +48,11 @@ export async function GET(request: NextRequest) {
 
     (data || []).forEach((row: any) => {
       const driverId = row.driver_id as string | null;
-      const task = row.tasks as { status?: string; updated_at?: string } | null;
+      const task = row.tasks as { status?: string; updated_at?: string; deleted_at?: string | null } | null;
       if (!driverId || !task) return;
+      
+      // Skip soft-deleted tasks
+      if (task.deleted_at) return;
 
       const key = driverId;
       const profiles = row.profiles;
