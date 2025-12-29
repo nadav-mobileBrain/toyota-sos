@@ -35,7 +35,9 @@ export default async function AdminCalendarPage() {
         ...task,
         stops: task.task_stops
           ? task.task_stops
-              .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+              .sort(
+                (a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)
+              )
               .map((stop: any) => ({
                 id: stop.id,
                 task_id: task.id,
@@ -186,4 +188,3 @@ export default async function AdminCalendarPage() {
     </main>
   );
 }
-

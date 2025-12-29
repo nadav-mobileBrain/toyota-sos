@@ -103,7 +103,8 @@ RETURNS TABLE (
   updated_at timestamptz,
   distance_from_garage numeric,
   advisor_name text,
-  advisor_color public.advisor_color
+  advisor_color public.advisor_color,
+  is_lead_driver boolean
 )
 LANGUAGE plpgsql
 STABLE
@@ -157,7 +158,8 @@ BEGIN
     t.updated_at,
     t.distance_from_garage,
     t.advisor_name,
-    t.advisor_color
+    t.advisor_color,
+    ta.is_lead AS is_lead_driver
   FROM public.tasks t
   INNER JOIN public.task_assignees ta ON ta.task_id = t.id
   LEFT JOIN public.clients c ON c.id = t.client_id
