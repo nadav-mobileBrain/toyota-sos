@@ -9,6 +9,8 @@ First, run the development server:
 bun dev
 ```
 
+# transfer owener
+
 # For Localhost:
 
 curl "http://localhost:3000/api/cron/check-late-tasks?key=ToyotaSecureKey9988"
