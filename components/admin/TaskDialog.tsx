@@ -2771,9 +2771,7 @@ export function TaskDialog(props: TaskDialogProps) {
 
               <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1">
-                  <Label className="text-blue-600">
-                    תאריך
-                  </Label>
+                  <Label className="text-blue-600">תאריך</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -2819,9 +2817,7 @@ export function TaskDialog(props: TaskDialogProps) {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <Label className="text-blue-600">
-                    שעת התחלה
-                  </Label>
+                  <Label className="text-blue-600">שעת התחלה</Label>
                   <input
                     type="time"
                     className="rounded border border-gray-300 p-2"
@@ -2831,9 +2827,7 @@ export function TaskDialog(props: TaskDialogProps) {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <Label className="text-blue-600">
-                    שעת סיום
-                  </Label>
+                  <Label className="text-blue-600">שעת סיום</Label>
                   <input
                     type="time"
                     className="rounded border border-gray-300 p-2"

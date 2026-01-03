@@ -19,8 +19,8 @@ self.addEventListener('push', (event) => {
     const options = {
       title: data.title || 'Toyota SOS',
       body: data.body || '',
-      icon: '/toyota-icon.png',
-      badge: '/toyota-badge.png',
+      icon: '/icons/bell.svg',
+      badge: '/icons/bell.svg',
       tag: data.tag || 'default',
       data: data.data || {},
       vibrate: [200, 100, 200],
@@ -109,4 +109,3 @@ self.addEventListener('message', (event) => {
     soundAllowed = true;
   }
 });
-
