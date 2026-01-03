@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Supabase Realtime WebSocket</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <h1>Supabase Realtime WebSocket Test</h1>
+  <div id="output"></div>
+
+  <script>
+    const output = document.getElementById('output');
+
+    function log(msg, isError = false) {
+      const p = document.createElement('p');
+      p.textContent = msg;
+      p.style.color = isError ? 'red' : 'green';
+      output.appendChild(p);
+      console.log(msg);
+    }
+
+    // Replace these with your actual values
+    const SUPABASE_URL = 'https://lsttbqwsomqandkqklrr.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzdHRicXdzb21xYW5ka3FrbHJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNDgzNjksImV4cCI6MjA4MjkyNDM2OX0.QGiE__kalMam31PG0gX_Ow7wQrvl7FHs-uq348SXzx4';
+
+    async function testConnection() {
+      log('1. Creating Supabase client...');
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      log('2. Testing WebSocket connection...');
+
+      const channel = supabase
+        .channel('test-channel-' + Date.now())
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'tasks'
+        }, (payload) => {
+          log('✅ Received realtime event: ' + JSON.stringify(payload));
+        })
+        .subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') {
+            log('✅ Successfully connected to Supabase Realtime!');
+            log('✅ WebSocket is working!');
+          } else if (status === 'TIMED_OUT') {
+            log('❌ Subscription TIMED_OUT', true);
+            log('This usually means RLS is blocking or authentication required', true);
+          } else if (status === 'CHANNEL_ERROR') {
+            log('❌ CHANNEL_ERROR: ' + (err || 'Unknown error'), true);
+            log('WebSocket connection failed!', true);
+          } else if (status === 'CLOSED') {
+            log('❌ Connection CLOSED', true);
+          } else {
+            log('Status: ' + status);
+          }
+        });
+
+      // Test raw WebSocket connection
+      log('3. Testing raw WebSocket...');
+      const wsUrl = `wss://lsttbqwsomqandkqklrr.supabase.co/realtime/v1/websocket?apikey=${SUPABASE_ANON_KEY}&vsn=1.0.0`;
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        log('✅ Raw WebSocket connected!');
+      };
+
+      ws.onerror = (err) => {
+        log('❌ Raw WebSocket error: ' + err, true);
+      };
+
+      ws.onclose = () => {
+        log('Raw WebSocket closed');
+      };
+    }
+
+    testConnection();
+  </script>
+</body>
+</html>

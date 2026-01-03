@@ -43,13 +43,13 @@ import type { Driver } from '@/types/user';
 import type { Client, Vehicle, ClientVehicle } from '@/types/entity';
 import type { GroupBy, SortBy, SortDir, TasksBoardProps } from '@/types/board';
 import { usePeriod } from '@/components/admin/dashboard/PeriodContext';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   statusLabel,
   priorityColor,
   priorityLabel,
   typeLabel,
 } from '@/lib/task-utils';
+import { useAuth } from '@/components/AuthProvider';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -112,6 +112,9 @@ export function TasksBoard({
   clientVehicles,
   driverBreaks = {},
 }: TasksBoardProps) {
+  // Get the shared authenticated client from context
+  const { client: supabaseClient } = useAuth();
+  
   // State management
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [assignees, setAssignees] = useState<TaskAssignee[]>(taskAssignees);
@@ -152,6 +155,8 @@ export function TasksBoard({
 
   // Fallback: Poll driver breaks every 30 seconds as backup to realtime
   useEffect(() => {
+    if (!supabaseClient) return;
+    
     let cancelled = false;
     let pollInterval: NodeJS.Timeout;
 
@@ -159,10 +164,7 @@ export function TasksBoard({
       if (cancelled) return;
 
       try {
-        const { createBrowserClient } = await import('@/lib/auth');
-        const client = createBrowserClient();
-
-        const { data, error } = await client
+        const { data, error } = await supabaseClient
           .from('driver_breaks')
           .select('driver_id, ended_at')
           .is('ended_at', null);
@@ -201,7 +203,7 @@ export function TasksBoard({
       clearTimeout(startPolling);
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, []);
+  }, [supabaseClient]);
 
   useEffect(() => {
     setAssignees(taskAssignees);
@@ -941,15 +943,40 @@ export function TasksBoard({
   // Realtime updates (tasks, task_assignees, driver_breaks)
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    console.log('[DriverBreaks] Setting up real-time subscription...');
-    // Lazy load browser client to avoid SSR issues
-    let supa: SupabaseClient;
-    let channel: ReturnType<typeof supa.channel> | null = null;
-    (async () => {
+    if (!supabaseClient) {
+      console.log('[TasksBoard] Waiting for Supabase client...');
+      return;
+    }
+    
+    let channel: ReturnType<typeof supabaseClient.channel> | null = null;
+    let isMounted = true;
+    
+    // We need to ensure the Supabase session is loaded before setting up Realtime
+    // This is async because the session is restored from localStorage
+    const setupRealtime = async () => {
       try {
-        const { createBrowserClient } = await import('@/lib/auth');
-        supa = createBrowserClient();
-        channel = supa
+        // Check if we have a valid Supabase session (JWT)
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        
+        if (!session) {
+          console.warn('[TasksBoard] No Supabase session found - Realtime RLS may fail');
+          console.log('[TasksBoard] Attempting to refresh session...');
+          
+          // Try to refresh the session
+          const { data: refreshData } = await supabaseClient.auth.refreshSession();
+          if (!refreshData.session) {
+            console.error('[TasksBoard] ❌ No valid session for Realtime - updates will not work');
+            return;
+          }
+          console.log('[TasksBoard] ✅ Session refreshed successfully');
+        } else {
+          console.log('[TasksBoard] ✅ Valid Supabase session found, user:', session.user?.id);
+        }
+        
+        if (!isMounted) return;
+        
+        console.log('[TasksBoard] Setting up real-time subscription...');
+        channel = supabaseClient
           .channel('realtime:admin-tasks')
           .on(
             'postgres_changes',
@@ -965,44 +992,27 @@ export function TasksBoard({
                   const row = payload.new as Task;
                   console.log('[TasksBoard] UPDATE event received:', {
                     taskId: row.id,
-                    advisor_color: row.advisor_color,
-                    advisor_name: row.advisor_name,
+                    status: row.status,
                     fullRow: row,
-                    hasAdvisorColor: 'advisor_color' in row,
-                    hasAdvisorName: 'advisor_name' in row,
-                    isManuallyUpdating: updatingTasksRef.current.has(row.id),
                   });
 
-                  // Skip realtime update if this task is being manually updated
+                  // Skip realtime update if this task is being manually updated by admin
                   if (updatingTasksRef.current.has(row.id)) {
-                    console.log(
-                      '[TasksBoard] Skipping realtime update - task is being manually updated'
-                    );
                     return prev;
                   }
 
                   return prev.map((t) => {
                     if (t.id === row.id) {
-                      // Merge only the fields that exist in the update payload
-                      // This ensures we don't lose fields that weren't included in the realtime event
-                      // Explicitly preserve advisor_color and advisor_name if they exist in the update
-                      const updated = { ...t };
-                      Object.keys(row).forEach((key) => {
-                        const value = row[key as keyof Task];
-                        // Update field if it exists in the payload (even if null/undefined)
-                        if (key in row) {
-                          (updated as any)[key] = value;
-                        }
-                      });
-                      // Explicitly handle advisor fields - update if present in payload, otherwise keep existing
-                      if ('advisor_color' in row) {
-                        updated.advisor_color = row.advisor_color ?? null;
-                      }
-                      if ('advisor_name' in row) {
-                        updated.advisor_name = row.advisor_name ?? null;
-                      }
-
-                      return updated;
+                      // Merge the entire row from Supabase to ensure all fields (including status and dates) are up to date
+                      // We use spread to ensure we don't lose any fields that exist in the local state but not in the payload
+                      const updatedTask = { 
+                        ...t, 
+                        ...row,
+                        // Ensure we use the status from the DB as it defines the column
+                        status: row.status || t.status
+                      };
+                      
+                      return updatedTask;
                     }
                     return t;
                   });
@@ -1115,7 +1125,12 @@ export function TasksBoard({
             }
           )
           .subscribe((status) => {
+            console.log('[TasksBoard] Realtime subscription status:', status);
+            if (status === 'SUBSCRIBED') {
+              console.log('[TasksBoard] ✅ Successfully subscribed to realtime updates');
+            }
             if (status === 'TIMED_OUT' || status === 'CLOSED') {
+              console.log('[TasksBoard] ⚠️ Subscription issue, reconnecting...');
               // Auto-reconnect on timeout or close
               setTimeout(() => {
                 if (status === 'TIMED_OUT') {
@@ -1124,23 +1139,29 @@ export function TasksBoard({
                 channel?.subscribe();
               }, 1000);
             }
+            if (status === 'CHANNEL_ERROR') {
+              console.error('[TasksBoard] ❌ Channel error - check Supabase realtime config');
+            }
           });
       } catch (error) {
-        console.log('🚀 ~ TasksBoard ~ error:', error);
-        // Silent error handling
-      }
-    })();
-    // Cleanup
-    return () => {
-      try {
-        if (channel && supa) {
-          supa.removeChannel(channel);
-        }
-      } catch (error) {
-        console.error('[DriverBreaks] Error cleaning up channel:', error);
+        console.error('[TasksBoard] Error setting up realtime:', error);
       }
     };
-  }, []);
+    
+    setupRealtime();
+    
+    // Cleanup
+    return () => {
+      isMounted = false;
+      try {
+        if (channel && supabaseClient) {
+          supabaseClient.removeChannel(channel);
+        }
+      } catch (error) {
+        console.error('[TasksBoard] Error cleaning up channel:', error);
+      }
+    };
+  }, [supabaseClient]);
 
   return (
     <DndContext

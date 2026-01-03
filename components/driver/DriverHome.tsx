@@ -253,7 +253,7 @@ export function DriverHome() {
             }
           : null,
         details: t.details || null,
-        isSecondaryDriver: !t.is_lead_driver,
+        isSecondaryDriver: t.is_lead_driver === false,
       }));
 
       const taskIds = mapped.map((t) => t.id);
@@ -426,14 +426,37 @@ export function DriverHome() {
   // Realtime: refresh driver tasks when tasks or assignments change (admin updates/new tasks)
   useEffect(() => {
     if (!client) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supa = client as any;
-    const channel = supa
-      .channel('realtime:driver-tasks')
+
+    console.log('[DriverHome] Setting up realtime subscription...');
+
+    // Check if user is authenticated for realtime
+    client.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        console.error(
+          '❌ [DriverHome] No Supabase auth session - Realtime will not work!'
+        );
+        console.error(
+          '⚠️ Driver must login with proper credentials for Realtime to work'
+        );
+      } else {
+        console.log(
+          '✅ [DriverHome] Driver has valid auth session:',
+          session.user.id
+        );
+      }
+    });
+
+    // Create unique channel name to avoid collisions (especially in React StrictMode)
+    const channelName = `driver-tasks-${Date.now()}`;
+
+    // Simple realtime setup - similar pattern to the working admin TasksBoard
+    const channel = client
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
         () => {
+          console.log('[DriverHome] tasks change received, refreshing...');
           fetchPageRef.current(true);
         }
       )
@@ -441,14 +464,38 @@ export function DriverHome() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'task_assignees' },
         () => {
+          console.log(
+            '[DriverHome] task_assignees change received, refreshing...'
+          );
           fetchPageRef.current(true);
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(
+            '[DriverHome] ✅ Successfully subscribed to realtime updates'
+          );
+        } else if (status === 'TIMED_OUT') {
+          console.warn(
+            '[DriverHome] ⚠️ Subscription TIMED_OUT - This can happen in dev mode with React StrictMode',
+            err
+          );
+          // Auto-retry after timeout (common in development with double-mounting)
+          setTimeout(() => {
+            console.log('[DriverHome] Retrying subscription...');
+            channel.subscribe();
+          }, 2000);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error(
+            '[DriverHome] ❌ CHANNEL_ERROR - Check Supabase realtime config',
+            err
+          );
+        }
+      });
 
     return () => {
       try {
-        supa.removeChannel(channel);
+        client.removeChannel(channel);
       } catch {
         // ignore cleanup errors
       }

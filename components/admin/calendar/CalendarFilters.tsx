@@ -26,10 +26,10 @@ const taskTypes: TaskType[] = [
 const taskStatuses: TaskStatus[] = ['בהמתנה', 'בעבודה', 'הושלמה', 'חסומה'];
 
 const statusLabels: Record<TaskStatus, string> = {
-  בהמתנה: 'ממתינה',
+  בהמתנה: 'ממתינה לביצוע',
   בעבודה: 'בביצוע',
   חסומה: 'חסומה',
-  הושלמה: 'הושלמה',
+  הושלמה: 'בוצעה',
 };
 
 interface CalendarFiltersPanelProps {
