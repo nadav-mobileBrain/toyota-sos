@@ -18,7 +18,7 @@ export async function GET() {
     const admin = getSupabaseAdmin();
     const { data, error } = await admin
       .from('clients')
-      .select('id, name, email')
+      .select('id, name, phone, email')
       .order('name');
 
     if (error)
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         phone: phone || null,
       })
-      .select('id, name')
+      .select('id, name, phone')
       .single();
 
     if (error) {
