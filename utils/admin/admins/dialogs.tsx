@@ -15,6 +15,7 @@ import {
   AlertDialog,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -88,6 +89,9 @@ export function AdminEditDialog({
           <AlertDialogTitle>
             {mode === 'create' ? 'יצירת מנהל חדש' : 'עריכת מנהל'}
           </AlertDialogTitle>
+          <AlertDialogDescription>
+            {mode === 'create' ? 'הגדר שם משתמש ותפקיד למנהל החדש במערכת.' : 'ערוך את פרטי המנהל ותפקידו.'}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <form className="mt-3 space-y-4" onSubmit={onSubmit} autoComplete="off">
           <div className="space-y-1.5">
@@ -222,6 +226,9 @@ export function DeleteAdminDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>מחיקת מנהל</AlertDialogTitle>
+          <AlertDialogDescription>
+            פעולה זו תסיר את המנהל מהמערכת לצמיתות. פעולה זו אינה הפיכה.
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <p className="mt-2 text-xs text-gray-700">
           האם אתה בטוח שברצונך למחוק את המנהל? פעולה זו אינה הפיכה.

@@ -14,7 +14,12 @@ export async function GET() {
   try {
     const cookieStore = await cookies();
     const roleCookie = cookieStore.get('toyota_role')?.value;
-    if (!roleCookie || (roleCookie !== 'admin' && roleCookie !== 'manager' && roleCookie !== 'viewer')) {
+    if (
+      !roleCookie ||
+      (roleCookie !== 'admin' &&
+        roleCookie !== 'manager' &&
+        roleCookie !== 'viewer')
+    ) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -34,12 +39,12 @@ export async function GET() {
         ok: true,
         data: data ?? [],
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (err: any) {
     return NextResponse.json(
       { error: err?.message || 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -48,14 +53,21 @@ export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
     const roleCookie = cookieStore.get('toyota_role')?.value;
-    if (!roleCookie || (roleCookie !== 'admin' && roleCookie !== 'manager' && roleCookie !== 'viewer')) {
+    if (
+      !roleCookie ||
+      (roleCookie !== 'admin' &&
+        roleCookie !== 'manager' &&
+        roleCookie !== 'viewer')
+    ) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json().catch(() => ({}));
     const payload = {
       name: body?.name,
-      employeeId: body?.employeeId ? String(body.employeeId).trim() || undefined : undefined,
+      employeeId: body?.employeeId
+        ? String(body.employeeId).trim() || undefined
+        : undefined,
       email: body?.email,
       password: body?.password,
       role: body?.role,
@@ -69,7 +81,7 @@ export async function POST(request: NextRequest) {
           error: 'Validation failed',
           fieldErrors,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -78,7 +90,7 @@ export async function POST(request: NextRequest) {
     if (!password) {
       return NextResponse.json(
         { error: 'סיסמה היא שדה חובה' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -94,7 +106,7 @@ export async function POST(request: NextRequest) {
     if (emailCheckErr && emailCheckErr.code !== 'PGRST116') {
       return NextResponse.json(
         { error: emailCheckErr.message },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -104,7 +116,7 @@ export async function POST(request: NextRequest) {
           error: 'אימייל כבר קיים במערכת',
           code: 'EMAIL_EXISTS',
         },
-        { status: 409 },
+        { status: 409 }
       );
     }
 
@@ -120,7 +132,7 @@ export async function POST(request: NextRequest) {
       if (existingErr && existingErr.code !== 'PGRST116') {
         return NextResponse.json(
           { error: existingErr.message },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -130,7 +142,7 @@ export async function POST(request: NextRequest) {
             error: 'מספר עובד כבר קיים במערכת',
             code: 'EMPLOYEE_ID_EXISTS',
           },
-          { status: 409 },
+          { status: 409 }
         );
       }
     }
@@ -148,7 +160,7 @@ export async function POST(request: NextRequest) {
     if (createErr || !createdUser?.user?.id) {
       return NextResponse.json(
         { error: createErr?.message || 'Failed to create auth user' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -175,7 +187,7 @@ export async function POST(request: NextRequest) {
     if (upErr) {
       return NextResponse.json(
         { error: upErr.message || 'Failed to upsert profile' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -184,13 +196,12 @@ export async function POST(request: NextRequest) {
         ok: true,
         data: profile,
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (err: any) {
     return NextResponse.json(
       { error: err?.message || 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
-

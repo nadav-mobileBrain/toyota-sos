@@ -12,6 +12,7 @@ import {
   AlertDialog,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -100,6 +101,9 @@ export function VehicleEditDialog({
           <AlertDialogTitle>
             {mode === 'create' ? 'יצירת רכב חדש' : 'עריכת רכב'}
           </AlertDialogTitle>
+          <AlertDialogDescription>
+            {mode === 'create' ? 'מלא את הפרטים להוספת רכב חדש למערכת.' : 'ערוך את פרטי הרכב לפי הצורך.'}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <form className="mt-3 space-y-4" onSubmit={onSubmit}>
           <div className="space-y-1.5">
@@ -212,6 +216,9 @@ export function DeleteVehicleDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>מחיקת רכב</AlertDialogTitle>
+          <AlertDialogDescription>
+            פעולה זו תמחק לצמיתות את הרכב מהמערכת. לא ניתן לבטל פעולה זו.
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <p className="mt-2 text-xs text-gray-700">
           האם אתה בטוח שברצונך למחוק את הרכב? פעולה זו אינה הפיכה ועלולה להסיר

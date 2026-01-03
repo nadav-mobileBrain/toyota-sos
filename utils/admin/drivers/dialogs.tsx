@@ -11,6 +11,7 @@ import {
   AlertDialog,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -76,6 +77,9 @@ export function DriverEditDialog({
           <AlertDialogTitle>
             {mode === 'create' ? 'יצירת נהג חדש' : 'עריכת נהג'}
           </AlertDialogTitle>
+          <AlertDialogDescription>
+            {mode === 'create' ? 'הגדר שם ופרטי קשר לנהג החדש במערכת.' : 'ערוך את פרטי הנהג לפי הצורך.'}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <form className="mt-3 space-y-4" onSubmit={onSubmit}>
           <div className="space-y-1.5">
@@ -163,6 +167,9 @@ export function DeleteDriverDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>מחיקת נהג</AlertDialogTitle>
+          <AlertDialogDescription>
+            פעולה זו תמחק את הנהג מהמערכת לצמיתות. פעולה זו אינה הפיכה ועלולה להשפיע על משימות קיימות.
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <p className="mt-2 text-xs text-gray-700">
           האם אתה בטוח שברצונך למחוק את הנהג? פעולה זו אינה הפיכה ועלולה להסיר
