@@ -84,7 +84,7 @@ export function DriverHome() {
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
-  const { client } = useAuth();
+  const { client, error: authError } = useAuth();
   const urlTab =
     (search.get('tab') as 'today' | 'all' | 'overdue' | 'forms' | null) ??
     'today';
@@ -98,6 +98,14 @@ export function DriverHome() {
   const pullStartYRef = useRef<number | null>(null);
   const isPullingRef = useRef(false);
   const PULL_THRESHOLD_PX = 64;
+
+  // Handle auth errors
+  useEffect(() => {
+    if (!client && authError) {
+      setError(authError);
+      setIsInitialLoading(false);
+    }
+  }, [client, authError]);
 
   const setTab = (next: 'today' | 'all' | 'overdue' | 'forms') => {
     const params = new URLSearchParams(search.toString());
@@ -655,10 +663,12 @@ export function DriverHome() {
         </div>
       ) : (
         <div className="space-y-3">
-          {error ? (
+          {error || (!client && authError) ? (
             <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-800">
               <div className="flex items-center justify-between">
-                <span>אירעה שגיאה בטעינת המשימות</span>
+                <span>
+                  {error || authError || 'אירעה שגיאה בטעינת המשימות'}
+                </span>
                 <button
                   type="button"
                   className="rounded-md bg-red-600 px-3 py-1 text-white text-sm"

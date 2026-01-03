@@ -15,6 +15,24 @@ const getSupabaseConfigBrowser = () => {
     };
   }
 
+  // Fallback: Check standard env vars if window config is missing
+  // Next.js replaces process.env.NEXT_PUBLIC_* at build time, so this works if they are set in .env during build
+  const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const envKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (envUrl && envKey) {
+    console.warn(
+      'Supabase config missing from window, using process.env fallback'
+    );
+    return {
+      url: envUrl,
+      key: envKey,
+    };
+  }
+
+  console.error(
+    'Supabase config not available on client (window.__SUPABASE_CONFIG__ missing)'
+  );
   throw new Error('Supabase config not available on client');
 };
 
@@ -268,7 +286,9 @@ export const loginAsDriver = async (
         // Password is: Driver@{numeric_id} (e.g., Driver@157)
         const derivedPassword = `Driver@${numericId}`;
 
-        console.log(`[Auth] Attempting login for driver ${row.employee_id} (${row.email})...`);
+        console.log(
+          `[Auth] Attempting login for driver ${row.employee_id} (${row.email})...`
+        );
         console.log(`[Auth] Using password: Driver@${numericId}`);
 
         const { error: authErr, data } = await client.auth.signInWithPassword({
@@ -290,25 +310,36 @@ export const loginAsDriver = async (
           );
           return {
             success: false,
-            error:
-              'אימות נכשל. אנא פנה למנהל המערכת להגדרת חשבון המשתמש שלך',
+            error: 'אימות נכשל. אנא פנה למנהל המערכת להגדרת חשבון המשתמש שלך',
           };
         } else {
           console.log(
             '✅ Driver authenticated with Supabase - Realtime enabled'
           );
-          console.log('[Auth] Supabase session:', data.session ? {
-            user_id: data.session.user.id,
-            email: data.session.user.email,
-            expires_at: data.session.expires_at
-          } : 'NO SESSION');
+          console.log(
+            '[Auth] Supabase session:',
+            data.session
+              ? {
+                  user_id: data.session.user.id,
+                  email: data.session.user.email,
+                  expires_at: data.session.expires_at,
+                }
+              : 'NO SESSION'
+          );
 
           // Verify session was stored correctly
-          const { data: { session: storedSession } } = await client.auth.getSession();
-          console.log('[Auth] Verify stored session:', storedSession ? {
-            user_id: storedSession.user.id,
-            email: storedSession.user.email
-          } : 'NO STORED SESSION - THIS IS THE PROBLEM!');
+          const {
+            data: { session: storedSession },
+          } = await client.auth.getSession();
+          console.log(
+            '[Auth] Verify stored session:',
+            storedSession
+              ? {
+                  user_id: storedSession.user.id,
+                  email: storedSession.user.email,
+                }
+              : 'NO STORED SESSION - THIS IS THE PROBLEM!'
+          );
         }
       } catch (err) {
         console.error('Driver sign-in error:', err);
@@ -341,8 +372,12 @@ export const loginAsDriver = async (
     if (typeof window !== 'undefined') {
       localStorage.setItem(DRIVER_SESSION_KEY, JSON.stringify(session));
       // Set cookies so getCurrentSession can quickly skip getAdminSession for drivers
-      document.cookie = `toyota_role=driver; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 days
-      document.cookie = `toyota_user_id=${row.id}; path=/; max-age=${60 * 60 * 24 * 7}`;
+      document.cookie = `toyota_role=driver; path=/; max-age=${
+        60 * 60 * 24 * 7
+      }`; // 7 days
+      document.cookie = `toyota_user_id=${row.id}; path=/; max-age=${
+        60 * 60 * 24 * 7
+      }`;
     }
 
     return { success: true, session };
@@ -551,12 +586,19 @@ export const getCurrentSession = async (
 
   // CRITICAL: Check Supabase auth session FIRST!
   // This ensures realtime subscriptions work for authenticated users (including drivers)
-  const { data: { session: supabaseSession } } = await client.auth.getSession();
+  const {
+    data: { session: supabaseSession },
+  } = await client.auth.getSession();
 
-  console.log('[getCurrentSession] Supabase session:', supabaseSession ? {
-    user_id: supabaseSession.user.id,
-    email: supabaseSession.user.email
-  } : 'NO SESSION');
+  console.log(
+    '[getCurrentSession] Supabase session:',
+    supabaseSession
+      ? {
+          user_id: supabaseSession.user.id,
+          email: supabaseSession.user.email,
+        }
+      : 'NO SESSION'
+  );
 
   if (supabaseSession) {
     // We have a valid Supabase auth session - use it!
@@ -581,7 +623,9 @@ export const getCurrentSession = async (
         };
       } else {
         // Admin/manager/viewer
-        console.log(`✅ [getCurrentSession] Using Supabase ${profile.role} session!`);
+        console.log(
+          `✅ [getCurrentSession] Using Supabase ${profile.role} session!`
+        );
         return {
           userId: supabaseSession.user.id,
           username: supabaseSession.user.email || '',
@@ -596,7 +640,9 @@ export const getCurrentSession = async (
   // This is only used if there's no Supabase session
   const driverSession = getDriverSession();
   if (driverSession) {
-    console.log('⚠️ [getCurrentSession] Using local driver session (fallback) - Realtime will NOT work!');
+    console.log(
+      '⚠️ [getCurrentSession] Using local driver session (fallback) - Realtime will NOT work!'
+    );
     return driverSession;
   }
 

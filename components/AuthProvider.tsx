@@ -16,7 +16,7 @@ interface AuthContextType {
   session: AuthSession;
   loading: boolean;
   error: string | null;
-  client: SupabaseClient;
+  client: SupabaseClient | null;
   role: 'driver' | 'admin' | 'manager' | 'viewer' | null;
   loginDriver: (
     employeeId: string
@@ -72,7 +72,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (storedSession) {
           try {
             const parsedSession = JSON.parse(storedSession);
-            console.log('AuthProvider: Found stored driver session, using it immediately');
+            console.log(
+              'AuthProvider: Found stored driver session, using it immediately'
+            );
             setSession(parsedSession);
             setRole('driver');
             setLoading(false); // Unblock UI immediately with real data
@@ -173,14 +175,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // ALWAYS update with real session data (overwrite optimistic/localStorage data)
         if (currentSession) {
-          console.log('AuthProvider: Got real session, replacing any optimistic data');
+          console.log(
+            'AuthProvider: Got real session, replacing any optimistic data'
+          );
           setSession(currentSession);
           setRole(currentRole);
           writeAuthCookies(currentRole, currentSession?.userId || null);
 
           // Update localStorage for driver sessions
           if (currentRole === 'driver') {
-            localStorage.setItem('driver_session', JSON.stringify(currentSession));
+            localStorage.setItem(
+              'driver_session',
+              JSON.stringify(currentSession)
+            );
           }
         } else {
           // Only clear if we have no valid session
@@ -208,7 +215,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (storedSession) {
             try {
               const parsedSession = JSON.parse(storedSession);
-              console.warn('AuthProvider: Using stored session as fallback (auth timed out)');
+              console.warn(
+                'AuthProvider: Using stored session as fallback (auth timed out)'
+              );
               setSession(parsedSession);
               setRole('driver');
               // Keep existing cookies
@@ -228,7 +237,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               roleCookie &&
               ['admin', 'manager', 'viewer', 'driver'].includes(roleCookie)
             ) {
-              console.warn('AuthProvider: Recovering from error using cookies (session already set from optimistic load)');
+              console.warn(
+                'AuthProvider: Recovering from error using cookies (session already set from optimistic load)'
+              );
               setRole(roleCookie as 'driver' | 'admin' | 'manager' | 'viewer');
               // Session is already set from optimistic load (lines 108-122)
               // Don't overwrite it here
@@ -247,8 +258,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.removeItem('driver_session');
         }
 
-        // Don't show error to user for timeouts, just let them be "logged out" or use cached session
-        // setError(err.message || 'Failed to initialize auth');
+        // Show error to user so they know why it's stuck
+        setError(errorMessage || 'Failed to initialize auth');
       } finally {
         setLoading(false);
       }
@@ -272,7 +283,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           // Update localStorage for driver sessions
           if (currentRole === 'driver' && currentSession) {
-            localStorage.setItem('driver_session', JSON.stringify(currentSession));
+            localStorage.setItem(
+              'driver_session',
+              JSON.stringify(currentSession)
+            );
           }
         } else if (event === 'SIGNED_OUT') {
           setSession(null);
@@ -362,7 +376,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     loading,
     error,
-    client: client!,
+    client: client,
     role,
     loginDriver: handleLoginDriver,
     loginAdmin: handleLoginAdmin,
