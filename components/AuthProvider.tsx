@@ -158,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         };
 
-        // Race against a 2-second timeout (reduced from 5s for better UX)
+        // Race against a 5-second timeout for production reliability
         // If Supabase hangs completely, we force a fallback or clear state
         const { session: currentSession, role: currentRole } =
           await Promise.race([
@@ -166,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             new Promise<{ session: any; role: any }>((_, reject) =>
               setTimeout(
                 () => reject(new Error('Auth initialization timed out')),
-                2000
+                5000
               )
             ),
           ]);
@@ -228,9 +228,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               roleCookie &&
               ['admin', 'manager', 'viewer', 'driver'].includes(roleCookie)
             ) {
-              console.warn('AuthProvider: Recovering from error using cookies');
+              console.warn('AuthProvider: Recovering from error using cookies (session already set from optimistic load)');
               setRole(roleCookie as 'driver' | 'admin' | 'manager' | 'viewer');
-              // Session might already be set from optimistic load
+              // Session is already set from optimistic load (lines 108-122)
+              // Don't overwrite it here
             } else {
               // No fallback available, clear everything
               setSession(null);
