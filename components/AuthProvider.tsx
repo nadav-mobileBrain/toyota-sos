@@ -66,57 +66,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initializeAuth = async () => {
       console.log('AuthProvider: Initializing...');
 
-      // OPTIMISTIC CHECK: Check cookies immediately to unblock UI
+      // FAST LOAD: Check localStorage first for full session data
       try {
-        const roleCookie = document.cookie
-          .split('; ')
-          .find((row) => row.startsWith('toyota_role='))
-          ?.split('=')[1];
-
-        const userIdCookie = document.cookie
-          .split('; ')
-          .find((row) => row.startsWith('toyota_user_id='))
-          ?.split('=')[1];
-
-        if (
-          roleCookie &&
-          userIdCookie &&
-          ['admin', 'manager', 'viewer', 'driver'].includes(roleCookie)
-        ) {
-          console.log('AuthProvider: Optimistic cookie found, unblocking UI');
-          const typedRole = roleCookie as
-            | 'driver'
-            | 'admin'
-            | 'manager'
-            | 'viewer';
-          setRole(typedRole);
-
-          if (typedRole === 'driver') {
-            setSession({
-              userId: userIdCookie,
-              employeeId: 'optimistic',
-              role: 'driver',
-              createdAt: Date.now(),
-              name: 'Optimistic Driver',
-            });
-          } else {
-            setSession({
-              userId: userIdCookie,
-              username: 'Optimistic Session',
-              role: typedRole,
-              email: 'optimistic@loading',
-            });
+        const storedSession = localStorage.getItem('driver_session');
+        if (storedSession) {
+          try {
+            const parsedSession = JSON.parse(storedSession);
+            console.log('AuthProvider: Found stored driver session, using it immediately');
+            setSession(parsedSession);
+            setRole('driver');
+            setLoading(false); // Unblock UI immediately with real data
+          } catch (parseErr) {
+            console.warn('Failed to parse stored session:', parseErr);
           }
-          // We keep loading=true for a split second to let the real auth finish,
-          // BUT if we want "super fast", we can set loading=false here.
-          // However, let's keep it true but rely on the 2s timeout to be a fallback,
-          // OR we can trust this cookie and set loading=false immediately.
-          // Given the user wants "super fast", let's trust the cookie for UI rendering.
-          // The real auth will overwrite this shortly if it succeeds, or correct it if it fails.
-          setLoading(false);
+        } else {
+          // Fallback to cookie-based optimistic load if no localStorage
+          const roleCookie = document.cookie
+            .split('; ')
+            .find((row) => row.startsWith('toyota_role='))
+            ?.split('=')[1];
+
+          const userIdCookie = document.cookie
+            .split('; ')
+            .find((row) => row.startsWith('toyota_user_id='))
+            ?.split('=')[1];
+
+          if (
+            roleCookie &&
+            userIdCookie &&
+            ['admin', 'manager', 'viewer', 'driver'].includes(roleCookie)
+          ) {
+            console.log('AuthProvider: Optimistic cookie found, unblocking UI');
+            const typedRole = roleCookie as
+              | 'driver'
+              | 'admin'
+              | 'manager'
+              | 'viewer';
+            setRole(typedRole);
+
+            if (typedRole === 'driver') {
+              setSession({
+                userId: userIdCookie,
+                employeeId: 'optimistic',
+                role: 'driver',
+                createdAt: Date.now(),
+                name: 'Optimistic Driver',
+              });
+            } else {
+              setSession({
+                userId: userIdCookie,
+                username: 'Optimistic Session',
+                role: typedRole,
+                email: 'optimistic@loading',
+              });
+            }
+            setLoading(false);
+          }
         }
       } catch (err) {
-        console.warn('Optimistic check failed:', err);
+        console.warn('Fast load check failed:', err);
       }
 
       try {
@@ -163,9 +171,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ),
           ]);
 
-        setSession(currentSession);
-        setRole(currentRole);
-        writeAuthCookies(currentRole, currentSession?.userId || null);
+        // ALWAYS update with real session data (overwrite optimistic/localStorage data)
+        if (currentSession) {
+          console.log('AuthProvider: Got real session, replacing any optimistic data');
+          setSession(currentSession);
+          setRole(currentRole);
+          writeAuthCookies(currentRole, currentSession?.userId || null);
+
+          // Update localStorage for driver sessions
+          if (currentRole === 'driver') {
+            localStorage.setItem('driver_session', JSON.stringify(currentSession));
+          }
+        } else {
+          // Only clear if we have no valid session
+          console.log('AuthProvider: No valid session found');
+          setSession(null);
+          setRole(null);
+          writeAuthCookies(null, null);
+          localStorage.removeItem('driver_session');
+        }
         setError(null);
         console.log('AuthProvider: Initialization complete');
       } catch (err: unknown) {
@@ -176,33 +200,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           errorMessage
         );
 
-        // Final fallback: try to read from cookies directly if everything else failed
-        // This is a "Hail Mary" to prevent being logged out on slow connections
+        // Final fallback: Keep localStorage/cookie session if auth check fails
+        // This prevents users from being logged out on slow connections
         try {
-          const roleCookie = document.cookie
-            .split('; ')
-            .find((row) => row.startsWith('toyota_role='))
-            ?.split('=')[1];
+          // Try localStorage first for drivers (has full session data)
+          const storedSession = localStorage.getItem('driver_session');
+          if (storedSession) {
+            try {
+              const parsedSession = JSON.parse(storedSession);
+              console.warn('AuthProvider: Using stored session as fallback (auth timed out)');
+              setSession(parsedSession);
+              setRole('driver');
+              // Keep existing cookies
+            } catch {
+              // Fall through to cookie check
+            }
+          }
 
-          if (
-            roleCookie &&
-            ['admin', 'manager', 'viewer', 'driver'].includes(roleCookie)
-          ) {
-            console.warn('AuthProvider: Recovering from error using cookies');
-            setRole(roleCookie as 'driver' | 'admin' | 'manager' | 'viewer');
-            // We can't easily reconstruct the full session here without more data,
-            // but setting the role might be enough for some UI to show
-          } else {
-            setSession(null);
-            setRole(null);
-            writeAuthCookies(null, null);
+          // Fallback to cookies if no localStorage
+          if (!storedSession) {
+            const roleCookie = document.cookie
+              .split('; ')
+              .find((row) => row.startsWith('toyota_role='))
+              ?.split('=')[1];
+
+            if (
+              roleCookie &&
+              ['admin', 'manager', 'viewer', 'driver'].includes(roleCookie)
+            ) {
+              console.warn('AuthProvider: Recovering from error using cookies');
+              setRole(roleCookie as 'driver' | 'admin' | 'manager' | 'viewer');
+              // Session might already be set from optimistic load
+            } else {
+              // No fallback available, clear everything
+              setSession(null);
+              setRole(null);
+              writeAuthCookies(null, null);
+              localStorage.removeItem('driver_session');
+            }
           }
         } catch {
           setSession(null);
           setRole(null);
+          writeAuthCookies(null, null);
+          localStorage.removeItem('driver_session');
         }
 
-        // Don't show error to user for timeouts, just let them be "logged out" or "cookie authenticated"
+        // Don't show error to user for timeouts, just let them be "logged out" or use cached session
         // setError(err.message || 'Failed to initialize auth');
       } finally {
         setLoading(false);
@@ -212,7 +256,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
   }, []);
 
-  // Listen for Supabase auth state changes (for admins)
+  // Listen for Supabase auth state changes (for both admins and drivers)
   useEffect(() => {
     if (!client) return;
 
@@ -224,10 +268,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(currentSession);
           setRole(currentRole);
           writeAuthCookies(currentRole, currentSession?.userId || null);
+
+          // Update localStorage for driver sessions
+          if (currentRole === 'driver' && currentSession) {
+            localStorage.setItem('driver_session', JSON.stringify(currentSession));
+          }
         } else if (event === 'SIGNED_OUT') {
           setSession(null);
           setRole(null);
           writeAuthCookies(null, null);
+          localStorage.removeItem('driver_session');
         }
       }
     );
@@ -300,6 +350,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(null);
       setRole(null);
       writeAuthCookies(null, null);
+      // Clear localStorage
+      localStorage.removeItem('driver_session');
     } catch (err: any) {
       setError(err.message || 'Logout failed');
     }
