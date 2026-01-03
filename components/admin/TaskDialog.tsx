@@ -762,10 +762,13 @@ export function TaskDialog(props: TaskDialogProps) {
       return dateValidation.error.issues[0].message;
     }
 
-    const startTime = parseInt(estimatedStartTime.split(':')[0]);
-    const endTime = parseInt(estimatedEndTime.split(':')[0]);
-    if (startTime >= endTime) {
-      return 'שעת התחלה לא יכולה להיות אחרי שעת סיום';
+    const [startH, startM] = estimatedStartTime.split(':').map(Number);
+    const [endH, endM] = estimatedEndTime.split(':').map(Number);
+    const startTotal = startH * 60 + startM;
+    const endTotal = endH * 60 + endM;
+
+    if (startTotal >= endTotal) {
+      return 'שעת התחלה חייבת להיות לפני שעת סיום';
     }
 
     const driverValidation = driverSelectionSchema.safeParse({

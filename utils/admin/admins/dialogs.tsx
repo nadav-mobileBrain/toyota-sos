@@ -29,20 +29,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import dayjs from '@/lib/dayjs';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, SaveIcon } from 'lucide-react';
 
 // ---- Form schema & types ----
 
-export const AdminFormSchema = adminSchema.refine(
-  () => {
-    // Password is required only in create mode (we'll handle this at form level)
-    return true;
-  },
-  {
-    message: 'סיסמה היא שדה חובה',
-    path: ['password'],
-  }
-);
+export const AdminFormSchema = adminSchema;
 
 export type AdminFormValues = z.infer<typeof AdminFormSchema>;
 
@@ -184,7 +175,11 @@ export function AdminEditDialog({
               className="bg-primary hover:bg-primary/90 text-white"
               disabled={submitting}
             >
-              <PlusIcon className="w-4 h-4" />
+              {mode === 'create' ? (
+                <PlusIcon className="w-4 h-4" />
+              ) : (
+                <SaveIcon className="w-4 h-4" />
+              )}
               {mode === 'create'
                 ? submitting
                   ? 'יוצר...'

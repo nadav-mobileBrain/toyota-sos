@@ -35,6 +35,7 @@ export const adminSchema = z.object({
     .string()
     .min(6, 'סיסמה חייבת להכיל לפחות 6 תווים')
     .max(100, 'סיסמה לא יכולה להכיל יותר מ-100 תווים')
+    .or(z.literal(''))
     .optional(), // Optional to support edit flow where password isn't required
   role: z.enum(['admin', 'manager', 'viewer'], {
     error: (issue: any) => {
