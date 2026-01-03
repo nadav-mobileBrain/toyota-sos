@@ -160,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         };
 
-        // Race against a 5-second timeout for production reliability
+        // Race against a 10-second timeout for production reliability
         // If Supabase hangs completely, we force a fallback or clear state
         const { session: currentSession, role: currentRole } =
           await Promise.race([
@@ -168,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             new Promise<{ session: any; role: any }>((_, reject) =>
               setTimeout(
                 () => reject(new Error('Auth initialization timed out')),
-                5000
+                10000
               )
             ),
           ]);
@@ -207,6 +207,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           errorMessage
         );
 
+        let fallbackSuccess = false;
+
         // Final fallback: Keep localStorage/cookie session if auth check fails
         // This prevents users from being logged out on slow connections
         try {
@@ -220,14 +222,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               );
               setSession(parsedSession);
               setRole('driver');
+              fallbackSuccess = true;
               // Keep existing cookies
             } catch {
               // Fall through to cookie check
             }
           }
 
-          // Fallback to cookies if no localStorage
-          if (!storedSession) {
+          // Fallback to cookies if no localStorage or failed parse
+          if (!fallbackSuccess) {
             const roleCookie = document.cookie
               .split('; ')
               .find((row) => row.startsWith('toyota_role='))
@@ -241,6 +244,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 'AuthProvider: Recovering from error using cookies (session already set from optimistic load)'
               );
               setRole(roleCookie as 'driver' | 'admin' | 'manager' | 'viewer');
+              fallbackSuccess = true;
               // Session is already set from optimistic load (lines 108-122)
               // Don't overwrite it here
             } else {
@@ -256,10 +260,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setRole(null);
           writeAuthCookies(null, null);
           localStorage.removeItem('driver_session');
+          fallbackSuccess = false;
         }
 
-        // Show error to user so they know why it's stuck
-        setError(errorMessage || 'Failed to initialize auth');
+        // Show error to user ONLY if fallback failed
+        if (!fallbackSuccess) {
+          setError(errorMessage || 'Failed to initialize auth');
+        } else {
+          setError(null);
+        }
       } finally {
         setLoading(false);
       }
