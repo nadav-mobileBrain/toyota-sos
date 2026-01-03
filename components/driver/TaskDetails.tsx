@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { createBrowserClient } from '@/lib/auth';
+import { createBrowserClient, getDriverSession } from '@/lib/auth';
 import dayjs from '@/lib/dayjs';
 import { useFeatureFlag } from '@/lib/useFeatureFlag';
 import { FLAG_SIGNATURE_REQUIRED } from '@/lib/flagKeys';
@@ -53,8 +53,17 @@ export function TaskDetails({ taskId }: { taskId: string }) {
       setError(null);
       try {
         const supa = createBrowserClient();
+        
+        // Wait for session to be restored (handles "cold start" from push notification)
+        await supa.auth.getSession();
+        
+        // Get local driver session fallback
+        const driverSession = getDriverSession();
+        const driverId = driverSession?.userId;
+
         const { data, error } = (await supa.rpc('get_task_details', {
           task_id: taskId,
+          p_driver_id: driverId
         })) as { data: TaskDetailsData[] | null; error: unknown | null };
         if (error) {
           throw error as Error;
