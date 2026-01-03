@@ -14,7 +14,7 @@ export async function listTaskAudit(params: ListTaskAuditParams) {
   const offset = Math.max(0, params.offset ?? 0);
   const role = params.role ?? null;
 
-  if (!role || (role !== 'admin' && role !== 'manager')) {
+  if (!role || (role !== 'admin' && role !== 'manager' && role !== 'viewer')) {
     return { status: 401, body: { error: 'Unauthorized' } };
   }
 

@@ -102,13 +102,12 @@ export function ReplacementCarDeliveryForm({
     // If all attachments exist, allow skipping directly to completion
     if (
       hasExistingAttachments?.hasAllRequired &&
-      (hasExistingAttachments.hasCarImages ||
-        carPhotos.length > 0) &&
+      (hasExistingAttachments.hasCarImages || carPhotos.length > 0) &&
       (hasExistingAttachments.hasLicense || licensePhoto) &&
       hasExistingAttachments.hasSignature
     ) {
       await onSubmit();
-      toastSuccess('משימת מסירת רכב הושלמה בהצלחה');
+      toastSuccess('משימת מסירת רכב בוצעה בהצלחה');
       onOpenChange(false);
     }
   };
@@ -193,7 +192,7 @@ export function ReplacementCarDeliveryForm({
 
       // 2. Call parent submit (update status)
       await onSubmit();
-      toastSuccess('משימת מסירת רכב הושלמה בהצלחה');
+      toastSuccess('משימת מסירת רכב בוצעה בהצלחה');
       onOpenChange(false);
     } catch (err: unknown) {
       console.error(err);
@@ -347,7 +346,8 @@ export function ReplacementCarDeliveryForm({
                 <h3 className="font-semibold text-gray-900">חתימת לקוח</h3>
                 {hasExistingAttachments?.hasSignature && (
                   <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800 mb-2">
-                    נמצאה חתימה קיימת. ניתן לחתום חתימה חדשה או להמשיך עם הקיימת.
+                    נמצאה חתימה קיימת. ניתן לחתום חתימה חדשה או להמשיך עם
+                    הקיימת.
                   </div>
                 )}
                 <p className="text-sm text-gray-600">
@@ -385,8 +385,7 @@ export function ReplacementCarDeliveryForm({
           <div className="flex gap-2">
             {step === 0 &&
               hasExistingAttachments?.hasAllRequired &&
-              (hasExistingAttachments.hasCarImages ||
-                carPhotos.length > 0) &&
+              (hasExistingAttachments.hasCarImages || carPhotos.length > 0) &&
               (hasExistingAttachments.hasLicense || licensePhoto) &&
               hasExistingAttachments.hasSignature && (
                 <button

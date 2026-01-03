@@ -15,12 +15,14 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { formatLicensePlate } from '@/lib/vehicleLicensePlate';
+import type { TaskStatus } from '@/types/task';
+import { statusLabel } from '@/lib/task-utils';
 
 type TaskDetailsData = {
   id: string;
   type: string | null;
-  priority: 'low' | 'medium' | 'high' | null;
-  status: 'pending' | 'in_progress' | 'blocked' | 'completed' | null;
+  priority: string | null;
+  status: TaskStatus | null;
   details: string | null;
   estimated_start: string | null;
   estimated_end: string | null;
@@ -124,7 +126,8 @@ export function TaskDetails({ taskId }: { taskId: string }) {
         <CardHeader className="space-y-1">
           <CardTitle className="text-xl">{task.type}</CardTitle>
           <CardDescription>
-            {task.priority ?? '—'} • {task.status ?? '—'}
+            {task.priority ?? '—'} •{' '}
+            {task.status ? statusLabel(task.status) : '—'}
           </CardDescription>
           <p className="text-xs text-gray-400">
             עודכן:{' '}
@@ -153,7 +156,9 @@ export function TaskDetails({ taskId }: { taskId: string }) {
             <div>
               <div className="text-xs text-gray-500 mb-1">רכב סוכנות</div>
               <div className="font-medium">
-                {task.vehicle_plate ? formatLicensePlate(task.vehicle_plate) : '—'}
+                {task.vehicle_plate
+                  ? formatLicensePlate(task.vehicle_plate)
+                  : '—'}
                 {task.vehicle_model && (
                   <span className="block text-xs font-normal text-gray-600">
                     {task.vehicle_model}
@@ -194,7 +199,7 @@ export function TaskDetails({ taskId }: { taskId: string }) {
         </CardContent>
 
         {/* Actions Footer */}
-        {task.status !== 'completed' && (
+        {task.status !== 'הושלמה' && (
           <CardFooter className="flex flex-col gap-4 pt-2 border-t bg-gray-50/50 rounded-b-xl">
             {signatureRequired && (
               <div className="w-full space-y-2">

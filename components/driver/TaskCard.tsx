@@ -13,6 +13,7 @@ import {
 import { formatDistance } from '@/lib/geocoding';
 import type { AdvisorColor } from '@/types/task';
 import { formatLicensePlate } from '@/lib/vehicleLicensePlate';
+import { statusLabel } from '@/lib/task-utils';
 
 export type TaskCardProps = {
   id: string;
@@ -36,7 +37,10 @@ export type TaskCardProps = {
     advisorColor?: AdvisorColor | null;
   }[];
   vehicle?: { licensePlate?: string | null; model?: string | null } | null;
-  clientVehicle?: { licensePlate?: string | null; model?: string | null } | null;
+  clientVehicle?: {
+    licensePlate?: string | null;
+    model?: string | null;
+  } | null;
   details?: string | null;
   isSecondaryDriver?: boolean;
   onStatusChange?: (next: TaskCardProps['status']) => void;
@@ -177,7 +181,7 @@ export function TaskCard(props: TaskCardProps) {
               onStatusChange?.(value as TaskCardProps['status']);
             }}
             aria-label="עדכון סטטוס משימה"
-            className="w-full justify-between"
+            className="flex flex-wrap gap-1.5 justify-center sm:justify-end"
           >
             {(
               [
@@ -191,11 +195,11 @@ export function TaskCard(props: TaskCardProps) {
                 key={value}
                 value={value}
                 className={cn(
-                  'flex-1 rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] text-gray-700 sm:text-xs',
+                  'rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs text-gray-700 transition-all min-w-[70px]',
                   statusTheme[value].on
                 )}
               >
-                {value}
+                {statusLabel(value)}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -205,7 +209,7 @@ export function TaskCard(props: TaskCardProps) {
       <div className="flex items-center gap-2 py-2">
         <p className="text-md text-black font-bold">{type}</p>
         {isSecondaryDriver && (
-          <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+          <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800 shadow-sm">
             נהג משני
           </span>
         )}

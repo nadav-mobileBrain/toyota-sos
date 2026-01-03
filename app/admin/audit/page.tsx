@@ -1,11 +1,21 @@
 import React from 'react';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { NavBar } from '@/components/ui/tubelight-navbar';
 import { AuditFeed } from '@/components/admin/AuditFeed';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default function AdminAuditPage() {
+export default async function AdminAuditPage() {
+  const cookieStore = await cookies();
+  const role = cookieStore.get('toyota_role')?.value;
+
+  // Protect the page: only admin and manager can view audit logs
+  if (role !== 'admin' && role !== 'manager' && role !== 'viewer') {
+    redirect('/admin/dashboard');
+  }
+
   const navItems = [
     { name: 'דשבורד', url: '/admin/dashboard', icon: 'LayoutDashboard' },
     { name: 'משימות', url: '/admin/tasks', icon: 'ClipboardList' },

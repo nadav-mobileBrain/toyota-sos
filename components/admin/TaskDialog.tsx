@@ -19,6 +19,7 @@ import {
   getAdvisorColorTextClass,
   getAdvisorColorHex,
 } from '@/lib/advisorColors';
+import { formatIsraeliPhone, validateIsraeliPhone } from '@/lib/phone-utils';
 import type { Driver } from '@/types/user';
 import type { Client, Vehicle, ClientVehicle } from '@/types/entity';
 import { trackFormSubmitted } from '@/lib/events';
@@ -790,8 +791,12 @@ export function TaskDialog(props: TaskDialogProps) {
           return 'חובה לבחור לקוח עבור כל עצירה';
         }
         if (!stop.phone?.trim()) {
-          toastError('חובה להזין טלפון עבור כל עצירה');
-          return 'חובה להזין טלפון עבור כל עצירה';
+          toastError('חובה להכניס טלפון עבור כל עצירה');
+          return 'חובה להכניס טלפון עבור כל עצירה';
+        }
+        if (!validateIsraeliPhone(stop.phone)) {
+          toastError('מספר טלפון לא תקין. יש להזין 05X-XXXXXXX או 0X-XXXXXXX');
+          return 'מספר טלפון לא תקין';
         }
         if (!stop.address.trim()) {
           toastError('חובה להזין כתובת עבור כל עצירה');
@@ -804,7 +809,7 @@ export function TaskDialog(props: TaskDialogProps) {
       }
     }
 
-    // Validate client phone for regular tasks (non-multi-stop) when client is required
+    // Validate client name and phone for regular tasks (non-multi-stop) when client is required
     if (!isMultiStopType) {
       const clientRequiredTypes = [
         'ביצוע טסט',
@@ -814,9 +819,19 @@ export function TaskDialog(props: TaskDialogProps) {
         'החזרת רכב/שינוע',
       ];
 
-      if (clientRequiredTypes.includes(type) && !clientPhone?.trim()) {
-        toastError('חובה להזין טלפון עבור משימה זו');
-        return 'חובה להזין טלפון עבור משימה זו';
+      if (clientRequiredTypes.includes(type)) {
+        if (!clientId && !clientQuery.trim()) {
+          toastError('חובה לבחור לקוח');
+          return 'חובה לבחור לקוח';
+        }
+        if (!clientPhone?.trim()) {
+          toastError('חובה להכניס טלפון');
+          return 'חובה להכניס טלפון';
+        }
+        if (!validateIsraeliPhone(clientPhone)) {
+          toastError('מספר טלפון לא תקין. יש להזין 05X-XXXXXXX או 0X-XXXXXXX');
+          return 'מספר טלפון לא תקין';
+        }
       }
     }
 
@@ -826,6 +841,11 @@ export function TaskDialog(props: TaskDialogProps) {
   const createClient = async () => {
     const name = newClientName.trim();
     if (!name) return;
+    const phone = newClientPhone.trim();
+    if (phone && !validateIsraeliPhone(phone)) {
+      toastError('מספר טלפון לא תקין. יש להזין 05X-XXXXXXX או 0X-XXXXXXX');
+      return;
+    }
     try {
       const res = await fetch('/api/admin/clients', {
         method: 'POST',
@@ -1149,7 +1169,7 @@ export function TaskDialog(props: TaskDialogProps) {
           }
           const phoneValue = stop.phone?.trim() || '';
           if (!phoneValue) {
-            throw new Error('חובה להזין טלפון עבור כל עצירה');
+            throw new Error('חובה להכניס טלפון עבור כל עצירה');
           }
           const addressValue = stop.address.trim();
           if (!addressValue) {
@@ -1282,9 +1302,7 @@ export function TaskDialog(props: TaskDialogProps) {
         // Check if client has phone
         const selectedClient = clientsLocal.find((c) => c.id === finalClientId);
         if (!selectedClient?.phone) {
-          throw new Error(
-            'ללקוח הנבחר אין מספר טלפון (חובה עבור משימת החזרת רכב/שינוע)'
-          );
+          throw new Error('חובה להכניס טלפון');
         }
         if (!addressForTask.trim()) {
           throw new Error('חובה להזין כתובת עבור משימת החזרת רכב/שינוע');
@@ -1694,23 +1712,23 @@ export function TaskDialog(props: TaskDialogProps) {
                   {!isMultiStopType && (
                     <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
                       {/* Client Selection */}
-                      <label className="flex flex-col gap-1">
-                        <div className="flex gap-2">
-                          <div className="grid w-full max-w-sm items-center gap-1">
-                            <Label htmlFor="client" className="text-blue-600">
-                              לקוח
-                              {(type === 'ביצוע טסט' ||
-                                type === 'חילוץ רכב תקוע' ||
-                                type === 'מסירת רכב חלופי' ||
-                                type === 'הסעת לקוח הביתה' ||
-                                type === 'איסוף רכב/שינוע' ||
-                                type === 'החזרת רכב/שינוע') && (
-                                <span className="text-red-500"> *</span>
-                              )}
-                            </Label>
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-blue-600">
+                          לקוח
+                          {(type === 'ביצוע טסט' ||
+                            type === 'חילוץ רכב תקוע' ||
+                            type === 'מסירת רכב חלופי' ||
+                            type === 'הסעת לקוח הביתה' ||
+                            type === 'איסוף רכב/שינוע' ||
+                            type === 'החזרת רכב/שינוע') && (
+                            <span className="text-red-500"> *</span>
+                          )}
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <div className="relative w-full">
                             <Input
                               type="text"
-                              id="client"
+                              id="client-edit"
                               placeholder="לקוח"
                               value={clientQuery}
                               onChange={(e) => {
@@ -1720,7 +1738,7 @@ export function TaskDialog(props: TaskDialogProps) {
                               }}
                             />
                             {clientSuggestions.length > 0 && !clientId && (
-                              <div className="mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-300 bg-white text-sm shadow-sm">
+                              <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-300 bg-white text-sm shadow-sm">
                                 {clientSuggestions.map((c) => (
                                   <button
                                     key={c.id}
@@ -1745,7 +1763,7 @@ export function TaskDialog(props: TaskDialogProps) {
                           </div>
                           <button
                             type="button"
-                            className="rounded border border-gray-300 px-2 text-xs h-9 self-end bg-blue-500 text-white flex items-center justify-center"
+                            className="rounded border border-gray-300 px-2 text-xs h-9 bg-blue-500 text-white flex items-center justify-center shrink-0"
                             onClick={() => setShowAddClient((v) => !v)}
                           >
                             <PlusIcon className="w-4 h-4" />
@@ -1765,7 +1783,9 @@ export function TaskDialog(props: TaskDialogProps) {
                               placeholder="טלפון"
                               value={newClientPhone}
                               onChange={(e) =>
-                                setNewClientPhone(e.target.value)
+                                setNewClientPhone(
+                                  formatIsraeliPhone(e.target.value)
+                                )
                               }
                             />
 
@@ -1787,11 +1807,11 @@ export function TaskDialog(props: TaskDialogProps) {
                             </div>
                           </div>
                         )}
-                      </label>
+                      </div>
 
                       {/* Phone Field */}
-                      <label className="flex flex-col gap-1">
-                        <span className="text-sm font-medium text-blue-600">
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-blue-600">
                           טלפון
                           {(type === 'ביצוע טסט' ||
                             type === 'חילוץ רכב תקוע' ||
@@ -1800,24 +1820,26 @@ export function TaskDialog(props: TaskDialogProps) {
                             type === 'החזרת רכב/שינוע') && (
                             <span className="text-red-500"> *</span>
                           )}
-                        </span>
+                        </Label>
                         <Input
                           type="tel"
                           placeholder="טלפון"
                           value={clientPhone}
-                          onChange={(e) => setClientPhone(e.target.value)}
+                          onChange={(e) =>
+                            setClientPhone(formatIsraeliPhone(e.target.value))
+                          }
                         />
-                      </label>
+                      </div>
 
-                      <label className="flex flex-col gap-1">
-                        <span className="text-sm font-medium text-blue-600">
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-blue-600">
                           כתובת
                           {(type === 'חילוץ רכב תקוע' ||
                             type === 'איסוף רכב/שינוע' ||
                             type === 'החזרת רכב/שינוע') && (
                             <span className="text-red-500"> *</span>
                           )}
-                        </span>
+                        </Label>
                         <AddressAutocomplete
                           value={addressQuery}
                           onChange={(val) => {
@@ -1830,21 +1852,21 @@ export function TaskDialog(props: TaskDialogProps) {
                           }}
                           className="w-full"
                         />
-                      </label>
+                      </div>
 
                       {(type === 'איסוף רכב/שינוע' ||
                         type === 'החזרת רכב/שינוע' ||
                         type === 'ביצוע טסט') && (
-                        <label className="flex flex-col gap-1">
-                          <span className="text-sm font-medium text-blue-600">
+                        <div className="flex flex-col gap-1">
+                          <Label className="text-blue-600">
                             רכב לקוח{' '}
                             {(type === 'איסוף רכב/שינוע' ||
                               type === 'החזרת רכב/שינוע') && (
                               <span className="text-red-500"> *</span>
                             )}
-                          </span>
-                          <div className="flex gap-2">
-                            <div className="grid w-full max-w-sm items-center gap-1">
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <div className="relative w-full max-w-sm">
                               <Input
                                 type="text"
                                 placeholder="רכב לקוח (חפש לפי מספר רישוי או דגם)"
@@ -1856,7 +1878,7 @@ export function TaskDialog(props: TaskDialogProps) {
                               />
                               {clientVehicleSuggestions.length > 0 &&
                                 !clientVehicleId && (
-                                  <div className="mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-300 bg-white text-sm shadow-sm">
+                                  <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-300 bg-white text-sm shadow-sm">
                                     {clientVehicleSuggestions.map((v) => (
                                       <button
                                         key={v.id}
@@ -1882,7 +1904,7 @@ export function TaskDialog(props: TaskDialogProps) {
                             </div>
                             <button
                               type="button"
-                              className="rounded border border-gray-300 px-2 text-xs h-9 self-end bg-blue-500 text-white flex items-center justify-center"
+                              className="rounded border border-gray-300 px-2 text-xs h-9 bg-blue-500 text-white flex items-center justify-center shrink-0"
                               onClick={() => setShowAddClientVehicle((v) => !v)}
                             >
                               <PlusIcon className="w-4 h-4" />
@@ -1948,7 +1970,7 @@ export function TaskDialog(props: TaskDialogProps) {
                               </div>
                             </div>
                           )}
-                        </label>
+                        </div>
                       )}
                     </div>
                   )}
@@ -2098,15 +2120,18 @@ export function TaskDialog(props: TaskDialogProps) {
                                     type="tel"
                                     placeholder="טלפון"
                                     value={stop.phone}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
+                                      const formatted = formatIsraeliPhone(
+                                        e.target.value
+                                      );
                                       setStops((prev) =>
                                         prev.map((s, i) =>
                                           i === idx
-                                            ? { ...s, phone: e.target.value }
+                                            ? { ...s, phone: formatted }
                                             : s
                                         )
-                                      )
-                                    }
+                                      );
+                                    }}
                                   />
                                 </div>
                                 <div className="flex flex-col gap-1">
@@ -2251,7 +2276,11 @@ export function TaskDialog(props: TaskDialogProps) {
                             className="rounded border border-gray-300 p-2 col-span-2"
                             placeholder="טלפון"
                             value={newClientPhone}
-                            onChange={(e) => setNewClientPhone(e.target.value)}
+                            onChange={(e) =>
+                              setNewClientPhone(
+                                formatIsraeliPhone(e.target.value)
+                              )
+                            }
                           />
                           <div className="col-span-3 flex justify-end gap-2">
                             <button
@@ -2633,32 +2662,32 @@ export function TaskDialog(props: TaskDialogProps) {
               className="grid grid-cols-1 gap-3 md:grid-cols-2"
             >
               {/* Form Content starts here */}
-              <label className="flex flex-col gap-1 ">
-                <span className="text-md underline font-medium text-blue-500">
+              <div className="flex flex-col gap-1">
+                <Label className="text-md underline font-medium text-blue-500">
                   סוג
-                </span>
+                </Label>
                 <RtlSelectDropdown
                   value={type}
                   options={types.map((t) => ({ value: t, label: t }))}
                   onChange={(value) => setType(value as TaskType)}
                 />
-              </label>
+              </div>
 
-              <label className="flex flex-col gap-1">
-                <span className="text-md underline font-medium text-blue-500">
+              <div className="flex flex-col gap-1">
+                <Label className="text-md underline font-medium text-blue-500">
                   עדיפות
-                </span>
+                </Label>
                 <RtlSelectDropdown
                   value={priority}
                   options={priorities.map((p) => ({ value: p, label: p }))}
                   onChange={(value) => setPriority(value as TaskPriority)}
                 />
-              </label>
+              </div>
 
-              <label className="flex flex-col gap-1">
-                <span className="text-md underline font-medium text-blue-500">
+              <div className="flex flex-col gap-1">
+                <Label className="text-md underline font-medium text-blue-500">
                   סטטוס
-                </span>
+                </Label>
                 <RtlSelectDropdown
                   value={status}
                   options={statuses.map((s) => ({
@@ -2667,45 +2696,45 @@ export function TaskDialog(props: TaskDialogProps) {
                   }))}
                   onChange={(value) => setStatus(value as TaskStatus)}
                 />
-              </label>
+              </div>
 
-              <label className="col-span-1 md:col-span-2 flex flex-col gap-1">
-                <span className="text-md underline font-medium text-blue-500">
+              <div className="col-span-1 md:col-span-2 flex flex-col gap-1">
+                <Label className="text-md underline font-medium text-blue-500">
                   תיאור
-                </span>
+                </Label>
                 <textarea
                   className="rounded border border-gray-300 p-2"
                   rows={2}
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
                 />
-              </label>
+              </div>
 
               {!isMultiStopType && (
                 <>
-                  <label className="flex flex-col gap-1">
-                    <span className="text-sm font-medium text-blue-600">
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-blue-600">
                       שם יועץ{' '}
                       {(type === 'הסעת לקוח הביתה' ||
                         type === 'איסוף רכב/שינוע') && (
                         <span className="text-red-500">*</span>
                       )}
-                    </span>
+                    </Label>
                     <input
                       className="rounded border border-gray-300 p-2"
                       value={advisorName}
                       onChange={(e) => setAdvisorName(e.target.value)}
                       placeholder="הזן שם יועץ"
                     />
-                  </label>
-                  <label className="flex flex-col gap-1">
-                    <span className="text-sm font-medium text-blue-600">
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-blue-600">
                       צבע יועץ{' '}
                       {(type === 'הסעת לקוח הביתה' ||
                         type === 'איסוף רכב/שינוע') && (
                         <span className="text-red-500">*</span>
                       )}
-                    </span>
+                    </Label>
                     <RtlSelectDropdown
                       value={advisorColor || ''}
                       options={[
@@ -2736,15 +2765,15 @@ export function TaskDialog(props: TaskDialogProps) {
                         </span>
                       </div>
                     )}
-                  </label>
+                  </div>
                 </>
               )}
 
               <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-3">
-                <label className="flex flex-col gap-1">
-                  <span className="text-sm font-medium text-blue-600">
+                <div className="flex flex-col gap-1">
+                  <Label className="text-blue-600">
                     תאריך
-                  </span>
+                  </Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -2787,50 +2816,50 @@ export function TaskDialog(props: TaskDialogProps) {
                   {estimatedDateError && (
                     <p className="text-sm text-red-600">{estimatedDateError}</p>
                   )}
-                </label>
+                </div>
 
-                <label className="flex flex-col gap-1">
-                  <span className="text-sm font-medium text-blue-600">
+                <div className="flex flex-col gap-1">
+                  <Label className="text-blue-600">
                     שעת התחלה
-                  </span>
+                  </Label>
                   <input
                     type="time"
                     className="rounded border border-gray-300 p-2"
                     value={estimatedStartTime}
                     onChange={(e) => setEstimatedStartTime(e.target.value)}
                   />
-                </label>
+                </div>
 
-                <label className="flex flex-col gap-1">
-                  <span className="text-sm font-medium text-blue-600">
+                <div className="flex flex-col gap-1">
+                  <Label className="text-blue-600">
                     שעת סיום
-                  </span>
+                  </Label>
                   <input
                     type="time"
                     className="rounded border border-gray-300 p-2"
                     value={estimatedEndTime}
                     onChange={(e) => setEstimatedEndTime(e.target.value)}
                   />
-                </label>
+                </div>
               </div>
 
               {!isMultiStopType && (
                 <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
                   {/* Client Selection */}
-                  <label className="flex flex-col gap-1">
-                    <div className="flex gap-2">
-                      <div className="grid w-full max-w-sm items-center gap-1">
-                        <Label htmlFor="client" className="text-blue-600">
-                          לקוח
-                          {(type === 'ביצוע טסט' ||
-                            type === 'חילוץ רכב תקוע' ||
-                            type === 'מסירת רכב חלופי' ||
-                            type === 'הסעת לקוח הביתה' ||
-                            type === 'איסוף רכב/שינוע' ||
-                            type === 'החזרת רכב/שינוע') && (
-                            <span className="text-red-500"> *</span>
-                          )}
-                        </Label>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="client" className="text-blue-600">
+                      לקוח
+                      {(type === 'ביצוע טסט' ||
+                        type === 'חילוץ רכב תקוע' ||
+                        type === 'מסירת רכב חלופי' ||
+                        type === 'הסעת לקוח הביתה' ||
+                        type === 'איסוף רכב/שינוע' ||
+                        type === 'החזרת רכב/שינוע') && (
+                        <span className="text-red-500"> *</span>
+                      )}
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <div className="relative w-full">
                         <Input
                           type="text"
                           id="client"
@@ -2843,7 +2872,7 @@ export function TaskDialog(props: TaskDialogProps) {
                           }}
                         />
                         {clientSuggestions.length > 0 && !clientId && (
-                          <div className="mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-300 bg-white text-sm shadow-sm">
+                          <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-300 bg-white text-sm shadow-sm">
                             {clientSuggestions.map((c) => (
                               <button
                                 key={c.id}
@@ -2868,7 +2897,7 @@ export function TaskDialog(props: TaskDialogProps) {
                       </div>
                       <button
                         type="button"
-                        className="rounded border border-gray-300 px-2 text-xs h-9 self-end bg-blue-500 text-white flex items-center justify-center"
+                        className="rounded border border-gray-300 px-2 text-xs h-9 bg-blue-500 text-white flex items-center justify-center shrink-0"
                         onClick={() => setShowAddClient((v) => !v)}
                       >
                         <PlusIcon className="w-4 h-4" />
@@ -2887,7 +2916,11 @@ export function TaskDialog(props: TaskDialogProps) {
                           className="rounded border border-gray-300 p-2 col-span-2"
                           placeholder="טלפון"
                           value={newClientPhone}
-                          onChange={(e) => setNewClientPhone(e.target.value)}
+                          onChange={(e) =>
+                            setNewClientPhone(
+                              formatIsraeliPhone(e.target.value)
+                            )
+                          }
                         />
 
                         <div className="col-span-3 flex justify-end gap-2">
@@ -2908,11 +2941,11 @@ export function TaskDialog(props: TaskDialogProps) {
                         </div>
                       </div>
                     )}
-                  </label>
+                  </div>
 
                   {/* Phone Field */}
-                  <label className="flex flex-col gap-1">
-                    <span className="text-sm font-medium text-blue-600">
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-blue-600">
                       טלפון
                       {(type === 'ביצוע טסט' ||
                         type === 'חילוץ רכב תקוע' ||
@@ -2921,24 +2954,26 @@ export function TaskDialog(props: TaskDialogProps) {
                         type === 'החזרת רכב/שינוע') && (
                         <span className="text-red-500"> *</span>
                       )}
-                    </span>
+                    </Label>
                     <Input
                       type="tel"
                       placeholder="טלפון"
                       value={clientPhone}
-                      onChange={(e) => setClientPhone(e.target.value)}
+                      onChange={(e) =>
+                        setClientPhone(formatIsraeliPhone(e.target.value))
+                      }
                     />
-                  </label>
+                  </div>
 
-                  <label className="flex flex-col gap-1">
-                    <span className="text-sm font-medium text-blue-600">
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-blue-600">
                       כתובת
                       {(type === 'חילוץ רכב תקוע' ||
                         type === 'איסוף רכב/שינוע' ||
                         type === 'החזרת רכב/שינוע') && (
                         <span className="text-red-500"> *</span>
                       )}
-                    </span>
+                    </Label>
                     <AddressAutocomplete
                       value={addressQuery}
                       onChange={(val) => {
@@ -2951,21 +2986,21 @@ export function TaskDialog(props: TaskDialogProps) {
                       }}
                       className="w-full"
                     />
-                  </label>
+                  </div>
 
                   {(type === 'איסוף רכב/שינוע' ||
                     type === 'החזרת רכב/שינוע' ||
                     type === 'ביצוע טסט') && (
-                    <label className="flex flex-col gap-1">
-                      <span className="text-sm font-medium text-blue-600">
+                    <div className="flex flex-col gap-1">
+                      <Label className="text-blue-600">
                         רכב לקוח{' '}
                         {(type === 'איסוף רכב/שינוע' ||
                           type === 'החזרת רכב/שינוע') && (
                           <span className="text-red-500"> *</span>
                         )}
-                      </span>
-                      <div className="flex gap-2">
-                        <div className="grid w-full max-w-sm items-center gap-1">
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <div className="relative w-full max-w-sm">
                           <Input
                             type="text"
                             placeholder="רכב לקוח (חפש לפי מספר רישוי או דגם)"
@@ -2977,7 +3012,7 @@ export function TaskDialog(props: TaskDialogProps) {
                           />
                           {clientVehicleSuggestions.length > 0 &&
                             !clientVehicleId && (
-                              <div className="mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-300 bg-white text-sm shadow-sm">
+                              <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-300 bg-white text-sm shadow-sm">
                                 {clientVehicleSuggestions.map((v) => (
                                   <button
                                     key={v.id}
@@ -3003,7 +3038,7 @@ export function TaskDialog(props: TaskDialogProps) {
                         </div>
                         <button
                           type="button"
-                          className="rounded border border-gray-300 px-2 text-xs h-9 self-end bg-blue-500 text-white flex items-center justify-center"
+                          className="rounded border border-gray-300 px-2 text-xs h-9 bg-blue-500 text-white flex items-center justify-center shrink-0"
                           onClick={() => setShowAddClientVehicle((v) => !v)}
                         >
                           <PlusIcon className="w-4 h-4" />
@@ -3066,7 +3101,7 @@ export function TaskDialog(props: TaskDialogProps) {
                           </div>
                         </div>
                       )}
-                    </label>
+                    </div>
                   )}
                 </div>
               )}
@@ -3214,15 +3249,16 @@ export function TaskDialog(props: TaskDialogProps) {
                                 type="tel"
                                 placeholder="טלפון"
                                 value={stop.phone}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                  const formatted = formatIsraeliPhone(
+                                    e.target.value
+                                  );
                                   setStops((prev) =>
                                     prev.map((s, i) =>
-                                      i === idx
-                                        ? { ...s, phone: e.target.value }
-                                        : s
+                                      i === idx ? { ...s, phone: formatted } : s
                                     )
-                                  )
-                                }
+                                  );
+                                }}
                               />
                             </div>
                             <div className="flex flex-col gap-1">
@@ -3358,7 +3394,9 @@ export function TaskDialog(props: TaskDialogProps) {
                         className="rounded border border-gray-300 p-2 col-span-2"
                         placeholder="טלפון"
                         value={newClientPhone}
-                        onChange={(e) => setNewClientPhone(e.target.value)}
+                        onChange={(e) =>
+                          setNewClientPhone(formatIsraeliPhone(e.target.value))
+                        }
                       />
                       <div className="col-span-3 flex justify-end gap-2">
                         <button

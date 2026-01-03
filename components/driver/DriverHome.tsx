@@ -713,7 +713,7 @@ export function DriverHome() {
                       const errorMessage = upErr.message || '';
                       if (errorMessage.includes('INVALID_STATUS_FLOW')) {
                         toastError(
-                          'המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה',
+                          'המשימה חייבת להיות בסטטוס "בביצוע" לפני שניתן להשלים אותה',
                           5000
                         );
                       } else {
@@ -784,7 +784,7 @@ export function DriverHome() {
               const errorMessage = upErr.message || '';
               if (errorMessage.includes('INVALID_STATUS_FLOW')) {
                 toastError(
-                  'המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה',
+                  'המשימה חייבת להיות בסטטוס "בביצוע" לפני שניתן להשלים אותה',
                   5000
                 );
               } else {
@@ -897,7 +897,7 @@ export function DriverHome() {
               const errorMessage = upErr.message || '';
               if (errorMessage.includes('INVALID_STATUS_FLOW')) {
                 toastError(
-                  'המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה',
+                  'המשימה חייבת להיות בסטטוס "בביצוע" לפני שניתן להשלים אותה',
                   5000
                 );
               } else {
@@ -912,7 +912,7 @@ export function DriverHome() {
                   : t
               )
             );
-            toastSuccess('המשימה הושלמה בהצלחה');
+            toastSuccess('המשימה בוצעה בהצלחה');
             setCompletionChecklistState(null);
           }}
         />
@@ -940,7 +940,7 @@ export function DriverHome() {
               const errorMessage = upErr.message || '';
               if (errorMessage.includes('INVALID_STATUS_FLOW')) {
                 toastError(
-                  'המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה',
+                  'המשימה חייבת להיות בסטטוס "בביצוע" לפני שניתן להשלים אותה',
                   5000
                 );
               } else {
@@ -955,7 +955,7 @@ export function DriverHome() {
                   : t
               )
             );
-            toastSuccess('המשימה הושלמה בהצלחה');
+            toastSuccess('המשימה בוצעה בהצלחה');
           }}
         />
       ) : null}
@@ -982,7 +982,7 @@ export function DriverHome() {
               const errorMessage = upErr.message || '';
               if (errorMessage.includes('INVALID_STATUS_FLOW')) {
                 toastError(
-                  'המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה',
+                  'המשימה חייבת להיות בסטטוס "בביצוע" לפני שניתן להשלים אותה',
                   5000
                 );
               } else {
@@ -997,7 +997,7 @@ export function DriverHome() {
                   : t
               )
             );
-            toastSuccess('המשימה הושלמה בהצלחה');
+            toastSuccess('המשימה בוצעה בהצלחה');
           }}
           onSubmit={async (data) => {
             if (!client || !testCompletionState) return;
@@ -1012,7 +1012,7 @@ export function DriverHome() {
               const errorMessage = upErr.message || '';
               if (errorMessage.includes('INVALID_STATUS_FLOW')) {
                 toastError(
-                  'המשימה חייבת להיות בסטטוס "בעבודה" לפני שניתן להשלים אותה',
+                  'המשימה חייבת להיות בסטטוס "בביצוע" לפני שניתן להשלים אותה',
                   5000
                 );
               } else {

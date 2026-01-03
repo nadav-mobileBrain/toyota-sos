@@ -49,7 +49,7 @@ import {
   priorityColor,
   priorityLabel,
   typeLabel,
-} from './TaskCard';
+} from '@/lib/task-utils';
 import {
   DropdownMenu,
   DropdownMenuContent,

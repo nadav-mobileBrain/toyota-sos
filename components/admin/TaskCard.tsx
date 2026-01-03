@@ -24,6 +24,13 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { TaskAttachments } from './TaskAttachments';
+import {
+  statusLabel,
+  statusColor,
+  priorityLabel,
+  priorityColor,
+  typeLabel,
+} from '@/lib/task-utils';
 
 /**
  * TaskCard Component
@@ -231,7 +238,9 @@ export function TaskCard({
             {formatLicensePlate(vehicle.license_plate)}
             {vehicle.model ? ` · ${vehicle.model}` : ''}
           </span>
-          <span className="text-[10px] text-gray-400 font-medium">(סוכנות)</span>
+          <span className="text-[10px] text-gray-400 font-medium">
+            (סוכנות)
+          </span>
         </div>
       )}
 
@@ -389,65 +398,6 @@ export function TaskCard({
       </div>
     </div>
   );
-}
-
-/**
- * Utility functions for labels and colors
- */
-export function statusLabel(status: TaskStatus): string {
-  const labels: Record<TaskStatus, string> = {
-    בהמתנה: 'ממתינה לביצוע',
-    בעבודה: 'בביצוע',
-    חסומה: 'חסומה',
-    הושלמה: 'בוצעה',
-  };
-  return labels[status] || status;
-}
-
-export function statusColor(status: TaskStatus): string {
-  const colors: Record<TaskStatus, string> = {
-    בהמתנה: 'bg-gray-100 text-gray-800',
-    בעבודה: 'bg-blue-100 text-blue-800',
-    חסומה: 'bg-red-100 text-red-800',
-    הושלמה: 'bg-green-100 text-green-800',
-  };
-  return colors[status] || 'bg-gray-100 text-gray-800';
-}
-
-export function priorityLabel(priority: TaskPriority): string {
-  const labels: Record<TaskPriority, string> = {
-    'ללא עדיפות': 'ללא עדיפות',
-    מיידי: 'מיידי',
-    נמוכה: 'נמוכה',
-    בינונית: 'בינונית',
-    גבוהה: 'גבוהה',
-  };
-  return labels[priority] || priority;
-}
-
-export function priorityColor(priority: TaskPriority): string {
-  const colors: Record<TaskPriority, string> = {
-    'ללא עדיפות': 'bg-gray-400',
-    מיידי: 'bg-red-600',
-    נמוכה: 'bg-gray-500',
-    בינונית: 'bg-yellow-500',
-    גבוהה: 'bg-red-600',
-  };
-  return colors[priority] || 'bg-gray-500';
-}
-
-export function typeLabel(type: TaskType): string {
-  const labels: Record<TaskType, string> = {
-    'איסוף רכב/שינוע': 'איסוף רכב/שינוע',
-    'החזרת רכב/שינוע': 'החזרת רכב/שינוע',
-    'מסירת רכב חלופי': 'מסירת רכב חלופי',
-    'הסעת לקוח הביתה': 'הסעת לקוח הביתה',
-    'הסעת לקוח למוסך': 'הסעת לקוח למוסך',
-    'ביצוע טסט': 'ביצוע טסט',
-    'חילוץ רכב תקוע': 'חילוץ רכב תקוע',
-    אחר: 'אחר',
-  };
-  return labels[type];
 }
 
 function formatDate(dateStr: string): string {
