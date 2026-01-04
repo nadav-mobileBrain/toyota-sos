@@ -91,25 +91,28 @@ export function AuditFeed({
     vehicles: ProfilesMap;
     clientVehicles: ProfilesMap;
     drivers: ProfilesMap;
-  }>({ clients: {}, vehicles: {}, clientVehicles: {}, drivers: {} });
+    admins: ProfilesMap;
+  }>({ clients: {}, vehicles: {}, clientVehicles: {}, drivers: {}, admins: {} });
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [query, setQuery] = useState<string>('');
 
   const fetchLookups = useCallback(async () => {
     try {
-      const [clientsRes, vehiclesRes, clientVehiclesRes, driversRes] =
+      const [clientsRes, vehiclesRes, clientVehiclesRes, driversRes, adminsRes] =
         await Promise.all([
           fetch('/api/admin/clients'),
           fetch('/api/admin/vehicles'),
           fetch('/api/admin/clients-vehicles'),
           fetch('/api/admin/drivers'),
+          fetch('/api/admin/admins'),
         ]);
 
-      const [clients, vehicles, clientVehicles, drivers] = await Promise.all([
+      const [clients, vehicles, clientVehicles, drivers, admins] = await Promise.all([
         clientsRes.ok ? clientsRes.json() : Promise.resolve([]),
         vehiclesRes.ok ? vehiclesRes.json() : Promise.resolve([]),
         clientVehiclesRes.ok ? clientVehiclesRes.json() : Promise.resolve([]),
         driversRes.ok ? driversRes.json() : Promise.resolve([]),
+        adminsRes.ok ? adminsRes.json() : Promise.resolve([]),
       ]);
 
       const clientMap: ProfilesMap = {};
@@ -148,11 +151,20 @@ export function AuditFeed({
         });
       }
 
+      const adminMap: ProfilesMap = {};
+      const adminsData = admins?.data || admins || [];
+      if (Array.isArray(adminsData)) {
+        adminsData.forEach((a: any) => {
+          if (a.id) adminMap[a.id] = a.name || a.email || a.id;
+        });
+      }
+
       setLookups({
         clients: clientMap,
         vehicles: vehicleMap,
         clientVehicles: clientVehicleMap,
         drivers: driverMap,
+        admins: adminMap,
       });
     } catch {
       // ignore errors
@@ -211,6 +223,22 @@ export function AuditFeed({
       )
         return val;
     }
+    if (key === 'updated_by' || key === 'created_by') {
+      // Try to find in admins or drivers
+      const adminEntry = Object.entries(lookups.admins).find(
+        ([id]) => id.toLowerCase() === sVal
+      );
+      if (adminEntry) return adminEntry[1];
+
+      const driverEntry = Object.entries(lookups.drivers).find(
+        ([id]) => id.toLowerCase() === sVal
+      );
+      if (driverEntry) return driverEntry[1];
+      
+      // If we can't find the name, just return the ID (don't format as date)
+      return sVal;
+    }
+
     if (
       key.includes('date') ||
       key.includes('start') ||
@@ -370,7 +398,13 @@ export function AuditFeed({
 
       <ul className="space-y-3">
         {grouped.map((r) => {
-          const actor = r.actor?.name || r.actor?.email || r.actor_id || '—';
+          const actor =
+            r.actor?.name ||
+            r.actor?.email ||
+            (r.actor_id && lookups.admins[r.actor_id]) ||
+            (r.actor_id && lookups.drivers[r.actor_id]) ||
+            r.actor_id ||
+            '—';
           const when = formatDateHeIL(r.changed_at);
           const diff = r.diff || {};
           const keys = Object.keys(diff);
