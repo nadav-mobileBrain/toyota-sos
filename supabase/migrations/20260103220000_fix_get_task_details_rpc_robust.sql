@@ -1,9 +1,6 @@
--- Fix get_task_details to be SECURITY DEFINER and accept driver_id
--- This fixes the "Task not found" error when opening push notifications
--- specifically for drivers using the "Employee ID" login (hybrid auth)
--- where auth.uid() might be null/anon but they have a valid local session.
-
-DROP FUNCTION IF EXISTS public.get_task_details(uuid);
+-- Fix get_task_details logic to be more robust
+-- Allow access if EITHER auth.uid() matches OR p_driver_id matches
+-- removing the "auth.uid() IS NULL" constraint from the fallback path.
 
 CREATE OR REPLACE FUNCTION public.get_task_details(
   task_id uuid,
@@ -51,7 +48,7 @@ AS $$
   LEFT JOIN public.clients_vehicles cv ON cv.id = t.client_vehicle_id
   WHERE t.id = get_task_details.task_id
   AND (
-    -- 1. Authenticated user (Standard Flow)
+    -- 1. Authenticated user check
     (auth.uid() IS NOT NULL AND (
       -- Is assigned driver
       EXISTS (
@@ -66,10 +63,8 @@ AS $$
       )
     ))
     OR
-    -- 2. Unauthenticated/Hybrid but ID provided (Driver App Flow)
-    -- This handles cases where auth.uid() is null (anon) but the app has a local driver session
-    (auth.uid() IS NULL AND p_driver_id IS NOT NULL AND (
-       -- Check if the provided driver ID is assigned to this task
+    -- 2. Explicit driver_id check (fallback for hybrid auth or partial sessions)
+    (p_driver_id IS NOT NULL AND (
        EXISTS (
          SELECT 1 FROM public.task_assignees ta
          WHERE ta.task_id = t.id AND ta.driver_id = p_driver_id
@@ -78,7 +73,3 @@ AS $$
   )
   LIMIT 1;
 $$;
-
--- Grant execution to anon so unauthenticated (but identified) drivers can call it
-GRANT EXECUTE ON FUNCTION public.get_task_details(uuid, uuid) TO anon;
-GRANT EXECUTE ON FUNCTION public.get_task_details(uuid, uuid) TO authenticated;
