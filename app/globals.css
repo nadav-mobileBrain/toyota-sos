@@ -328,6 +328,17 @@ body {
   box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.35);
 }
 
+/* Blocked Task Pattern */
+.task-blocked {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.1) 10px,
+    transparent 10px,
+    transparent 20px
+  );
+}
+
 /* Toyota Brand Gradients */
 .bg-toyota-gradient {
   background: linear-gradient(

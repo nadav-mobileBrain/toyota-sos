@@ -34,7 +34,7 @@ const getTaskColor = (type: TaskType): string => {
 const statusColors: Record<TaskStatus, string> = {
   בהמתנה: 'opacity-90',
   בעבודה: 'opacity-100 ring-2 ring-white ring-offset-1',
-  חסומה: 'opacity-60 bg-stripes',
+  חסומה: 'opacity-90 task-blocked',
   הושלמה: 'opacity-50',
 };
 
