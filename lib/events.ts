@@ -11,7 +11,10 @@ type TaskEventCommon = {
   created_at?: string;
 };
 
-export function buildTaskPayload(task: any, extra?: Record<string, any>): TaskEventCommon & Record<string, any> {
+export function buildTaskPayload(
+  task: any,
+  extra?: Record<string, any>
+): TaskEventCommon & Record<string, any> {
   return {
     task_id: task?.id,
     type: task?.type,
@@ -24,20 +27,32 @@ export function buildTaskPayload(task: any, extra?: Record<string, any>): TaskEv
 }
 
 export function trackTaskCreated(task: any, leadDriverId?: string) {
-  analytics.track('Task Created', buildTaskPayload(task, { assigned_to: leadDriverId || null }));
+  analytics.track(
+    'Task Created',
+    buildTaskPayload(task, { assigned_to: leadDriverId || null })
+  );
 }
 
 export function trackTaskAssigned(task: any, driverId: string) {
-  analytics.track('Task Assigned', buildTaskPayload(task, { assigned_to: driverId }));
+  analytics.track(
+    'Task Assigned',
+    buildTaskPayload(task, { assigned_to: driverId })
+  );
 }
 
 export function trackTaskStatusChange(task: any, newStatus: string) {
   const extra: Record<string, any> = { status: newStatus };
   if (newStatus === 'completed') {
-    const end = task?.updated_at ? new Date(task.updated_at).getTime() : Date.now();
-    const start = task?.estimated_start ? new Date(task.estimated_start).getTime() : undefined;
+    const end = task?.updated_at
+      ? new Date(task.updated_at).getTime()
+      : Date.now();
+    const start = task?.estimated_start
+      ? new Date(task.estimated_start).getTime()
+      : undefined;
     if (start) extra.duration_ms = Math.max(0, end - start);
-    const eta = task?.estimated_end ? new Date(task.estimated_end).getTime() : undefined;
+    const eta = task?.estimated_end
+      ? new Date(task.estimated_end).getTime()
+      : undefined;
     if (eta) extra.on_time = end <= eta;
   }
   analytics.track('Task Status Changed', buildTaskPayload(task, extra));
@@ -84,7 +99,11 @@ export function trackSignatureCaptured(params: {
 }
 
 // Notification events
-export function trackNotificationReceived(row: { id: string; type?: string; task_id?: string | null }) {
+export function trackNotificationReceived(row: {
+  id: string;
+  type?: string;
+  task_id?: string | null;
+}) {
   analytics.track('Notification Received', {
     notification_id: row.id,
     type: row.type,
@@ -93,7 +112,11 @@ export function trackNotificationReceived(row: { id: string; type?: string; task
   });
 }
 
-export function trackNotificationOpened(row: { id: string; type?: string; task_id?: string | null }) {
+export function trackNotificationOpened(row: {
+  id: string;
+  type?: string;
+  task_id?: string | null;
+}) {
   analytics.track('Notification Opened', {
     notification_id: row.id,
     type: row.type,
@@ -101,5 +124,29 @@ export function trackNotificationOpened(row: { id: string; type?: string; task_i
     opened_at: new Date().toISOString(),
   });
 }
+// Auth events
+export function trackLoginAttempt(role: 'driver' | 'admin') {
+  analytics.track('Login Attempt', { role });
+}
 
+export function trackLoginSuccess(role: 'driver' | 'admin', userId?: string) {
+  if (userId) analytics.identify(userId);
+  analytics.track('Login Success', { role });
+}
 
+export function trackLoginFailed(role: 'driver' | 'admin', error: string) {
+  analytics.track('Login Failed', { role, error });
+}
+
+// Driver events
+export function trackTaskViewed(taskId: string) {
+  analytics.track('Task Viewed', { task_id: taskId });
+}
+
+export function trackNavigationStarted(taskId: string, address: string) {
+  analytics.track('Navigation Started', {
+    task_id: taskId,
+    address,
+    method: 'waze',
+  });
+}

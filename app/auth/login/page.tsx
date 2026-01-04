@@ -7,6 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/components/AuthProvider';
 import { CarFront, LogInIcon, UserIcon } from 'lucide-react';
+import {
+  trackLoginAttempt,
+  trackLoginSuccess,
+  trackLoginFailed,
+} from '@/lib/events';
 
 function LoginContent() {
   const router = useRouter();
@@ -31,19 +36,24 @@ function LoginContent() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    trackLoginAttempt('driver');
 
     try {
       const result = await loginDriver(employeeId);
       if (result.success) {
+        trackLoginSuccess('driver', employeeId);
         setSuccess('הכניסה בוצעה בהצלחה! מעבר לדף הבית...');
         setTimeout(() => {
           router.push(redirectTo || '/driver');
         }, 500);
       } else {
-        setError(result.error || 'Login failed');
+        const msg = result.error || 'Login failed';
+        trackLoginFailed('driver', msg);
+        setError(msg);
       }
     } catch (err: unknown) {
       const error = err instanceof Error ? err : new Error('An error occurred');
+      trackLoginFailed('driver', error.message);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -54,10 +64,12 @@ function LoginContent() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    trackLoginAttempt('admin');
 
     try {
       const result = await loginAdmin(username, password);
       if (result.success) {
+        trackLoginSuccess('admin', username);
         setSuccess('הכניסה בוצעה בהצלחה! מעבר לדף הבית...');
         setTimeout(() => {
           // If redirectTo is within /admin, normalize to /admin/dashboard as the landing page
@@ -68,10 +80,13 @@ function LoginContent() {
           router.push(target);
         }, 500);
       } else {
-        setError(result.error || 'Login failed');
+        const msg = result.error || 'Login failed';
+        trackLoginFailed('admin', msg);
+        setError(msg);
       }
     } catch (err: unknown) {
       const error = err instanceof Error ? err : new Error('An error occurred');
+      trackLoginFailed('admin', error.message);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -221,7 +236,7 @@ function LoginContent() {
 
         {/* Footer */}
         <div className="text-center text-sm text-gray-600">
-          <p>Version 1.0.2</p>
+          <p>Version 1.0.3</p>
         </div>
       </div>
     </div>

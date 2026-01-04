@@ -21,6 +21,7 @@ import { TestCompletionPopup } from '@/components/driver/TestCompletionPopup';
 import { toastSuccess, toastError } from '@/lib/toast';
 import { checkExistingAttachments } from '@/lib/taskAttachments';
 import { UtensilsIcon } from 'lucide-react';
+import { track } from '@/lib/mixpanel';
 
 function getChecklistInfo(type: string) {
   switch (type) {
@@ -366,6 +367,7 @@ export function DriverHome() {
           const json = await res.json();
           if (json.ok) {
             setIsOnBreak(false);
+            track('Driver End Break', { driverId });
             toastSuccess('הפסקה הסתיימה');
           } else {
             toastError('שגיאה בסיום הפסקה');
@@ -387,6 +389,7 @@ export function DriverHome() {
           const json = await res.json();
           if (json.ok) {
             setIsOnBreak(true);
+            track('Driver Start Break', { driverId });
             toastSuccess('הפסקה התחילה');
           } else {
             toastError('שגיאה בהתחלת הפסקה');
@@ -629,7 +632,7 @@ export function DriverHome() {
       <div className="grid grid-cols-1 gap-2">
         {(
           [
-            { key: 'today', label: 'היום' },
+            { key: 'today', label: 'לוח משימות יומי' },
             // { key: 'all', label: 'הכל' },
           ] as const
         ).map((t) => {

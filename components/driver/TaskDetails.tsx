@@ -17,6 +17,7 @@ import {
 import { formatLicensePlate } from '@/lib/vehicleLicensePlate';
 import type { TaskStatus } from '@/types/task';
 import { statusLabel } from '@/lib/task-utils';
+import { trackTaskViewed, trackNavigationStarted } from '@/lib/events';
 
 type TaskDetailsData = {
   id: string;
@@ -53,23 +54,26 @@ export function TaskDetails({ taskId }: { taskId: string }) {
       setError(null);
       try {
         const supa = createBrowserClient();
-        
+
         // Wait for session to be restored (handles "cold start" from push notification)
         await supa.auth.getSession();
-        
+
         // Get local driver session fallback
         const driverSession = getDriverSession();
         const driverId = driverSession?.userId;
 
         const { data, error } = (await supa.rpc('get_task_details', {
           task_id: taskId,
-          p_driver_id: driverId
+          p_driver_id: driverId,
         })) as { data: TaskDetailsData[] | null; error: unknown | null };
         if (error) {
           throw error as Error;
         }
         if (mounted) {
           setTask(data && data[0] ? data[0] : null);
+          if (data && data[0]) {
+            trackTaskViewed(data[0].id);
+          }
         }
       } catch {
         if (mounted) setError('טעינת המשימה נכשלה. נסה שוב.');
@@ -198,6 +202,7 @@ export function TaskDetails({ taskId }: { taskId: string }) {
               {wazeHref && (
                 <a
                   href={wazeHref}
+                  onClick={() => trackNavigationStarted(task.id, task.address!)}
                   className="inline-flex mt-2 items-center justify-center rounded-md bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600 w-full"
                 >
                   ניווט עם Waze

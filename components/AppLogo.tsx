@@ -8,7 +8,7 @@ export function AppLogo() {
   const pathname = usePathname();
   const isDriverPage = pathname?.startsWith('/driver');
   const isAdminPage = pathname?.startsWith('/admin');
-
+  const isAuthPage = pathname === '/auth/login';
   return (
     <div
       className={cn(
@@ -29,8 +29,8 @@ export function AppLogo() {
           'shadow-md bg-white/90 backdrop-blur-sm border border-red-200 transition-all',
           isDriverPage
             ? 'rounded-lg w-14 h-14'
-            : isAdminPage
-            ? 'rounded-xl w-14 h-14 md:w-20 md:h-20'
+            : isAdminPage || isAuthPage
+            ? 'rounded-xl w-20 h-20 md:w-20 md:h-20'
             : 'rounded-2xl w-32 h-32 md:w-40 md:h-40'
         )}
         priority
