@@ -1129,19 +1129,12 @@ export function TasksBoard({
             if (status === 'SUBSCRIBED') {
               console.log('[TasksBoard] ✅ Successfully subscribed to realtime updates');
             }
-            if (status === 'TIMED_OUT' || status === 'CLOSED') {
-              console.log('[TasksBoard] ⚠️ Subscription issue, reconnecting...');
-              // Auto-reconnect on timeout or close
-              setTimeout(() => {
-                if (status === 'TIMED_OUT') {
-                  channel?.unsubscribe();
-                }
-                channel?.subscribe();
-              }, 1000);
-            }
             if (status === 'CHANNEL_ERROR') {
               console.error('[TasksBoard] ❌ Channel error - check Supabase realtime config');
             }
+            // Note: Don't auto-reconnect on TIMED_OUT or CLOSED here
+            // The AuthProvider handles token refresh via client.realtime.setAuth()
+            // which keeps the connection alive. Manual reconnects can cause loops.
           });
       } catch (error) {
         console.error('[TasksBoard] Error setting up realtime:', error);

@@ -70,8 +70,9 @@ const getSupabaseConfig = () => {
     : getSupabaseConfigServer();
 };
 
-// Session storage key for driver sessions (localStorage)
+// Session storage keys (localStorage)
 const DRIVER_SESSION_KEY = 'driver_session';
+const ADMIN_SESSION_KEY = 'admin_session';
 
 // In-memory cache for Supabase session to avoid repeated slow getSession() calls
 let cachedSupabaseSession: {
@@ -106,10 +107,18 @@ export interface AdminSession {
 
 export type AuthSession = DriverSession | AdminSession | null;
 
-// Browser client (client-side only)
+// Singleton browser client instance
+let browserClientInstance: SupabaseClient | null = null;
+
+// Browser client (client-side only) - SINGLETON to prevent multiple GoTrueClient instances
 export const createBrowserClient = (): SupabaseClient => {
+  // Return existing instance if available (prevents "Multiple GoTrueClient instances" warning)
+  if (browserClientInstance) {
+    return browserClientInstance;
+  }
+
   const { url, key } = getSupabaseConfig();
-  return createClient(url, key, {
+  browserClientInstance = createClient(url, key, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -119,6 +128,8 @@ export const createBrowserClient = (): SupabaseClient => {
       flowType: 'implicit',
     },
   });
+
+  return browserClientInstance;
 };
 
 // Server client (server-side only)
@@ -441,6 +452,40 @@ export const getDriverSession = (): DriverSession | null => {
   }
 };
 
+/**
+ * Get admin session from localStorage
+ */
+export const getAdminSessionFromStorage = (): AdminSession | null => {
+  if (typeof window === 'undefined') return null;
+
+  const stored = localStorage.getItem(ADMIN_SESSION_KEY);
+  if (!stored) return null;
+
+  try {
+    return JSON.parse(stored) as AdminSession;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Save admin session to localStorage
+ */
+export const saveAdminSession = (session: AdminSession): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
+  }
+};
+
+/**
+ * Clear admin session from localStorage
+ */
+export const clearAdminSession = (): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+  }
+};
+
 // ============================================
 // ADMIN/OFFICE AUTHENTICATION (Username + Password)
 // ============================================
@@ -502,6 +547,9 @@ export const loginAsAdmin = async (
       email: data.user.email,
     };
 
+    // Save to localStorage for fast session recovery
+    saveAdminSession(session);
+
     return { success: true, session };
   } catch (err) {
     return {
@@ -515,8 +563,9 @@ export const loginAsAdmin = async (
  * Logout admin user
  */
 export const logoutAdmin = async (client: SupabaseClient): Promise<void> => {
-  // Clear session cache
+  // Clear session cache and localStorage
   cachedSupabaseSession = null;
+  clearAdminSession();
   await client.auth.signOut();
 };
 
@@ -615,10 +664,12 @@ export const getAdminSession = async (
 export const getCurrentSession = async (
   client: SupabaseClient
 ): Promise<AuthSession> => {
-  console.log('[getCurrentSession] Called...');
+  console.log('[getCurrentSession] Called... [v5]');
 
-  // CRITICAL FIX: For DRIVERS, check localStorage FIRST before any Supabase calls
-  // This prevents skeletons from showing while waiting for slow getSession()
+  // CRITICAL FIX: Check localStorage FIRST before any Supabase calls
+  // This prevents slow getSession() calls on page refresh/token refresh
+
+  // Check for driver session
   const driverSession = getDriverSession();
   if (driverSession) {
     console.log(
@@ -627,10 +678,17 @@ export const getCurrentSession = async (
     return driverSession;
   }
 
-  // For non-drivers (admins/managers/viewers), check Supabase auth
-  console.log(
-    '[getCurrentSession] No driver session, checking Supabase auth...'
-  );
+  // Check for admin session
+  const adminSession = getAdminSessionFromStorage();
+  if (adminSession) {
+    console.log(
+      '✅ [getCurrentSession] Using localStorage admin session immediately!'
+    );
+    return adminSession;
+  }
+
+  // No cached session - need to check Supabase auth (first login or cleared storage)
+  console.log('[getCurrentSession] No cached session, checking Supabase...');
 
   // Check cache first to avoid repeated slow getSession() calls
   const now = Date.now();
@@ -665,7 +723,7 @@ export const getCurrentSession = async (
   );
 
   if (supabaseSession) {
-    // For non-driver users, query profiles
+    // Query profiles to get role
     // Use a timeout to prevent hanging on slow profile queries
     try {
       const profilePromise = client
@@ -710,16 +768,19 @@ export const getCurrentSession = async (
           }
           return newDriverSession;
         } else {
-          // Admin/manager/viewer
+          // Admin/manager/viewer - save to localStorage for next time
           console.log(
-            `✅ [getCurrentSession] Using Supabase ${profile.role} session!`
+            `✅ [getCurrentSession] ${profile.role} found via Supabase, saving to localStorage`
           );
-          return {
+          const newAdminSession: AdminSession = {
             userId: supabaseSession.user.id,
             username: supabaseSession.user.email || '',
             role: profile.role as 'admin' | 'manager' | 'viewer',
             email: supabaseSession.user.email || '',
           };
+          // Save for future quick loads
+          saveAdminSession(newAdminSession);
+          return newAdminSession;
         }
       }
     } catch (err) {

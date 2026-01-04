@@ -5,12 +5,12 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import {
   createBrowserClient,
   getCurrentSession,
-  getCurrentRole,
   logout,
   loginAsDriver,
   loginAsAdmin,
   AuthSession,
   clearSessionCache,
+  clearAdminSession,
 } from '@/lib/auth';
 
 interface AuthContextType {
@@ -288,29 +288,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!client) return;
 
     const { data: authListener } = client.auth.onAuthStateChange(
-      async (event) => {
-        // Clear cache when auth state changes to ensure fresh data
+      async (event, supabaseSession) => {
+        console.log('[AuthProvider] onAuthStateChange:', event);
+
+        // Clear Supabase session cache when auth state changes
         clearSessionCache();
 
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          const currentRole = await getCurrentRole(client);
+        if (event === 'SIGNED_IN') {
+          // On sign in, we already set session in the login handlers
+          // Just need to get the current session from localStorage (already saved by login)
           const currentSession = await getCurrentSession(client);
-          setSession(currentSession);
-          setRole(currentRole);
-          writeAuthCookies(currentRole, currentSession?.userId || null);
+          if (currentSession) {
+            setSession(currentSession);
+            setRole(currentSession.role);
+            writeAuthCookies(currentSession.role, currentSession.userId || null);
+          }
 
-          // Update localStorage for driver sessions
-          if (currentRole === 'driver' && currentSession) {
-            localStorage.setItem(
-              'driver_session',
-              JSON.stringify(currentSession)
-            );
+          // Update realtime connection with the new token
+          if (supabaseSession?.access_token) {
+            console.log('[AuthProvider] Setting realtime auth token on SIGNED_IN');
+            client.realtime.setAuth(supabaseSession.access_token);
+          }
+        } else if (event === 'TOKEN_REFRESHED') {
+          // CRITICAL: Update realtime connection with the refreshed token
+          // Without this, realtime subscriptions die when the old token expires
+          if (supabaseSession?.access_token) {
+            console.log('[AuthProvider] Refreshing realtime auth token');
+            client.realtime.setAuth(supabaseSession.access_token);
+          }
+
+          // Session state already correct, just ensure cookies are up to date
+          if (session) {
+            writeAuthCookies(role, session.userId || null);
           }
         } else if (event === 'SIGNED_OUT') {
           setSession(null);
           setRole(null);
           writeAuthCookies(null, null);
           localStorage.removeItem('driver_session');
+          clearAdminSession();
         }
       }
     );
@@ -318,7 +334,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, [client]);
+  }, [client, session, role]);
 
   // Handle driver login
   const handleLoginDriver = async (employeeId: string) => {
@@ -383,8 +399,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(null);
       setRole(null);
       writeAuthCookies(null, null);
-      // Clear localStorage
+      // Clear localStorage for both driver and admin sessions
       localStorage.removeItem('driver_session');
+      clearAdminSession();
     } catch (err: any) {
       setError(err.message || 'Logout failed');
     }
