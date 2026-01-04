@@ -607,14 +607,30 @@ export const getAdminSession = async (
 /**
  * Get current session (either driver or admin)
  * Returns the first available session found
- * 
- * OPTIMIZATION: For drivers, we trust localStorage session if Supabase session exists
- * This avoids slow profile queries on every page load while still validating auth
+ *
+ * OPTIMIZATION: For drivers, check localStorage FIRST and return immediately.
+ * This avoids slow Supabase getSession() calls on page refresh.
+ * Realtime will still work because the Supabase auth token is stored separately.
  */
 export const getCurrentSession = async (
   client: SupabaseClient
 ): Promise<AuthSession> => {
-  console.log('[getCurrentSession] Called - checking Supabase auth...');
+  console.log('[getCurrentSession] Called...');
+
+  // CRITICAL FIX: For DRIVERS, check localStorage FIRST before any Supabase calls
+  // This prevents skeletons from showing while waiting for slow getSession()
+  const driverSession = getDriverSession();
+  if (driverSession) {
+    console.log(
+      '✅ [getCurrentSession] Using localStorage driver session immediately!'
+    );
+    return driverSession;
+  }
+
+  // For non-drivers (admins/managers/viewers), check Supabase auth
+  console.log(
+    '[getCurrentSession] No driver session, checking Supabase auth...'
+  );
 
   // Check cache first to avoid repeated slow getSession() calls
   const now = Date.now();
@@ -624,12 +640,10 @@ export const getCurrentSession = async (
     cachedSupabaseSession &&
     now - cachedSupabaseSession.timestamp < SESSION_CACHE_TTL
   ) {
-    console.log('[getCurrentSession] Using cached session');
+    console.log('[getCurrentSession] Using cached Supabase session');
     supabaseSession = cachedSupabaseSession.session;
   } else {
     console.log('[getCurrentSession] Fetching fresh session from Supabase...');
-    // CRITICAL: Check Supabase auth session FIRST!
-    // This ensures realtime subscriptions work for authenticated users (including drivers)
     const result = await client.auth.getSession();
     supabaseSession = result.data.session;
 
@@ -651,15 +665,7 @@ export const getCurrentSession = async (
   );
 
   if (supabaseSession) {
-    // OPTIMIZATION: For drivers, check localStorage first to avoid profile query
-    // We already verified they have a valid Supabase auth session
-    const driverSession = getDriverSession();
-    if (driverSession && driverSession.userId === supabaseSession.user.id) {
-      console.log('✅ [getCurrentSession] Using cached driver session (validated by Supabase auth)!');
-      return driverSession;
-    }
-
-    // For non-driver users OR if localStorage doesn't match, query profiles
+    // For non-driver users, query profiles
     // Use a timeout to prevent hanging on slow profile queries
     try {
       const profilePromise = client
@@ -667,12 +673,14 @@ export const getCurrentSession = async (
         .select('role, employee_id, name')
         .eq('id', supabaseSession.user.id)
         .single();
-      
+
       const { data: profile } = await Promise.race([
         profilePromise,
-        new Promise<{ data: null }>((resolve) => 
+        new Promise<{ data: null }>((resolve) =>
           setTimeout(() => {
-            console.warn('[getCurrentSession] Profile query timed out after 5s');
+            console.warn(
+              '[getCurrentSession] Profile query timed out after 5s'
+            );
             resolve({ data: null });
           }, 5000)
         ),
@@ -682,14 +690,25 @@ export const getCurrentSession = async (
 
       if (profile) {
         if (profile.role === 'driver') {
-          console.log('✅ [getCurrentSession] Using Supabase driver session!');
-          return {
+          // Driver found via Supabase - save to localStorage for next time
+          console.log(
+            '✅ [getCurrentSession] Driver found via Supabase, saving to localStorage'
+          );
+          const newDriverSession: DriverSession = {
             userId: supabaseSession.user.id,
             employeeId: profile.employee_id,
             role: 'driver',
             name: profile.name,
             createdAt: Date.now(),
           };
+          // Save for future quick loads
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(
+              DRIVER_SESSION_KEY,
+              JSON.stringify(newDriverSession)
+            );
+          }
+          return newDriverSession;
         } else {
           // Admin/manager/viewer
           console.log(
@@ -707,16 +726,6 @@ export const getCurrentSession = async (
       console.error('[getCurrentSession] Profile query failed:', err);
       // Continue to fallbacks
     }
-  }
-
-  // Fallback: Check for driver session in localStorage
-  // This is only used if there's no Supabase session
-  const driverSession = getDriverSession();
-  if (driverSession) {
-    console.log(
-      '⚠️ [getCurrentSession] Using local driver session (fallback) - Realtime will NOT work!'
-    );
-    return driverSession;
   }
 
   // Check cookies (faster than Supabase call)
