@@ -4,13 +4,17 @@ import mixpanel from 'mixpanel-browser';
 import { getFlags } from './flags';
 
 let inited = false;
-const token =
-  process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || 'dbe6cb24df9f2ad1c563a71acd174b9e';
+const token = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
+if (!token) {
+  throw new Error('NEXT_PUBLIC_MIXPANEL_TOKEN is not set');
+}
 
 const hasConsent = () => {
   if (typeof window === 'undefined') return false;
   try {
-    return (localStorage.getItem('analytics:consent') || 'granted') === 'granted';
+    return (
+      (localStorage.getItem('analytics:consent') || 'granted') === 'granted'
+    );
   } catch {
     return true;
   }
@@ -18,11 +22,13 @@ const hasConsent = () => {
 
 export function initMixpanel() {
   if (inited || typeof window === 'undefined') return;
-  mixpanel.init(token, {
+  mixpanel.init(token as string, {
     track_pageview: true,
     persistence: 'localStorage',
     autocapture: true,
     record_sessions_percent: 100,
+    api_host: 'https://api-eu.mixpanel.com',
+    debug: true,
   });
   inited = true;
   // Fire-and-forget: register feature flags and cohort variant as super properties
@@ -85,15 +91,13 @@ function getOrAssignVariant(): 'A' | 'B' {
     const ua = navigator.userAgent || `${Math.random()}`;
     let hash = 0;
     for (let i = 0; i < ua.length; i++) {
-      hash = ((hash << 5) - hash) + ua.charCodeAt(i);
+      hash = (hash << 5) - hash + ua.charCodeAt(i);
       hash |= 0;
     }
-    const variant: 'A' | 'B' = (Math.abs(hash) % 2 === 0) ? 'A' : 'B';
+    const variant: 'A' | 'B' = Math.abs(hash) % 2 === 0 ? 'A' : 'B';
     localStorage.setItem(key, variant);
     return variant;
   } catch {
     return 'A';
   }
 }
-
-

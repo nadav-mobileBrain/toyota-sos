@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import Image from 'next/image';
+// import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
@@ -102,9 +102,15 @@ export default function Home() {
         }
       `}</style>
 
+      {/* Subtle Background Pattern */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[length:24px_24px]"></div>
+        <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/5 opacity-30 blur-[100px]"></div>
+      </div>
+
       <div className="relative z-10 flex flex-col items-center text-center space-y-10 px-4 max-w-3xl mx-auto w-full">
         {/* App Icon */}
-        <div className="relative group animate-appear opacity-0">
+        {/* <div className="relative group animate-appear opacity-0">
           <div className="absolute inset-0 bg-primary rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-500" />
           <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-[2.5rem] shadow-2xl overflow-hidden transition-transform duration-500 group-hover:scale-105">
             <Image
@@ -115,7 +121,7 @@ export default function Home() {
               priority
             />
           </div>
-        </div>
+        </div> */}
 
         <div className="space-y-4 w-full">
           {/* Brand Name */}
@@ -154,19 +160,19 @@ export default function Home() {
         <p>
           &copy; {new Date().getFullYear()} Toyota S.O.S. All rights reserved.
         </p>
-        <p>Version 1.0.2</p>
+        <p>Version 1.0.3</p>
         <div className="flex flex-col items-center gap-1">
           <p>Developed By Nadav Galili</p>
           <div className="flex items-center gap-4">
-            <Link 
-              href="/accessibility" 
+            <Link
+              href="/accessibility"
               className="text-primary/60 hover:text-primary transition-colors underline underline-offset-2"
             >
               הצהרת נגישות
             </Link>
             <span className="text-gray-600">|</span>
-            <Link 
-              href="/privacy" 
+            <Link
+              href="/privacy"
               className="text-primary/60 hover:text-primary transition-colors underline underline-offset-2"
             >
               מדיניות פרטיות
