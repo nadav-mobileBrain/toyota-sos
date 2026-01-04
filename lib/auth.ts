@@ -607,6 +607,9 @@ export const getAdminSession = async (
 /**
  * Get current session (either driver or admin)
  * Returns the first available session found
+ * 
+ * OPTIMIZATION: For drivers, we trust localStorage session if Supabase session exists
+ * This avoids slow profile queries on every page load while still validating auth
  */
 export const getCurrentSession = async (
   client: SupabaseClient
@@ -648,38 +651,61 @@ export const getCurrentSession = async (
   );
 
   if (supabaseSession) {
-    // We have a valid Supabase auth session - use it!
-    // This could be admin, manager, viewer, OR driver
-    const { data: profile } = await client
-      .from('profiles')
-      .select('role, employee_id, name')
-      .eq('id', supabaseSession.user.id)
-      .single();
+    // OPTIMIZATION: For drivers, check localStorage first to avoid profile query
+    // We already verified they have a valid Supabase auth session
+    const driverSession = getDriverSession();
+    if (driverSession && driverSession.userId === supabaseSession.user.id) {
+      console.log('✅ [getCurrentSession] Using cached driver session (validated by Supabase auth)!');
+      return driverSession;
+    }
 
-    console.log('[getCurrentSession] Profile from Supabase:', profile);
+    // For non-driver users OR if localStorage doesn't match, query profiles
+    // Use a timeout to prevent hanging on slow profile queries
+    try {
+      const profilePromise = client
+        .from('profiles')
+        .select('role, employee_id, name')
+        .eq('id', supabaseSession.user.id)
+        .single();
+      
+      const { data: profile } = await Promise.race([
+        profilePromise,
+        new Promise<{ data: null }>((resolve) => 
+          setTimeout(() => {
+            console.warn('[getCurrentSession] Profile query timed out after 5s');
+            resolve({ data: null });
+          }, 5000)
+        ),
+      ]);
 
-    if (profile) {
-      if (profile.role === 'driver') {
-        console.log('✅ [getCurrentSession] Using Supabase driver session!');
-        return {
-          userId: supabaseSession.user.id,
-          employeeId: profile.employee_id,
-          role: 'driver',
-          name: profile.name,
-          createdAt: Date.now(),
-        };
-      } else {
-        // Admin/manager/viewer
-        console.log(
-          `✅ [getCurrentSession] Using Supabase ${profile.role} session!`
-        );
-        return {
-          userId: supabaseSession.user.id,
-          username: supabaseSession.user.email || '',
-          role: profile.role as 'admin' | 'manager' | 'viewer',
-          email: supabaseSession.user.email || '',
-        };
+      console.log('[getCurrentSession] Profile from Supabase:', profile);
+
+      if (profile) {
+        if (profile.role === 'driver') {
+          console.log('✅ [getCurrentSession] Using Supabase driver session!');
+          return {
+            userId: supabaseSession.user.id,
+            employeeId: profile.employee_id,
+            role: 'driver',
+            name: profile.name,
+            createdAt: Date.now(),
+          };
+        } else {
+          // Admin/manager/viewer
+          console.log(
+            `✅ [getCurrentSession] Using Supabase ${profile.role} session!`
+          );
+          return {
+            userId: supabaseSession.user.id,
+            username: supabaseSession.user.email || '',
+            role: profile.role as 'admin' | 'manager' | 'viewer',
+            email: supabaseSession.user.email || '',
+          };
+        }
       }
+    } catch (err) {
+      console.error('[getCurrentSession] Profile query failed:', err);
+      // Continue to fallbacks
     }
   }
 

@@ -131,8 +131,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        if (!client) {
-          // Only if not already set by optimistic render (though it won't be in useEffect)
+        // Check if we already have a valid session from localStorage
+        // If so, DON'T set loading back to true - let the UI stay unblocked
+        const hasStoredDriverSession = !!localStorage.getItem('driver_session');
+        if (!hasStoredDriverSession) {
           setLoading(true);
         }
 
@@ -142,6 +144,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('AuthProvider: Client created');
 
         // Create a promise for the auth check
+        // NOTE: We only call getCurrentSession once - getCurrentRole is redundant
+        // because the session already contains the role
         const checkAuth = async () => {
           try {
             console.log('AuthProvider: Checking session...');
@@ -151,7 +155,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               currentSession ? 'Found' : 'Null'
             );
 
-            const currentRole = await getCurrentRole(supabaseClient);
+            // Extract role directly from session - no need for separate getCurrentRole call
+            const currentRole = currentSession?.role || null;
             console.log('AuthProvider: Role result:', currentRole);
 
             return { session: currentSession, role: currentRole };
@@ -161,15 +166,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         };
 
-        // Race against a 10-second timeout for production reliability
-        // If Supabase hangs completely, we force a fallback or clear state
+        // Race against a 15-second timeout for production reliability
+        // Increased from 10s to handle slow token refresh on cold starts
         const { session: currentSession, role: currentRole } =
           await Promise.race([
             checkAuth(),
             new Promise<{ session: any; role: any }>((_, reject) =>
               setTimeout(
                 () => reject(new Error('Auth initialization timed out')),
-                10000
+                15000
               )
             ),
           ]);
