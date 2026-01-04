@@ -92,28 +92,40 @@ export function AuditFeed({
     clientVehicles: ProfilesMap;
     drivers: ProfilesMap;
     admins: ProfilesMap;
-  }>({ clients: {}, vehicles: {}, clientVehicles: {}, drivers: {}, admins: {} });
+  }>({
+    clients: {},
+    vehicles: {},
+    clientVehicles: {},
+    drivers: {},
+    admins: {},
+  });
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [query, setQuery] = useState<string>('');
 
   const fetchLookups = useCallback(async () => {
     try {
-      const [clientsRes, vehiclesRes, clientVehiclesRes, driversRes, adminsRes] =
-        await Promise.all([
-          fetch('/api/admin/clients'),
-          fetch('/api/admin/vehicles'),
-          fetch('/api/admin/clients-vehicles'),
-          fetch('/api/admin/drivers'),
-          fetch('/api/admin/admins'),
-        ]);
-
-      const [clients, vehicles, clientVehicles, drivers, admins] = await Promise.all([
-        clientsRes.ok ? clientsRes.json() : Promise.resolve([]),
-        vehiclesRes.ok ? vehiclesRes.json() : Promise.resolve([]),
-        clientVehiclesRes.ok ? clientVehiclesRes.json() : Promise.resolve([]),
-        driversRes.ok ? driversRes.json() : Promise.resolve([]),
-        adminsRes.ok ? adminsRes.json() : Promise.resolve([]),
+      const [
+        clientsRes,
+        vehiclesRes,
+        clientVehiclesRes,
+        driversRes,
+        adminsRes,
+      ] = await Promise.all([
+        fetch('/api/admin/clients'),
+        fetch('/api/admin/vehicles'),
+        fetch('/api/admin/clients-vehicles'),
+        fetch('/api/admin/drivers'),
+        fetch('/api/admin/admins'),
       ]);
+
+      const [clients, vehicles, clientVehicles, drivers, admins] =
+        await Promise.all([
+          clientsRes.ok ? clientsRes.json() : Promise.resolve([]),
+          vehiclesRes.ok ? vehiclesRes.json() : Promise.resolve([]),
+          clientVehiclesRes.ok ? clientVehiclesRes.json() : Promise.resolve([]),
+          driversRes.ok ? driversRes.json() : Promise.resolve([]),
+          adminsRes.ok ? adminsRes.json() : Promise.resolve([]),
+        ]);
 
       const clientMap: ProfilesMap = {};
       const clientsData = clients?.data || clients || [];
@@ -234,7 +246,7 @@ export function AuditFeed({
         ([id]) => id.toLowerCase() === sVal
       );
       if (driverEntry) return driverEntry[1];
-      
+
       // If we can't find the name, just return the ID (don't format as date)
       return sVal;
     }
@@ -298,7 +310,9 @@ export function AuditFeed({
     list = list.filter((r) => {
       if (r.action !== 'updated' || !r.diff) return true;
       const keys = Object.keys(r.diff);
-      const hasVisibleChanges = keys.some((k) => !HIDDEN_FIELDS.has(k) && k !== 'deleted_at');
+      const hasVisibleChanges = keys.some(
+        (k) => !HIDDEN_FIELDS.has(k) && k !== 'deleted_at'
+      );
       return hasVisibleChanges;
     });
 
@@ -398,12 +412,30 @@ export function AuditFeed({
 
       <ul className="space-y-3">
         {grouped.map((r) => {
+          // Attempt to infer actor_id if missing (e.g. created/updated via service role before trigger fix)
+          let inferredActorId = r.actor_id;
+          if (!inferredActorId) {
+            if (
+              r.action === 'created' &&
+              r.after &&
+              typeof r.after.created_by === 'string'
+            ) {
+              inferredActorId = r.after.created_by;
+            } else if (
+              r.action === 'updated' &&
+              r.after &&
+              typeof r.after.updated_by === 'string'
+            ) {
+              inferredActorId = r.after.updated_by;
+            }
+          }
+
           const actor =
             r.actor?.name ||
             r.actor?.email ||
-            (r.actor_id && lookups.admins[r.actor_id]) ||
-            (r.actor_id && lookups.drivers[r.actor_id]) ||
-            r.actor_id ||
+            (inferredActorId && lookups.admins[inferredActorId]) ||
+            (inferredActorId && lookups.drivers[inferredActorId]) ||
+            inferredActorId ||
             '—';
           const when = formatDateHeIL(r.changed_at);
           const diff = r.diff || {};
@@ -413,8 +445,9 @@ export function AuditFeed({
           const isDeletion =
             keys.includes('deleted_at') &&
             diff.deleted_at &&
-            classifyChange(diff.deleted_at as { from: unknown; to: unknown }) ===
-              'added';
+            classifyChange(
+              diff.deleted_at as { from: unknown; to: unknown }
+            ) === 'added';
 
           // When a task is deleted, we want to show some context fields even if they didn't change
           const deletionContextFields = ['type', 'client_id'];
@@ -423,7 +456,9 @@ export function AuditFeed({
                 ...deletionContextFields.filter(
                   (f) => r.before?.[f] || r.after?.[f]
                 ),
-                ...keys.filter((k) => k !== 'deleted_at' && !HIDDEN_FIELDS.has(k)),
+                ...keys.filter(
+                  (k) => k !== 'deleted_at' && !HIDDEN_FIELDS.has(k)
+                ),
               ]
             : keys.filter((k) => !HIDDEN_FIELDS.has(k));
 
@@ -541,11 +576,7 @@ export function AuditFeed({
               <div className="mb-1 flex flex-wrap items-center gap-2 text-sm border-b pb-1">
                 <span className="font-semibold">{actor}</span>
                 <span>•</span>
-                <span
-                  className={cn(
-                    isDeletion && 'text-red-600 font-bold'
-                  )}
-                >
+                <span className={cn(isDeletion && 'text-red-600 font-bold')}>
                   {isDeletion
                     ? 'המשימה נמחקה'
                     : actionLabels[r.action] || r.action}
@@ -577,10 +608,11 @@ export function AuditFeed({
                           diff as Record<string, { from: unknown; to: unknown }>
                         )[k] || { from: r.before?.[k], to: r.after?.[k] };
 
-                        const kind = isDeletion && deletionContextFields.includes(k) 
-                          ? 'same' 
-                          : classifyChange(rec);
-                        
+                        const kind =
+                          isDeletion && deletionContextFields.includes(k)
+                            ? 'same'
+                            : classifyChange(rec);
+
                         const kindLabel =
                           kind === 'added'
                             ? 'הוסף'
@@ -591,8 +623,14 @@ export function AuditFeed({
                             : 'ללא שינוי';
 
                         // For deletion context, we just want to show what was there
-                        const fromVal = isDeletion && deletionContextFields.includes(k) ? rec.from || rec.to : rec.from;
-                        const toVal = isDeletion && deletionContextFields.includes(k) ? null : rec.to;
+                        const fromVal =
+                          isDeletion && deletionContextFields.includes(k)
+                            ? rec.from || rec.to
+                            : rec.from;
+                        const toVal =
+                          isDeletion && deletionContextFields.includes(k)
+                            ? null
+                            : rec.to;
 
                         return (
                           <tr key={k} className="border-t border-gray-50">
