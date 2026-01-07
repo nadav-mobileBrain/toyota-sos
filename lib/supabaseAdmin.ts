@@ -8,6 +8,7 @@ export function getSupabaseAdmin() {
   if (!url || !serviceKey) {
     throw new Error('Missing SUPABASE URL or SERVICE ROLE KEY in environment.');
   }
+
   return createClient(url, serviceKey, {
     auth: {
       persistSession: false,

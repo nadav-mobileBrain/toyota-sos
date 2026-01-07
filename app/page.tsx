@@ -160,7 +160,7 @@ export default function Home() {
         <p>
           &copy; {new Date().getFullYear()} Toyota S.O.S. All rights reserved.
         </p>
-        <p>Version 1.0.3</p>
+        <p>Version 1.0.4</p>
         <div className="flex flex-col items-center gap-1">
           <p>Developed By Nadav Galili</p>
           <div className="flex items-center gap-4">

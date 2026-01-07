@@ -4,7 +4,7 @@ import dayjs from '@/lib/dayjs';
 import React, { useMemo } from 'react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
-import { MapPinIcon, PhoneIcon, Navigation } from 'lucide-react';
+import { MapPinIcon, PhoneIcon, Navigation, MessageCircle } from 'lucide-react';
 import { TaskAttachments } from '@/components/admin/TaskAttachments';
 import {
   getAdvisorColorBgClass,
@@ -46,6 +46,33 @@ export type TaskCardProps = {
   onStatusChange?: (next: TaskCardProps['status']) => void;
 };
 
+function toWhatsAppPhone(phone: string): string | null {
+  const raw = phone.trim();
+  if (!raw) return null;
+
+  // Keep digits and an optional leading '+', drop separators/spaces/etc.
+  let cleaned = raw.replace(/[^\d+]/g, '');
+
+  // Normalize international prefix.
+  if (cleaned.startsWith('00')) cleaned = `+${cleaned.slice(2)}`;
+  if (cleaned.startsWith('+')) cleaned = cleaned.slice(1);
+
+  // If it's an Israeli local format (starts with 0), convert to +972 (without '+').
+  if (cleaned.startsWith('0')) cleaned = `972${cleaned.slice(1)}`;
+
+  const digitsOnly = cleaned.replace(/\D/g, '');
+  return digitsOnly ? digitsOnly : null;
+}
+
+const WHATSAPP_PREFILL_TEXT =
+  'היי, זה הנהג של סוכנות טויוטה sos בחדרה. תחזור אליי בבקשה';
+
+function getWhatsAppChatHref(phoneDigits: string) {
+  return `https://wa.me/${phoneDigits}?text=${encodeURIComponent(
+    WHATSAPP_PREFILL_TEXT
+  )}`;
+}
+
 export function TaskCard(props: TaskCardProps) {
   const {
     id,
@@ -76,6 +103,8 @@ export function TaskCard(props: TaskCardProps) {
       return distA - distB;
     });
   }, [stops]);
+
+  const clientWhatsAppPhone = clientPhone ? toWhatsAppPhone(clientPhone) : null;
 
   const priorityColor =
     priority === 'מיידי'
@@ -114,14 +143,9 @@ export function TaskCard(props: TaskCardProps) {
     },
   };
 
-  const timeWindow =
-    estimatedStart && estimatedEnd
-      ? `${dayjs(estimatedStart).format('HH:mm')} – ${dayjs(
-          estimatedEnd
-        ).format('HH:mm')}`
-      : estimatedEnd
-      ? `עד ${dayjs(estimatedEnd).format('HH:mm')}`
-      : 'ללא זמן יעד';
+  const timeWindow = estimatedStart
+    ? dayjs(estimatedStart).format('HH:mm')
+    : 'ללא זמן יעד';
 
   const primaryAddress =
     sortedStops.length > 0 ? sortedStops[0].address : address || undefined;
@@ -220,6 +244,10 @@ export function TaskCard(props: TaskCardProps) {
         {sortedStops && sortedStops.length > 0 ? (
           <div className="space-y-1 rounded border border-gray-200 bg-gray-50 p-2">
             {sortedStops.map((s, idx) => {
+              const stopWhatsAppPhone = s.clientPhone
+                ? toWhatsAppPhone(s.clientPhone)
+                : null;
+
               return (
                 <div key={`${s.address}-${idx}`} className="space-y-0.5">
                   <div className="text-xs font-semibold text-gray-600">
@@ -243,15 +271,29 @@ export function TaskCard(props: TaskCardProps) {
                     <div className="flex items-center gap-2">
                       <span>לקוח: {s.clientName}</span>
                       {s.clientPhone && (
-                        <a
-                          href={`tel:${s.clientPhone}`}
-                          className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                        >
-                          <PhoneIcon className="w-3 h-3" />
-                          <span className="text-xs" dir="ltr">
-                            {s.clientPhone}
-                          </span>
-                        </a>
+                        <>
+                          <a
+                            href={`tel:${s.clientPhone}`}
+                            className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                          >
+                            <PhoneIcon className="w-3 h-3" />
+                            <span className="text-xs" dir="ltr">
+                              {s.clientPhone}
+                            </span>
+                          </a>
+                          {stopWhatsAppPhone ? (
+                            <a
+                              href={getWhatsAppChatHref(stopWhatsAppPhone)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-green-600 hover:text-green-800 flex items-center gap-1"
+                              aria-label="WhatsApp"
+                            >
+                              <MessageCircle className="w-3 h-3" />
+                              <span className="text-xs">WhatsApp</span>
+                            </a>
+                          ) : null}
+                        </>
                       )}
                     </div>
                   ) : null}
@@ -295,15 +337,29 @@ export function TaskCard(props: TaskCardProps) {
               <div className="flex items-center gap-2">
                 <span>לקוח: {clientName}</span>
                 {clientPhone && (
-                  <a
-                    href={`tel:${clientPhone}`}
-                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                  >
-                    <PhoneIcon className="w-3 h-3" />
-                    <span className="text-xs" dir="ltr">
-                      {clientPhone}
-                    </span>
-                  </a>
+                  <>
+                    <a
+                      href={`tel:${clientPhone}`}
+                      className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <PhoneIcon className="w-3 h-3" />
+                      <span className="text-xs" dir="ltr">
+                        {clientPhone}
+                      </span>
+                    </a>
+                    {clientWhatsAppPhone ? (
+                      <a
+                        href={getWhatsAppChatHref(clientWhatsAppPhone)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-green-600 hover:text-green-800 flex items-center gap-1"
+                        aria-label="WhatsApp"
+                      >
+                        <MessageCircle className="w-3 h-3" />
+                        <span className="text-xs">WhatsApp</span>
+                      </a>
+                    ) : null}
+                  </>
                 )}
               </div>
             ) : null}

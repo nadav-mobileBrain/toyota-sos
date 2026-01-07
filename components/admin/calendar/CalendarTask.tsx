@@ -118,11 +118,6 @@ export function CalendarTask({
         <div className="flex items-center gap-1.5">
           <Clock className="h-3.5 w-3.5 opacity-80" />
           <span className="font-bold">{startTime}</span>
-          {task.estimated_end && (
-            <span className="opacity-70">
-              - {format(parseISO(task.estimated_end), 'HH:mm', { locale: he })}
-            </span>
-          )}
         </div>
       </div>
 

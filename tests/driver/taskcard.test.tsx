@@ -25,17 +25,15 @@ describe('TaskCard', () => {
     expect(priorityPill.className).toMatch(/bg-red-600/);
 
     // Status toggle button present
-    const statusButton = screen.getByText('בהמתנה');
+    const statusButton = screen.getByText('ממתינה לביצוע');
     expect(statusButton).toBeInTheDocument();
   });
 
-  test('formats time window (HH:mm – HH:mm)', () => {
+  test('formats time window (HH:mm)', () => {
     render(<TaskCard {...baseProps} />);
     const timeRow = screen.getByText(/חלון זמן:/);
     // Verify time-only format
-    expect(timeRow.textContent).toMatch(
-      /חלון זמן:\s*\d{2}:\d{2}\s–\s\d{2}:\d{2}/
-    );
+    expect(timeRow.textContent).toMatch(/חלון זמן:\s*\d{2}:\d{2}/);
   });
 
   test('creates Waze deeplink with encoded address', () => {

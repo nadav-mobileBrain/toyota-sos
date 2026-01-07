@@ -36,7 +36,7 @@ exports[`TaskCard matches snapshot 1`] = `
         </span>
         <div
           aria-label="עדכון סטטוס משימה"
-          class="inline-flex gap-1 rtl:flex-row-reverse w-full justify-between"
+          class="rtl:flex-row-reverse flex flex-wrap gap-1.5 justify-center sm:justify-end"
           dir="ltr"
           role="group"
           style="outline: none;"
@@ -44,40 +44,40 @@ exports[`TaskCard matches snapshot 1`] = `
         >
           <button
             aria-checked="true"
-            class="inline-flex items-center justify-center font-medium data-[state=on]:text-white hover:bg-gray-100 data-[state=on]:hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 flex-1 rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] text-gray-700 sm:text-xs data-[state=on]:bg-gray-700 data-[state=on]:border-gray-700"
+            class="inline-flex items-center justify-center font-medium data-[state=on]:text-white hover:bg-gray-100 data-[state=on]:hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs text-gray-700 transition-all min-w-[70px] data-[state=on]:bg-gray-700 data-[state=on]:border-gray-700"
             data-radix-collection-item=""
             data-state="on"
             role="radio"
             tabindex="-1"
             type="button"
           >
-            בהמתנה
+            ממתינה לביצוע
           </button>
           <button
             aria-checked="false"
-            class="inline-flex items-center justify-center font-medium data-[state=on]:text-white hover:bg-gray-100 data-[state=on]:hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 flex-1 rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] text-gray-700 sm:text-xs data-[state=on]:bg-blue-600 data-[state=on]:border-blue-600"
+            class="inline-flex items-center justify-center font-medium data-[state=on]:text-white hover:bg-gray-100 data-[state=on]:hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs text-gray-700 transition-all min-w-[70px] data-[state=on]:bg-blue-600 data-[state=on]:border-blue-600"
             data-radix-collection-item=""
             data-state="off"
             role="radio"
             tabindex="-1"
             type="button"
           >
-            בעבודה
+            בביצוע
           </button>
           <button
             aria-checked="false"
-            class="inline-flex items-center justify-center font-medium data-[state=on]:text-white hover:bg-gray-100 data-[state=on]:hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 flex-1 rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] text-gray-700 sm:text-xs data-[state=on]:bg-emerald-600 data-[state=on]:border-emerald-600"
+            class="inline-flex items-center justify-center font-medium data-[state=on]:text-white hover:bg-gray-100 data-[state=on]:hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs text-gray-700 transition-all min-w-[70px] data-[state=on]:bg-emerald-600 data-[state=on]:border-emerald-600"
             data-radix-collection-item=""
             data-state="off"
             role="radio"
             tabindex="-1"
             type="button"
           >
-            הושלמה
+            בוצעה
           </button>
           <button
             aria-checked="false"
-            class="inline-flex items-center justify-center font-medium data-[state=on]:text-white hover:bg-gray-100 data-[state=on]:hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 flex-1 rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] text-gray-700 sm:text-xs data-[state=on]:bg-amber-500 data-[state=on]:border-amber-500"
+            class="inline-flex items-center justify-center font-medium data-[state=on]:text-white hover:bg-gray-100 data-[state=on]:hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs text-gray-700 transition-all min-w-[70px] data-[state=on]:bg-amber-500 data-[state=on]:border-amber-500"
             data-radix-collection-item=""
             data-state="off"
             role="radio"
@@ -103,7 +103,7 @@ exports[`TaskCard matches snapshot 1`] = `
     >
       <div>
         חלון זמן: 
-        12:00 – 14:30
+        12:00
       </div>
       <div
         class="flex items-center justify-between gap-2"
@@ -124,7 +124,7 @@ exports[`TaskCard matches snapshot 1`] = `
         </span>
       </div>
       <div>
-        רכב: 
+        רכב סוכנות: 
         12-345-67
          • Corolla
       </div>

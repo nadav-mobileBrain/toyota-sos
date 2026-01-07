@@ -346,7 +346,7 @@ export function TaskCard({
           : 'ללא זמן יעד'}
       </div>
       <div className="mb-2 text-xs text-gray-500">
-        {formatDate(task.estimated_start)} - {formatDate(task.estimated_end)}
+        {formatDate(task.estimated_start)}
       </div>
 
       {/* Task Attachments (images and signatures) */}

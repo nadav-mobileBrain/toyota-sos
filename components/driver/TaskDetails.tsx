@@ -120,14 +120,9 @@ export function TaskDetails({ taskId }: { taskId: string }) {
     return <div className="text-sm text-gray-600">המשימה לא נמצאה</div>;
   }
 
-  const timeWindow =
-    task.estimated_start && task.estimated_end
-      ? `${dayjs(task.estimated_start).format('DD/MM/YYYY HH:mm')} – ${dayjs(
-          task.estimated_end
-        ).format('DD/MM/YYYY HH:mm')}`
-      : task.estimated_end
-      ? `עד ${dayjs(task.estimated_end).format('DD/MM/YYYY HH:mm')}`
-      : 'ללא זמן יעד';
+  const timeWindow = task.estimated_start
+    ? dayjs(task.estimated_start).format('DD/MM/YYYY HH:mm')
+    : 'ללא זמן יעד';
 
   const wazeHref = task.address
     ? `waze://?navigate=yes&q=${encodeURIComponent(task.address)}`

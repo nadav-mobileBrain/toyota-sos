@@ -18,3 +18,11 @@ curl "http://localhost:3000/api/cron/check-late-tasks?key=ToyotaSecureKey9988"
 # For Production / Preview URL:
 
 curl "https://toyota-sos.vercel.app/api/cron/check-late-tasks?key=ToyotaSecureKey9988"
+
+## fix driver credentials
+
+update auth.users
+set
+encrypted_password = crypt('Driver@22222', gen_salt('bf')),
+updated_at = now()
+where email = 'b@b.com';
