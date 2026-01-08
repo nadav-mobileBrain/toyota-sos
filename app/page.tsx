@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { LogInIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { APP_VERSION } from '@/lib/appVersion';
 
 // Glow Component
 const glowVariants = cva('absolute w-full', {
@@ -104,7 +105,7 @@ export default function Home() {
 
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[length:24px_24px]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px]"></div>
         <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/5 opacity-30 blur-[100px]"></div>
       </div>
 
@@ -160,7 +161,7 @@ export default function Home() {
         <p>
           &copy; {new Date().getFullYear()} Toyota S.O.S. All rights reserved.
         </p>
-        <p>Version 1.0.4</p>
+        <p>Version {APP_VERSION}</p>
         <div className="flex flex-col items-center gap-1">
           <p>Developed By Nadav Galili</p>
           <div className="flex items-center gap-4">

@@ -1258,12 +1258,13 @@ export function TaskDialog(props: TaskDialogProps) {
         }
       }
 
-      // Validation for "Replacement Car Delivery" - must have client and vehicle
+      // Validation for "Replacement Car Delivery" - must have client
       if (type === 'מסירת רכב חלופי') {
         if (!finalClientId) {
           throw new Error('חובה לבחור לקוח עבור משימת מסירת רכב חלופי');
         }
-        if (!finalVehicleId) {
+        // Agency vehicle is required only when a lead driver is assigned
+        if (leadDriverId && !finalVehicleId) {
           throw new Error('חובה לבחור רכב עבור משימת מסירת רכב חלופי');
         }
       }
@@ -1273,7 +1274,8 @@ export function TaskDialog(props: TaskDialogProps) {
         if (!finalClientId) {
           throw new Error('חובה לבחור לקוח עבור משימת הסעת לקוח הביתה');
         }
-        if (!finalVehicleId) {
+        // Agency vehicle is required only when a lead driver is assigned
+        if (leadDriverId && !finalVehicleId) {
           throw new Error('חובה לבחור רכב עבור משימת הסעת לקוח הביתה');
         }
         if (isMultiStopType) {
@@ -1328,12 +1330,13 @@ export function TaskDialog(props: TaskDialogProps) {
         }
       }
 
-      // Validation for "Test Execution" (ביצוע טסט) - must have client and vehicle (either agency or client)
+      // Validation for "Test Execution" (ביצוע טסט) - must have client.
+      // Vehicle (agency OR client) is required only when a lead driver is assigned.
       if (type === 'ביצוע טסט') {
         if (!finalClientId) {
           throw new Error('חובה לבחור לקוח עבור משימת ביצוע טסט');
         }
-        if (!finalVehicleId && !clientVehicleId) {
+        if (leadDriverId && !finalVehicleId && !clientVehicleId) {
           throw new Error(
             'חובה לבחור רכב (סוכנות או לקוח) עבור משימת ביצוע טסט'
           );
@@ -1345,7 +1348,8 @@ export function TaskDialog(props: TaskDialogProps) {
         if (!finalClientId) {
           throw new Error('חובה לבחור לקוח עבור משימת חילוץ רכב תקוע');
         }
-        if (!finalVehicleId) {
+        // Agency vehicle is required only when a lead driver is assigned
+        if (leadDriverId && !finalVehicleId) {
           throw new Error('חובה לבחור רכב עבור משימת חילוץ רכב תקוע');
         }
         if (!addressForTask.trim()) {
@@ -2484,11 +2488,12 @@ export function TaskDialog(props: TaskDialogProps) {
                     <label className="flex flex-col gap-1">
                       <span className="text-sm font-medium text-primary">
                         רכב סוכנות
-                        {(type === 'חילוץ רכב תקוע' ||
-                          type === 'מסירת רכב חלופי' ||
-                          type === 'הסעת לקוח הביתה') && (
-                          <span className="text-red-500"> *</span>
-                        )}
+                        {leadDriverId &&
+                          (type === 'חילוץ רכב תקוע' ||
+                            type === 'מסירת רכב חלופי' ||
+                            type === 'הסעת לקוח הביתה') && (
+                            <span className="text-red-500"> *</span>
+                          )}
                       </span>
                       <div className="flex gap-2">
                         <div className="grid w-full max-w-sm items-center gap-1">
@@ -3750,11 +3755,12 @@ export function TaskDialog(props: TaskDialogProps) {
                 <label className="flex flex-col gap-1">
                   <span className="text-sm font-medium text-primary">
                     רכב סוכנות
-                    {(type === 'חילוץ רכב תקוע' ||
-                      type === 'מסירת רכב חלופי' ||
-                      type === 'הסעת לקוח הביתה') && (
-                      <span className="text-red-500"> *</span>
-                    )}
+                    {leadDriverId &&
+                      (type === 'חילוץ רכב תקוע' ||
+                        type === 'מסירת רכב חלופי' ||
+                        type === 'הסעת לקוח הביתה') && (
+                        <span className="text-red-500"> *</span>
+                      )}
                   </span>
                   <div className="flex gap-2">
                     <div className="grid w-full max-w-sm items-center gap-1">

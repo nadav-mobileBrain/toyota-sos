@@ -76,6 +76,9 @@ export async function POST(request: NextRequest) {
     const isMulti =
       isMultiStopType(type) || (Array.isArray(stops) && stops.length > 0);
 
+    const hasLeadDriver =
+      typeof lead_driver_id === 'string' && lead_driver_id.trim() !== '';
+
     // Normalize stops if provided
     let normalizedStops: {
       client_id: string;
@@ -190,6 +193,34 @@ export async function POST(request: NextRequest) {
         );
       }
     }
+
+    // Vehicle validation:
+    // Agency vehicle is required only when a lead driver is assigned (except "Test Execution",
+    // where at least one of agency/client vehicle is required when a lead driver is assigned).
+    if (hasLeadDriver) {
+      if (
+        (type === 'מסירת רכב חלופי' ||
+          type === 'הסעת לקוח הביתה' ||
+          type === 'חילוץ רכב תקוע') &&
+        !vehicle_id
+      ) {
+        return NextResponse.json(
+          { error: 'חובה לבחור רכב סוכנות כאשר משוייך נהג מוביל למשימה' },
+          { status: 400 }
+        );
+      }
+
+      if (type === 'ביצוע טסט' && !vehicle_id && !client_vehicle_id) {
+        return NextResponse.json(
+          {
+            error:
+              'חובה לבחור רכב (סוכנות או לקוח) כאשר משוייך נהג מוביל למשימה',
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Insert task
     const { data: created, error } = await admin
       .from('tasks')

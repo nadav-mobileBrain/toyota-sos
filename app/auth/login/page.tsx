@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/components/AuthProvider';
 import { CarFront, LogInIcon, UserIcon } from 'lucide-react';
+import { APP_VERSION } from '@/lib/appVersion';
 import {
   trackLoginAttempt,
   trackLoginSuccess,
@@ -236,7 +237,7 @@ function LoginContent() {
 
         {/* Footer */}
         <div className="text-center text-sm text-gray-600">
-          <p>Version 1.0.4</p>
+          <p>Version {APP_VERSION}</p>
         </div>
       </div>
     </div>

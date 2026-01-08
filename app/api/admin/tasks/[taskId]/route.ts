@@ -175,7 +175,9 @@ export async function PATCH(
     const admin = getSupabaseAdmin();
     const { data: currentTask, error: existingError } = await admin
       .from('tasks')
-      .select('type, client_id, address, advisor_name, advisor_color, status')
+      .select(
+        'type, client_id, client_vehicle_id, vehicle_id, address, advisor_name, advisor_color, status'
+      )
       .eq('id', taskId)
       .is('deleted_at', null)
       .single();
@@ -194,6 +196,26 @@ export async function PATCH(
 
     const isMulti =
       isMultiStopType(effectiveType) || normalizedStops.length > 0;
+
+    // Determine effective lead driver for validation (lead driver lives in task_assignees)
+    let effectiveLeadDriverId: string | null = null;
+    if (body.hasOwnProperty('lead_driver_id')) {
+      effectiveLeadDriverId =
+        typeof lead_driver_id === 'string' && lead_driver_id.trim()
+          ? lead_driver_id.trim()
+          : null;
+    } else {
+      const { data: existingLead } = await admin
+        .from('task_assignees')
+        .select('driver_id')
+        .eq('task_id', taskId)
+        .eq('is_lead', true)
+        .limit(1);
+      effectiveLeadDriverId =
+        existingLead && existingLead.length > 0
+          ? existingLead[0]?.driver_id ?? null
+          : null;
+    }
 
     if (normalizedStops.length > 0) {
       if (!isMulti) {
@@ -257,6 +279,46 @@ export async function PATCH(
           {
             error:
               'חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת הסעת לקוח הביתה',
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Vehicle validation:
+    // Agency vehicle is required only when a lead driver is assigned (except "Test Execution",
+    // where at least one of agency/client vehicle is required when a lead driver is assigned).
+    const hasLeadDriver =
+      typeof effectiveLeadDriverId === 'string' &&
+      effectiveLeadDriverId.trim() !== '';
+
+    if (hasLeadDriver) {
+      const effectiveVehicleId =
+        updatePayload.vehicle_id ?? currentTask?.vehicle_id;
+      const effectiveClientVehicleId =
+        updatePayload.client_vehicle_id ?? currentTask?.client_vehicle_id;
+
+      if (
+        (effectiveType === 'מסירת רכב חלופי' ||
+          effectiveType === 'הסעת לקוח הביתה' ||
+          effectiveType === 'חילוץ רכב תקוע') &&
+        !effectiveVehicleId
+      ) {
+        return NextResponse.json(
+          { error: 'חובה לבחור רכב סוכנות כאשר משוייך נהג מוביל למשימה' },
+          { status: 400 }
+        );
+      }
+
+      if (
+        effectiveType === 'ביצוע טסט' &&
+        !effectiveVehicleId &&
+        !effectiveClientVehicleId
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              'חובה לבחור רכב (סוכנות או לקוח) כאשר משוייך נהג מוביל למשימה',
           },
           { status: 400 }
         );
