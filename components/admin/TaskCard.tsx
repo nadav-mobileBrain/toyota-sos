@@ -57,6 +57,8 @@ export function TaskCard({
   const vehicle = vehicleMap.get(task.vehicle_id || '');
   const clientVehicle = clientVehicleMap.get(task.client_vehicle_id || '');
   const creator = task.created_by ? userMap.get(task.created_by) : null;
+  const updater = task.updated_by ? userMap.get(task.updated_by) : null;
+  const showUpdater = updater && updater.role !== 'driver';
   const leadAssignee = assignees.find((a) => a.is_lead);
   const leadDriver = leadAssignee
     ? driverMap.get(leadAssignee.driver_id)
@@ -391,6 +393,11 @@ export function TaskCard({
           {creator && (
             <span className="text-[10px] text-gray-400">
               נוצר ע&quot;י {creator.name || 'משתמש לא ידוע'}
+            </span>
+          )}
+          {showUpdater && (
+            <span className="text-[10px] text-gray-400">
+              עודכן ע&quot;י {updater.name || 'משתמש לא ידוע'}
             </span>
           )}
         </div>
