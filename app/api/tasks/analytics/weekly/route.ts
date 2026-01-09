@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fetchDashboardData, type DateRange } from '@/lib/dashboard/queries';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 function normalizeRange(searchParams: URLSearchParams): DateRange {
   const now = new Date();
@@ -21,7 +22,8 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const range = normalizeRange(url.searchParams);
-    const data = await fetchDashboardData(range);
+    const admin = getSupabaseAdmin();
+    const data = await fetchDashboardData(range, admin);
 
     const byDate = new Map<
       string,
