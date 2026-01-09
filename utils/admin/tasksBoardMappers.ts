@@ -61,15 +61,16 @@ export function computeColumns(params: {
   label: string;
   type: 'driver' | 'status';
 }> {
-  const { groupBy, assignees, driverMap, statusLabel, filteredSortedTasks } = params;
+  const { groupBy, assignees, driverMap, statusLabel, filteredSortedTasks } =
+    params;
 
   if (groupBy === 'driver') {
     // Get all drivers to ensure we can assign to anyone
     const allDrivers = Array.from(driverMap.values());
-    
+
     // Determine which drivers have visible tasks in the current filter
     const driversWithVisibleTasks = new Set<string>();
-    
+
     if (filteredSortedTasks) {
       const visibleTaskIds = new Set(filteredSortedTasks.map((t) => t.id));
       assignees.forEach((ta) => {
@@ -80,7 +81,7 @@ export function computeColumns(params: {
     } else {
       // Fallback if filteredSortedTasks is not provided (e.g. initial load or legacy call)
       // Just consider all assignees as "visible" or just don't sort by visibility?
-      // For safety, we can default to the old behavior of using assignments if needed, 
+      // For safety, we can default to the old behavior of using assignments if needed,
       // but sticking to "all drivers" is better.
       // We just won't be able to prioritize active ones accurately without the filter.
     }
@@ -91,10 +92,10 @@ export function computeColumns(params: {
     const sortedDrivers = allDrivers.sort((a, b) => {
       const aHas = driversWithVisibleTasks.has(a.id);
       const bHas = driversWithVisibleTasks.has(b.id);
-      
+
       if (aHas && !bHas) return -1;
       if (!aHas && bHas) return 1;
-      
+
       return (a.name || '').localeCompare(b.name || '');
     });
 

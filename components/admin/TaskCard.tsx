@@ -348,7 +348,10 @@ export function TaskCard({
       {task.details && (
         <div className="mb-2 flex items-start gap-1 text-xs text-gray-600">
           <span className="font-medium shrink-0">📝</span>
-          <span className="line-clamp-2 break-words min-w-0" title={task.details}>
+          <span
+            className="line-clamp-2 break-words min-w-0"
+            title={task.details}
+          >
             {task.details}
           </span>
         </div>
@@ -366,7 +369,12 @@ export function TaskCard({
       </div>
 
       {/* Task Attachments (images and signatures) */}
-      <TaskAttachments key={task.id} taskId={task.id} taskType={task.type} taskStatus={task.status} />
+      <TaskAttachments
+        key={task.id}
+        taskId={task.id}
+        taskType={task.type}
+        taskStatus={task.status}
+      />
 
       {/* Footer: Status + Actions */}
       <div className="mt-2 flex items-center justify-between">

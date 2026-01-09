@@ -114,7 +114,7 @@ export function TasksBoard({
 }: TasksBoardProps) {
   // Get the shared authenticated client from context
   const { client: supabaseClient } = useAuth();
-  
+
   // State management
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [assignees, setAssignees] = useState<TaskAssignee[]>(taskAssignees);
@@ -156,7 +156,7 @@ export function TasksBoard({
   // Fallback: Poll driver breaks every 30 seconds as backup to realtime
   useEffect(() => {
     if (!supabaseClient) return;
-    
+
     let cancelled = false;
     let pollInterval: NodeJS.Timeout;
 
@@ -948,34 +948,44 @@ export function TasksBoard({
       console.log('[TasksBoard] Waiting for Supabase client...');
       return;
     }
-    
+
     let channel: ReturnType<typeof supabaseClient.channel> | null = null;
     let isMounted = true;
-    
+
     // We need to ensure the Supabase session is loaded before setting up Realtime
     // This is async because the session is restored from localStorage
     const setupRealtime = async () => {
       try {
         // Check if we have a valid Supabase session (JWT)
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        
+        const {
+          data: { session },
+        } = await supabaseClient.auth.getSession();
+
         if (!session) {
-          console.warn('[TasksBoard] No Supabase session found - Realtime RLS may fail');
+          console.warn(
+            '[TasksBoard] No Supabase session found - Realtime RLS may fail'
+          );
           console.log('[TasksBoard] Attempting to refresh session...');
-          
+
           // Try to refresh the session
-          const { data: refreshData } = await supabaseClient.auth.refreshSession();
+          const { data: refreshData } =
+            await supabaseClient.auth.refreshSession();
           if (!refreshData.session) {
-            console.error('[TasksBoard] ❌ No valid session for Realtime - updates will not work');
+            console.error(
+              '[TasksBoard] ❌ No valid session for Realtime - updates will not work'
+            );
             return;
           }
           console.log('[TasksBoard] ✅ Session refreshed successfully');
         } else {
-          console.log('[TasksBoard] ✅ Valid Supabase session found, user:', session.user?.id);
+          console.log(
+            '[TasksBoard] ✅ Valid Supabase session found, user:',
+            session.user?.id
+          );
         }
-        
+
         if (!isMounted) return;
-        
+
         console.log('[TasksBoard] Setting up real-time subscription...');
         channel = supabaseClient
           .channel('realtime:admin-tasks')
@@ -1006,13 +1016,13 @@ export function TasksBoard({
                     if (t.id === row.id) {
                       // Merge the entire row from Supabase to ensure all fields (including status and dates) are up to date
                       // We use spread to ensure we don't lose any fields that exist in the local state but not in the payload
-                      const updatedTask = { 
-                        ...t, 
+                      const updatedTask = {
+                        ...t,
                         ...row,
                         // Ensure we use the status from the DB as it defines the column
-                        status: row.status || t.status
+                        status: row.status || t.status,
                       };
-                      
+
                       return updatedTask;
                     }
                     return t;
@@ -1128,10 +1138,14 @@ export function TasksBoard({
           .subscribe((status) => {
             console.log('[TasksBoard] Realtime subscription status:', status);
             if (status === 'SUBSCRIBED') {
-              console.log('[TasksBoard] ✅ Successfully subscribed to realtime updates');
+              console.log(
+                '[TasksBoard] ✅ Successfully subscribed to realtime updates'
+              );
             }
             if (status === 'CHANNEL_ERROR') {
-              console.error('[TasksBoard] ❌ Channel error - check Supabase realtime config');
+              console.error(
+                '[TasksBoard] ❌ Channel error - check Supabase realtime config'
+              );
             }
             // Note: Don't auto-reconnect on TIMED_OUT or CLOSED here
             // The AuthProvider handles token refresh via client.realtime.setAuth()
@@ -1141,9 +1155,9 @@ export function TasksBoard({
         console.error('[TasksBoard] Error setting up realtime:', error);
       }
     };
-    
+
     setupRealtime();
-    
+
     // Cleanup
     return () => {
       isMounted = false;
@@ -1232,10 +1246,19 @@ export function TasksBoard({
                 label: string;
               }> = [
                 { value: 'all', label: 'כל הסוגים' },
-                { value: 'איסוף רכב/שינוע פרטי', label: 'איסוף רכב/שינוע פרטי' },
+                {
+                  value: 'איסוף רכב/שינוע פרטי',
+                  label: 'איסוף רכב/שינוע פרטי',
+                },
                 { value: 'איסוף רכב/שינוע+טסט', label: 'איסוף רכב/שינוע+טסט' },
-                { value: 'איסוף רכב/שינוע+טסט מוביליטי', label: 'איסוף רכב/שינוע+טסט מוביליטי' },
-                { value: 'החזרת רכב/שינוע פרטי', label: 'החזרת רכב/שינוע פרטי' },
+                {
+                  value: 'איסוף רכב/שינוע+טסט מוביליטי',
+                  label: 'איסוף רכב/שינוע+טסט מוביליטי',
+                },
+                {
+                  value: 'החזרת רכב/שינוע פרטי',
+                  label: 'החזרת רכב/שינוע פרטי',
+                },
                 { value: 'מסירת רכב חלופי', label: 'מסירת רכב חלופי' },
                 { value: 'הסעת לקוח הביתה', label: 'הסעת לקוח הביתה' },
                 { value: 'הסעת לקוח למוסך', label: 'הסעת לקוח למוסך' },
