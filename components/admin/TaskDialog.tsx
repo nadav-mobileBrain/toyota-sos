@@ -780,7 +780,8 @@ export function TaskDialog(props: TaskDialogProps) {
         const matchesQuery =
           plate.includes(q) ||
           model.includes(q) ||
-          (normalizedQuery.length > 0 && normalizedPlate.includes(normalizedQuery));
+          (normalizedQuery.length > 0 &&
+            normalizedPlate.includes(normalizedQuery));
 
         // If user is searching, show matching vehicles from any client
         // If query is empty (though we return early above), show only client's vehicles
