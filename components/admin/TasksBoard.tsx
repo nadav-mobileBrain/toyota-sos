@@ -387,8 +387,9 @@ export function TasksBoard({
         assignees,
         driverMap,
         statusLabel,
+        filteredSortedTasks,
       }),
-    [groupBy, assignees, driverMap]
+    [groupBy, assignees, driverMap, filteredSortedTasks]
   );
 
   // Get tasks for a specific column
