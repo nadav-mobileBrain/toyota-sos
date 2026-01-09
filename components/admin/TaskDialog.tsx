@@ -770,18 +770,22 @@ export function TaskDialog(props: TaskDialogProps) {
     // Filter by selected client if one is selected
     return clientVehiclesLocal
       .filter((v) => {
-        // If a client is selected, only show their vehicles
-        if (clientId && v.client_id !== clientId) return false;
+        // If a client is selected, prioritize their vehicles but allow searching all if query matches
+        const matchesClient = !clientId || v.client_id === clientId;
 
         const plate = v.license_plate?.toLowerCase() ?? '';
         const normalizedPlate = plate.replace(/\D/g, '');
         const model = v.model?.toLowerCase() ?? '';
 
-        return (
+        const matchesQuery =
           plate.includes(q) ||
-          normalizedPlate.includes(normalizedQuery) ||
-          model.includes(q)
-        );
+          model.includes(q) ||
+          (normalizedQuery.length > 0 && normalizedPlate.includes(normalizedQuery));
+
+        // If user is searching, show matching vehicles from any client
+        // If query is empty (though we return early above), show only client's vehicles
+        if (q) return matchesQuery;
+        return matchesClient;
       })
       .slice(0, 8);
   }, [clientVehiclesLocal, clientVehicleQuery, clientId]);
@@ -1995,6 +1999,22 @@ export function TaskDialog(props: TaskDialogProps) {
                                               v.license_plate
                                             )}${v.model ? ` · ${v.model}` : ''}`
                                           );
+                                          // Auto-select client if not already selected or different
+                                          if (
+                                            v.client_id &&
+                                            v.client_id !== clientId
+                                          ) {
+                                            const client = clientsLocal.find(
+                                              (c) => c.id === v.client_id
+                                            );
+                                            if (client) {
+                                              setClientId(client.id);
+                                              setClientQuery(client.name);
+                                              setClientPhone(
+                                                client.phone || ''
+                                              );
+                                            }
+                                          }
                                         }}
                                       >
                                         <span>
@@ -3290,6 +3310,20 @@ export function TaskDialog(props: TaskDialogProps) {
                                           v.license_plate
                                         )}${v.model ? ` · ${v.model}` : ''}`
                                       );
+                                      // Auto-select client if not already selected or different
+                                      if (
+                                        v.client_id &&
+                                        v.client_id !== clientId
+                                      ) {
+                                        const client = clientsLocal.find(
+                                          (c) => c.id === v.client_id
+                                        );
+                                        if (client) {
+                                          setClientId(client.id);
+                                          setClientQuery(client.name);
+                                          setClientPhone(client.phone || '');
+                                        }
+                                      }
                                     }}
                                   >
                                     <span>
