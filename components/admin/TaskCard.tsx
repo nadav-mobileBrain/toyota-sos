@@ -172,13 +172,29 @@ export function TaskCard({
             const stopClient = clientMap.get(clientId);
             if (!stopClient) return null;
 
+            // Find the stop for this client
+            const stop = stops.find((s) => s.client_id === clientId);
+            // Default to true if undefined (backward compatibility)
+            const isPickedUp = stop?.is_picked_up !== false;
+
             return (
               <div
                 key={clientId}
                 className="mb-1.5 flex items-center gap-1 text-xs text-gray-600"
               >
                 <span className="font-medium">👤</span>
-                <span className="truncate">{stopClient.name}</span>
+                <span
+                  className={`truncate ${
+                    !isPickedUp ? 'text-gray-400 line-through' : ''
+                  }`}
+                >
+                  {stopClient.name}
+                </span>
+                {!isPickedUp && (
+                  <span className="text-[10px] text-red-600 font-bold bg-red-50 px-1.5 py-0.5 rounded-full border border-red-100">
+                    לא נאסף
+                  </span>
+                )}
               </div>
             );
           });

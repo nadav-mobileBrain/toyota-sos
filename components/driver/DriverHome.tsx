@@ -19,6 +19,7 @@ import {
 import { ReplacementCarDeliveryForm } from '@/components/driver/ReplacementCarDeliveryForm';
 import { MobilityTestCompletionForm } from '@/components/driver/MobilityTestCompletionForm';
 import { TestCompletionPopup } from '@/components/driver/TestCompletionPopup';
+import { CustomerSelectionModal } from '@/components/driver/CustomerSelectionModal';
 import { toastSuccess, toastError } from '@/lib/toast';
 import { checkExistingAttachments } from '@/lib/taskAttachments';
 import { UtensilsIcon } from 'lucide-react';
@@ -180,6 +181,12 @@ export function DriverHome() {
     nextStatus: DriverTask['status'];
   } | null>(null);
 
+  // Customer selection modal state
+  const [customerSelectionState, setCustomerSelectionState] = useState<{
+    task: DriverTask;
+    nextStatus: DriverTask['status'];
+  } | null>(null);
+
   const driverId = getDriverSession()?.userId || null;
 
   function mergeById(prev: DriverTask[], next: DriverTask[]): DriverTask[] {
@@ -290,7 +297,7 @@ export function DriverHome() {
         const { data: stopRows, error: stopsError } = await client
           .from('task_stops')
           .select(
-            'task_id, address, advisor_name, advisor_color, phone, sort_order, distance_from_garage, client:clients(id,name,phone)'
+            'id, task_id, address, advisor_name, advisor_color, phone, sort_order, distance_from_garage, is_picked_up, client:clients(id,name,phone)'
           )
           .in('task_id', taskIds)
           .order('sort_order', { ascending: true });
@@ -307,12 +314,14 @@ export function DriverHome() {
             // Use phone from stop if exists, otherwise fallback to client's phone
             const phone = row.phone || clientData?.phone || null;
             entry.push({
+              id: row.id,
               address: row.address || '',
               distanceFromGarage: row.distance_from_garage || null,
               clientName: clientData?.name || null,
               clientPhone: phone,
               advisorName: row.advisor_name || null,
               advisorColor: (row.advisor_color as AdvisorColor) || null,
+              isPickedUp: row.is_picked_up,
             });
             grouped.set(row.task_id, entry);
           }
@@ -709,6 +718,18 @@ export function DriverHome() {
                   {...task}
                   onStatusChange={async (next) => {
                     if (!client || next === task.status) return;
+
+                    // If moving into "בעבודה" and this task type is relevant for pickup selection
+                    if (
+                      next === 'בעבודה' &&
+                      (task.type === 'הסעת לקוח הביתה' ||
+                        task.type === 'הסעת לקוח למוסך') &&
+                      task.stops &&
+                      task.stops.length > 1
+                    ) {
+                      setCustomerSelectionState({ task, nextStatus: next });
+                      return;
+                    }
 
                     // If moving into "בעבודה" and this task type has a start checklist,
                     // open the checklist modal instead of immediately updating status.
@@ -1188,6 +1209,74 @@ export function DriverHome() {
               )
             );
             toastSuccess('הטסט הושלם בהצלחה');
+          }}
+        />
+      ) : null}
+
+      {/* Customer Selection Modal */}
+      {customerSelectionState ? (
+        <CustomerSelectionModal
+          open={!!customerSelectionState}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCustomerSelectionState(null);
+            }
+          }}
+          stops={customerSelectionState.task.stops?.map(s => ({
+            id: s.id || '',
+            clientName: s.clientName,
+            address: s.address,
+            is_picked_up: s.isPickedUp
+          })) || []}
+          onSubmit={async (updates) => {
+            if (!client || !customerSelectionState) return;
+
+            // Update stops
+            const { error: stopsErr } = await client.rpc('update_task_stops_pickup_status', {
+              p_updates: updates
+            });
+
+            if (stopsErr) {
+              console.error('Failed to update stops pickup status', stopsErr);
+              toastError('שגיאה בעדכון סטטוס הלקוחות');
+              throw stopsErr;
+            }
+
+            // Update task status
+            const { error: upErr } = await client.rpc('update_task_status', {
+              p_task_id: customerSelectionState.task.id,
+              p_status: customerSelectionState.nextStatus,
+              p_driver_id: driverId || undefined,
+            });
+
+            if (upErr) {
+              const errorMessage = upErr.message || '';
+              if (errorMessage.includes('INVALID_STATUS_FLOW')) {
+                toastError(
+                  'המשימה חייבת להיות בסטטוס "בביצוע" לפני שניתן להשלים אותה',
+                  5000
+                );
+              } else {
+                toastError('שגיאה בעדכון סטטוס המשימה');
+              }
+              return;
+            }
+
+            setRemoteTasks((prev) =>
+              prev.map((t) => {
+                if (t.id === customerSelectionState.task.id) {
+                  // Update status and stops locally
+                  const updatedStops = t.stops?.map(s => {
+                    const update = updates.find(u => u.id === s.id);
+                    return update ? { ...s, isPickedUp: update.is_picked_up } : s;
+                  });
+                  return { ...t, status: customerSelectionState.nextStatus, stops: updatedStops };
+                }
+                return t;
+              })
+            );
+            toastSuccess('המשימה עודכנה בהצלחה');
+            setCustomerSelectionState(null);
           }}
         />
       ) : null}

@@ -29,12 +29,14 @@ export type TaskCardProps = {
   advisorName?: string | null;
   advisorColor?: AdvisorColor | null;
   stops?: {
+    id?: string;
     address: string;
     distanceFromGarage?: number | null;
     clientName?: string | null;
     clientPhone?: string | null;
     advisorName?: string | null;
     advisorColor?: AdvisorColor | null;
+    isPickedUp?: boolean;
   }[];
   vehicle?: { licensePlate?: string | null; model?: string | null } | null;
   clientVehicle?: {
@@ -271,7 +273,15 @@ export function TaskCard(props: TaskCardProps) {
                   ) : null}
                   {s.clientName ? (
                     <div className="flex items-center gap-2">
-                      <span>לקוח: {s.clientName}</span>
+                      <span>לקוח: </span>
+                      <span className={s.isPickedUp === false ? 'line-through text-gray-400' : ''}>
+                        {s.clientName}
+                      </span>
+                      {s.isPickedUp === false && (
+                        <span className="text-[10px] text-red-600 font-bold bg-red-50 px-1.5 py-0.5 rounded-full border border-red-100">
+                          לא נאסף
+                        </span>
+                      )}
                       {s.clientPhone && (
                         <>
                           <a

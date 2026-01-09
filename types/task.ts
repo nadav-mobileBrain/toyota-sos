@@ -71,6 +71,7 @@ export interface TaskStop {
   lng?: number | null;
   created_at: string;
   updated_at: string;
+  is_picked_up?: boolean;
 }
 
 // Calendar view types
