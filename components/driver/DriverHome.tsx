@@ -17,6 +17,7 @@ import {
   getCompletionFlowForTaskType,
 } from '@/components/driver/checklists';
 import { ReplacementCarDeliveryForm } from '@/components/driver/ReplacementCarDeliveryForm';
+import { MobilityTestCompletionForm } from '@/components/driver/MobilityTestCompletionForm';
 import { TestCompletionPopup } from '@/components/driver/TestCompletionPopup';
 import { toastSuccess, toastError } from '@/lib/toast';
 import { checkExistingAttachments } from '@/lib/taskAttachments';
@@ -38,6 +39,11 @@ function getChecklistInfo(type: string) {
     case 'איסוף רכב/שינוע+טסט':
       return {
         title: 'צ׳ק-ליסט איסוף רכב וטסט',
+        description: 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני האיסוף והטסט.',
+      };
+    case 'איסוף רכב/שינוע+טסט מוביליטי':
+      return {
+        title: 'צ׳ק-ליסט איסוף רכב וטסט מוביליטי',
         description: 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני האיסוף והטסט.',
       };
     case 'החזרת רכב/שינוע':
@@ -159,6 +165,14 @@ export function DriverHome() {
     nextStatus: DriverTask['status'];
     hasExistingAttachments?: import('@/lib/taskAttachments').ExistingAttachments;
   } | null>(null);
+
+  // Mobility Test Completion form state
+  const [mobilityTestCompletionState, setMobilityTestCompletionState] =
+    useState<{
+      task: DriverTask;
+      nextStatus: DriverTask['status'];
+      hasExistingAttachments?: import('@/lib/taskAttachments').ExistingAttachments;
+    } | null>(null);
 
   // Test completion popup state
   const [testCompletionState, setTestCompletionState] = useState<{
@@ -763,6 +777,16 @@ export function DriverHome() {
                         setTestCompletionState({ task, nextStatus: next });
                         return;
                       }
+                      if (completionFlow === 'mobility_test_completion') {
+                        const existingAttachments =
+                          await checkExistingAttachments(task.id);
+                        setMobilityTestCompletionState({
+                          task,
+                          nextStatus: next,
+                          hasExistingAttachments: existingAttachments,
+                        });
+                        return;
+                      }
                     }
 
                     const { error: upErr } = await client.rpc(
@@ -793,6 +817,20 @@ export function DriverHome() {
                     );
                     toastSuccess('סטטוס המשימה עודכן בהצלחה');
                   }}
+                  onUploadMissingPhotos={
+                    task.type === 'איסוף רכב/שינוע+טסט מוביליטי' &&
+                    task.status === 'הושלמה'
+                      ? async () => {
+                          const existingAttachments =
+                            await checkExistingAttachments(task.id);
+                          setMobilityTestCompletionState({
+                            task,
+                            nextStatus: task.status, // Keep current status
+                            hasExistingAttachments: existingAttachments,
+                          });
+                        }
+                      : undefined
+                  }
                 />
               </li>
             ))}
@@ -951,6 +989,19 @@ export function DriverHome() {
               return;
             }
 
+            if (completionFlow === 'mobility_test_completion') {
+              setCompletionChecklistState(null);
+              const existingAttachments = await checkExistingAttachments(
+                completionChecklistState.task.id
+              );
+              setMobilityTestCompletionState({
+                task: completionChecklistState.task,
+                nextStatus: completionChecklistState.nextStatus,
+                hasExistingAttachments: existingAttachments,
+              });
+              return;
+            }
+
             // For other task types, update status directly
             if (!client) return;
             const { error: upErr } = await client.rpc('update_task_status', {
@@ -1017,6 +1068,50 @@ export function DriverHome() {
               prev.map((t) =>
                 t.id === completionFormState.task.id
                   ? { ...t, status: completionFormState.nextStatus }
+                  : t
+              )
+            );
+            toastSuccess('המשימה בוצעה בהצלחה');
+          }}
+        />
+      ) : null}
+
+      {/* Completion form for Mobility Test */}
+      {mobilityTestCompletionState ? (
+        <MobilityTestCompletionForm
+          open={!!mobilityTestCompletionState}
+          onOpenChange={(open) => {
+            if (!open) {
+              setMobilityTestCompletionState(null);
+            }
+          }}
+          task={mobilityTestCompletionState.task}
+          hasExistingAttachments={
+            mobilityTestCompletionState.hasExistingAttachments
+          }
+          onSubmit={async () => {
+            if (!client || !mobilityTestCompletionState) return;
+            const { error: upErr } = await client.rpc('update_task_status', {
+              p_task_id: mobilityTestCompletionState.task.id,
+              p_status: mobilityTestCompletionState.nextStatus,
+              p_driver_id: driverId || undefined,
+            });
+            if (upErr) {
+              const errorMessage = upErr.message || '';
+              if (errorMessage.includes('INVALID_STATUS_FLOW')) {
+                toastError(
+                  'המשימה חייבת להיות בסטטוס "בביצוע" לפני שניתן להשלים אותה',
+                  5000
+                );
+              } else {
+                toastError('שגיאה בעדכון סטטוס המשימה');
+              }
+              throw upErr;
+            }
+            setRemoteTasks((prev) =>
+              prev.map((t) =>
+                t.id === mobilityTestCompletionState.task.id
+                  ? { ...t, status: mobilityTestCompletionState.nextStatus }
                   : t
               )
             );

@@ -392,6 +392,14 @@ export function CalendarShell({
               איסוף רכב
             </span>
             <span className="inline-flex items-center gap-1 text-xs">
+              <span className="w-3 h-3 rounded bg-blue-600"></span>
+              איסוף+טסט
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs">
+              <span className="w-3 h-3 rounded bg-blue-700"></span>
+              מוביליטי
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs">
               <span className="w-3 h-3 rounded bg-green-500"></span>
               החזרת רכב
             </span>

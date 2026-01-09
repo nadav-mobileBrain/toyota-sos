@@ -44,6 +44,7 @@ export type TaskCardProps = {
   details?: string | null;
   isSecondaryDriver?: boolean;
   onStatusChange?: (next: TaskCardProps['status']) => void;
+  onUploadMissingPhotos?: () => void;
 };
 
 function toWhatsAppPhone(phone: string): string | null {
@@ -93,6 +94,7 @@ export function TaskCard(props: TaskCardProps) {
     details,
     isSecondaryDriver,
     onStatusChange,
+    onUploadMissingPhotos,
   } = props;
 
   const sortedStops = useMemo(() => {
@@ -405,7 +407,12 @@ export function TaskCard(props: TaskCardProps) {
       </div>
 
       {/* Task Attachments (images and signatures) */}
-      <TaskAttachments taskId={id} taskType={type} />
+      <TaskAttachments
+        taskId={id}
+        taskType={type}
+        taskStatus={status}
+        onUploadMissingPhotos={onUploadMissingPhotos}
+      />
 
       <div className="mt-3 flex flex-wrap gap-2">
         {wazeHref ? (

@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils';
 // Color mappings - Google Calendar style colors
 const typeColors: Record<TaskType, string> = {
   'איסוף רכב/שינוע': 'bg-blue-500 hover:bg-blue-600',
+  'איסוף רכב/שינוע+טסט': 'bg-blue-600 hover:bg-blue-700',
+  'איסוף רכב/שינוע+טסט מוביליטי': 'bg-blue-700 hover:bg-blue-800',
   'החזרת רכב/שינוע': 'bg-green-500 hover:bg-green-600',
   'מסירת רכב חלופי': 'bg-purple-500 hover:bg-purple-600',
   'הסעת לקוח הביתה': 'bg-teal-500 hover:bg-teal-600',

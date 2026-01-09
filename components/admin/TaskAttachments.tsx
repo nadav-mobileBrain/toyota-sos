@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { createBrowserClient } from '@/lib/auth';
 import Image from 'next/image';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, AlertTriangle } from 'lucide-react';
+import type { TaskStatus } from '@/types/task';
 
 interface TaskAttachment {
   id: string;
@@ -16,18 +17,32 @@ interface TaskAttachment {
 interface TaskAttachmentsProps {
   taskId: string;
   taskType: string;
+  taskStatus?: TaskStatus | string; // Optional for backward compatibility, but recommended
+  onUploadMissingPhotos?: () => void;
 }
 
-export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
+export function TaskAttachments({
+  taskId,
+  taskType,
+  taskStatus,
+  onUploadMissingPhotos,
+}: TaskAttachmentsProps) {
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // New state for missing photos detection
+  const [missingPhotos, setMissingPhotos] = useState<string[]>([]);
 
   useEffect(() => {
     // Reset attachments when taskId changes to prevent showing wrong task's attachments
     setAttachments([]);
     setLoading(true);
-    
-    if (taskType !== 'מסירת רכב חלופי') {
+    setMissingPhotos([]);
+
+    // Supported task types for attachments
+    const supportedTypes = ['מסירת רכב חלופי', 'איסוף רכב/שינוע+טסט מוביליטי'];
+
+    if (!supportedTypes.includes(taskType)) {
       setLoading(false);
       return;
     }
@@ -43,11 +58,6 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
           .select('id, signature_url, signed_by_name')
           .eq('task_id', taskId)
           .order('signed_at', { ascending: true });
-        
-        // Debug: log what we're loading
-        if (signaturesData && signaturesData.length > 0) {
-          console.debug(`[TaskAttachments] Loading ${signaturesData.length} signatures for task ${taskId}`);
-        }
 
         if (!signaturesError && signaturesData && signaturesData.length > 0) {
           for (const sig of signaturesData) {
@@ -57,7 +67,7 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
               if (path.startsWith('task-attachments/')) {
                 path = path.replace('task-attachments/', '');
               }
-              
+
               const { data: signedData, error: signError } = await supa.storage
                 .from('task-attachments')
                 .createSignedUrl(path, 3600); // 1 hour expiry
@@ -70,8 +80,6 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
                   type: 'signature',
                   description: sig.signed_by_name || 'חתימת לקוח',
                 });
-              } else {
-                console.warn('Failed to create signed URL for signature:', sig.id, signError);
               }
             } catch (err) {
               console.error('Error processing signature:', sig.id, err);
@@ -80,7 +88,6 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
         }
 
         // Also check storage directly for signatures folder (in case they're not in DB)
-        // IMPORTANT: Only load from this specific task's folder
         try {
           const { data: signaturesList } = await supa.storage
             .from('task-attachments')
@@ -90,18 +97,18 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
             });
 
           if (signaturesList && signaturesList.length > 0) {
-            console.debug(`[TaskAttachments] Found ${signaturesList.length} signature files in storage for task ${taskId}`);
             for (const file of signaturesList) {
               // Skip if already in attachments (from DB) - check by exact URL match
               const path = `${taskId}/signatures/${file.name}`;
               const url = `task-attachments/${path}`;
-              
+
               // More strict check - verify the URL matches exactly
               if (
                 !allAttachments.some(
                   (a) =>
                     a.type === 'signature' &&
-                    (a.url === url || a.url.includes(`/${taskId}/signatures/${file.name}`))
+                    (a.url === url ||
+                      a.url.includes(`/${taskId}/signatures/${file.name}`))
                 )
               ) {
                 const { data: signedData } = await supa.storage
@@ -115,18 +122,14 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
                   type: 'signature',
                   description: 'חתימת לקוח',
                 });
-              } else {
-                console.debug(`[TaskAttachments] Skipping duplicate signature: ${file.name}`);
               }
             }
           }
         } catch (err) {
           // Folder might not exist, that's ok
-          console.debug(`[TaskAttachments] No signatures folder found for task ${taskId}:`, err);
         }
 
         // Check storage directly for car images (from car-images folder)
-        // IMPORTANT: Only load from this specific task's folder
         try {
           const { data: carImagesList } = await supa.storage
             .from('task-attachments')
@@ -136,13 +139,16 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
             });
 
           if (carImagesList && carImagesList.length > 0) {
-            console.debug(`[TaskAttachments] Found ${carImagesList.length} car images in storage for task ${taskId}`);
             for (const file of carImagesList) {
               const path = `${taskId}/car-images/${file.name}`;
-              // Skip if already exists (check by exact URL match)
               const url = `task-attachments/${path}`;
-              if (allAttachments.some((a) => a.url === url || a.url.includes(`/${taskId}/car-images/${file.name}`))) {
-                console.debug(`[TaskAttachments] Skipping duplicate car image: ${file.name}`);
+              if (
+                allAttachments.some(
+                  (a) =>
+                    a.url === url ||
+                    a.url.includes(`/${taskId}/car-images/${file.name}`)
+                )
+              ) {
                 continue;
               }
               const { data: signedData } = await supa.storage
@@ -154,17 +160,15 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
                 url: url,
                 signedUrl: signedData?.signedUrl || null,
                 type: 'image',
-                description: null,
+                description: 'צילום רכב',
               });
             }
           }
         } catch (err) {
           // Folder might not exist, that's ok
-          console.debug(`[TaskAttachments] No car-images folder found for task ${taskId}:`, err);
         }
 
         // Check for client-license folder
-        // IMPORTANT: Only load from this specific task's folder
         try {
           const { data: licenseList } = await supa.storage
             .from('task-attachments')
@@ -174,13 +178,16 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
             });
 
           if (licenseList && licenseList.length > 0) {
-            console.debug(`[TaskAttachments] Found ${licenseList.length} license images in storage for task ${taskId}`);
             for (const file of licenseList) {
               const path = `${taskId}/client-license/${file.name}`;
-              // Skip if already exists (check by exact URL match)
               const url = `task-attachments/${path}`;
-              if (allAttachments.some((a) => a.url === url || a.url.includes(`/${taskId}/client-license/${file.name}`))) {
-                console.debug(`[TaskAttachments] Skipping duplicate license image: ${file.name}`);
+              if (
+                allAttachments.some(
+                  (a) =>
+                    a.url === url ||
+                    a.url.includes(`/${taskId}/client-license/${file.name}`)
+                )
+              ) {
                 continue;
               }
               const { data: signedData } = await supa.storage
@@ -192,13 +199,90 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
                 url: url,
                 signedUrl: signedData?.signedUrl || null,
                 type: 'image',
-                description: null,
+                description: 'רשיון נהיגה',
               });
             }
           }
         } catch (err) {
           // Folder might not exist, that's ok
-          console.debug(`[TaskAttachments] No client-license folder found for task ${taskId}:`, err);
+        }
+
+        // Check for signed-license folder (Mobility)
+        try {
+          const { data: signedLicenseList } = await supa.storage
+            .from('task-attachments')
+            .list(`${taskId}/signed-license`, {
+              limit: 100,
+              sortBy: { column: 'created_at', order: 'asc' },
+            });
+
+          if (signedLicenseList && signedLicenseList.length > 0) {
+            for (const file of signedLicenseList) {
+              const path = `${taskId}/signed-license/${file.name}`;
+              const url = `task-attachments/${path}`;
+              if (
+                allAttachments.some(
+                  (a) =>
+                    a.url === url ||
+                    a.url.includes(`/${taskId}/signed-license/${file.name}`)
+                )
+              ) {
+                continue;
+              }
+              const { data: signedData } = await supa.storage
+                .from('task-attachments')
+                .createSignedUrl(path, 3600);
+
+              allAttachments.push({
+                id: `signed-license-${taskId}-${file.name}`,
+                url: url,
+                signedUrl: signedData?.signedUrl || null,
+                type: 'image',
+                description: 'רשיון רכב חתום',
+              });
+            }
+          }
+        } catch (err) {
+          // Folder might not exist, that's ok
+        }
+
+        // Check for km-photo folder (Mobility)
+        try {
+          const { data: kmPhotoList } = await supa.storage
+            .from('task-attachments')
+            .list(`${taskId}/km-photo`, {
+              limit: 100,
+              sortBy: { column: 'created_at', order: 'asc' },
+            });
+
+          if (kmPhotoList && kmPhotoList.length > 0) {
+            for (const file of kmPhotoList) {
+              const path = `${taskId}/km-photo/${file.name}`;
+              const url = `task-attachments/${path}`;
+              if (
+                allAttachments.some(
+                  (a) =>
+                    a.url === url ||
+                    a.url.includes(`/${taskId}/km-photo/${file.name}`)
+                )
+              ) {
+                continue;
+              }
+              const { data: signedData } = await supa.storage
+                .from('task-attachments')
+                .createSignedUrl(path, 3600);
+
+              allAttachments.push({
+                id: `km-photo-${taskId}-${file.name}`,
+                url: url,
+                signedUrl: signedData?.signedUrl || null,
+                type: 'image',
+                description: 'צילום ק״מ',
+              });
+            }
+          }
+        } catch (err) {
+          // Folder might not exist, that's ok
         }
 
         // Final deduplication by URL to ensure no duplicates
@@ -206,19 +290,30 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
           const existing = acc.find((a) => a.url === attachment.url);
           if (!existing) {
             acc.push(attachment);
-          } else {
-            console.debug(`[TaskAttachments] Removing duplicate attachment: ${attachment.url}`);
           }
           return acc;
         }, [] as TaskAttachment[]);
 
-        console.debug(`[TaskAttachments] Final attachments for task ${taskId}:`, {
-          total: uniqueAttachments.length,
-          images: uniqueAttachments.filter((a) => a.type === 'image').length,
-          signatures: uniqueAttachments.filter((a) => a.type === 'signature').length,
-        });
-
         setAttachments(uniqueAttachments);
+
+        // Check for missing photos if task is completed
+        if (
+          taskStatus === 'הושלמה' &&
+          taskType === 'איסוף רכב/שינוע+טסט מוביליטי'
+        ) {
+          const missing: string[] = [];
+          const hasSignedLicense = uniqueAttachments.some((a) =>
+            a.id.includes('signed-license')
+          );
+          const hasKmPhoto = uniqueAttachments.some((a) =>
+            a.id.includes('km-photo')
+          );
+
+          if (!hasSignedLicense) missing.push('רשיון רכב חתום');
+          if (!hasKmPhoto) missing.push('צילום ק״מ');
+
+          setMissingPhotos(missing);
+        }
       } catch (error) {
         console.error('Error loading attachments:', error);
       } finally {
@@ -227,13 +322,12 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
     };
 
     loadAttachments();
-  }, [taskId, taskType]);
+  }, [taskId, taskType, taskStatus]);
 
-  if (taskType !== 'מסירת רכב חלופי' || loading) {
-    return null;
-  }
-
-  if (attachments.length === 0) {
+  if (
+    !['מסירת רכב חלופי', 'איסוף רכב/שינוע+טסט מוביליטי'].includes(taskType) ||
+    loading
+  ) {
     return null;
   }
 
@@ -241,8 +335,37 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
   const images = attachments.filter((a) => a.type === 'image');
   const signatures = attachments.filter((a) => a.type === 'signature');
 
+  if (
+    images.length === 0 &&
+    signatures.length === 0 &&
+    missingPhotos.length === 0
+  ) {
+    return null;
+  }
+
   return (
     <div className="mt-2 space-y-2 border-t border-gray-100 pt-2">
+      {/* Missing Photos Warning */}
+      {missingPhotos.length > 0 && (
+        <div className="flex flex-col gap-2 p-2 bg-red-50 text-red-700 rounded-md text-xs">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="font-medium">חסר: {missingPhotos.join(', ')}</div>
+          </div>
+          {onUploadMissingPhotos && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                onUploadMissingPhotos();
+              }}
+              className="self-start text-xs border border-red-300 bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1.5 rounded-md font-medium transition-all shadow-sm active:scale-95"
+            >
+              השלם תמונות חסרות
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Images */}
       {images.length > 0 && (
         <div className="space-y-1">
@@ -265,7 +388,7 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
                   <div className="relative w-6 h-6 rounded border border-gray-200 overflow-hidden bg-gray-100 shrink-0">
                     <Image
                       src={img.signedUrl}
-                      alt={`תמונה ${index + 1}`}
+                      alt={img.description || `תמונה ${index + 1}`}
                       fill
                       className="object-cover"
                       sizes="24px"
@@ -273,7 +396,9 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
                     />
                   </div>
                 )}
-                <span className="whitespace-nowrap truncate">תמונה {index + 1}</span>
+                <span className="whitespace-nowrap truncate">
+                  {img.description || `תמונה ${index + 1}`}
+                </span>
                 <ExternalLink className="w-3 h-3 shrink-0" />
               </a>
             ))}
@@ -323,4 +448,3 @@ export function TaskAttachments({ taskId, taskType }: TaskAttachmentsProps) {
     </div>
   );
 }
-

@@ -350,7 +350,7 @@ export function TaskCard({
       </div>
 
       {/* Task Attachments (images and signatures) */}
-      <TaskAttachments key={task.id} taskId={task.id} taskType={task.type} />
+      <TaskAttachments key={task.id} taskId={task.id} taskType={task.type} taskStatus={task.status} />
 
       {/* Footer: Status + Actions */}
       <div className="mt-2 flex items-center justify-between">

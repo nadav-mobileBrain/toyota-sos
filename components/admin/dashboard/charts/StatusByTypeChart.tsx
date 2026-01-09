@@ -41,6 +41,8 @@ const STATUS_DISPLAY_NAMES: Record<TaskStatus, string> = {
 // Colors for task types - more distinct colors
 const TYPE_COLORS: Record<string, string> = {
   'איסוף רכב/שינוע': 'hsl(221 83% 53%)', // Blue
+  'איסוף רכב/שינוע+טסט': 'hsl(221 83% 45%)', // Darker Blue
+  'איסוף רכב/שינוע+טסט מוביליטי': 'hsl(221 83% 40%)', // Even Darker Blue
   'החזרת רכב/שינוע': 'hsl(142 76% 36%)', // Green
   'מסירת רכב חלופי': 'hsl(280 65% 60%)', // Purple
   'הסעת לקוח הביתה': 'hsl(38 92% 50%)', // Orange

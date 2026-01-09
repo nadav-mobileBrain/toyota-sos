@@ -78,6 +78,29 @@ export function getStartChecklistForTaskType(
     ];
   }
 
+  if (taskType === 'איסוף רכב/שינוע+טסט מוביליטי') {
+    return [
+      {
+        id: 'new_vehicle_license',
+        type: 'boolean',
+        title: 'האם יש לך רשיון רכב חדש?',
+        required: true,
+      },
+      {
+        id: 'has_insurance',
+        type: 'boolean',
+        title: 'האם יש ביטוח?',
+        required: true,
+      },
+      {
+        id: 'union_power_of_attorney',
+        type: 'boolean',
+        title: 'האם יש יפוי כוח יוניון?',
+        required: true,
+      },
+    ];
+  }
+
   if (taskType === 'החזרת רכב/שינוע') {
     return [
       {
@@ -208,12 +231,15 @@ export function getCompletionChecklistForTaskType(
  */
 export function getCompletionFlowForTaskType(
   taskType: string | null | undefined
-): 'replacement_car_delivery' | 'test_completion' | null {
+): 'replacement_car_delivery' | 'test_completion' | 'mobility_test_completion' | null {
   if (taskType === 'מסירת רכב חלופי') {
     return 'replacement_car_delivery';
   }
   if (taskType === 'ביצוע טסט') {
     return 'test_completion';
+  }
+  if (taskType === 'איסוף רכב/שינוע+טסט מוביליטי') {
+    return 'mobility_test_completion';
   }
   return null;
 }
