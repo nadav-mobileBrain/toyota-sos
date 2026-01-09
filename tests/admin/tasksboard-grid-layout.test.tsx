@@ -7,7 +7,7 @@ describe('TasksBoard Grid Layout (7.1.2)', () => {
     {
       id: 'task-1',
       
-      type: 'איסוף רכב/שינוע',
+      type: 'איסוף רכב/שינוע פרטי',
       priority: 'high',
       status: 'pending',
       estimated_start: '2025-11-11T09:00:00Z',
@@ -184,7 +184,7 @@ describe('TasksBoard Grid Layout (7.1.2)', () => {
     );
 
     // Check for type labels
-    expect(screen.getByText('איסוף רכב/שינוע')).toBeInTheDocument();
+    expect(screen.getByText('איסוף רכב/שינוע פרטי')).toBeInTheDocument();
     expect(screen.getByText('הסעת לקוח הביתה')).toBeInTheDocument();
     expect(screen.getByText('חילוץ רכב תקוע')).toBeInTheDocument();
   });
@@ -294,7 +294,7 @@ describe('TasksBoard Grid Layout (7.1.2)', () => {
     );
 
     // Check for task type labels (used as title)
-    expect(screen.getByText('איסוף רכב/שינוע')).toBeInTheDocument();
+    expect(screen.getByText('איסוף רכב/שינוע פרטי')).toBeInTheDocument();
     expect(screen.getByText('הסעת לקוח הביתה')).toBeInTheDocument();
     expect(screen.getByText('חילוץ רכב תקוע')).toBeInTheDocument();
 

@@ -42,6 +42,7 @@ export function TaskCard({
   isActive,
   assignees,
   driverMap,
+  userMap,
   clientMap,
   vehicleMap,
   clientVehicleMap,
@@ -55,6 +56,9 @@ export function TaskCard({
   const client = clientMap.get(task.client_id || '');
   const vehicle = vehicleMap.get(task.vehicle_id || '');
   const clientVehicle = clientVehicleMap.get(task.client_vehicle_id || '');
+  const creator = task.created_by ? userMap.get(task.created_by) : null;
+  const updater = task.updated_by ? userMap.get(task.updated_by) : null;
+  const showUpdater = updater && updater.role !== 'driver';
   const leadAssignee = assignees.find((a) => a.is_lead);
   const leadDriver = leadAssignee
     ? driverMap.get(leadAssignee.driver_id)
@@ -172,13 +176,29 @@ export function TaskCard({
             const stopClient = clientMap.get(clientId);
             if (!stopClient) return null;
 
+            // Find the stop for this client
+            const stop = stops.find((s) => s.client_id === clientId);
+            // Default to true if undefined (backward compatibility)
+            const isPickedUp = stop?.is_picked_up !== false;
+
             return (
               <div
                 key={clientId}
                 className="mb-1.5 flex items-center gap-1 text-xs text-gray-600"
               >
                 <span className="font-medium">👤</span>
-                <span className="truncate">{stopClient.name}</span>
+                <span
+                  className={`truncate ${
+                    !isPickedUp ? 'text-gray-400 line-through' : ''
+                  }`}
+                >
+                  {stopClient.name}
+                </span>
+                {!isPickedUp && (
+                  <span className="text-[10px] text-red-600 font-bold bg-red-50 px-1.5 py-0.5 rounded-full border border-red-100">
+                    לא נאסף
+                  </span>
+                )}
               </div>
             );
           });
@@ -332,7 +352,10 @@ export function TaskCard({
       {task.details && (
         <div className="mb-2 flex items-start gap-1 text-xs text-gray-600">
           <span className="font-medium shrink-0">📝</span>
-          <span className="line-clamp-2" title={task.details}>
+          <span
+            className="line-clamp-2 break-words min-w-0"
+            title={task.details}
+          >
             {task.details}
           </span>
         </div>
@@ -350,17 +373,34 @@ export function TaskCard({
       </div>
 
       {/* Task Attachments (images and signatures) */}
-      <TaskAttachments key={task.id} taskId={task.id} taskType={task.type} taskStatus={task.status} />
+      <TaskAttachments
+        key={task.id}
+        taskId={task.id}
+        taskType={task.type}
+        taskStatus={task.status}
+      />
 
-      {/* Footer: Status + Actions */}
-      <div className="mt-2 flex items-center justify-between">
-        <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${statusColor(
-            task.status
-          )}`}
-        >
-          {statusLabel(task.status)}
-        </span>
+      {/* Footer: Status + Created By + Actions */}
+      <div className="mt-2 flex items-end justify-between">
+        <div className="flex flex-col gap-1">
+          <span
+            className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-semibold ${statusColor(
+              task.status
+            )}`}
+          >
+            {statusLabel(task.status)}
+          </span>
+          {creator && (
+            <span className="text-[10px] text-gray-400">
+              נוצר ע&quot;י {creator.name || 'משתמש לא ידוע'}
+            </span>
+          )}
+          {showUpdater && (
+            <span className="text-[10px] text-gray-400">
+              עודכן ע&quot;י {updater.name || 'משתמש לא ידוע'}
+            </span>
+          )}
+        </div>
         <div className="flex flex-row items-end gap-4">
           <button
             className="text-xs text-blue-500 hover:underline flex items-center gap-1"

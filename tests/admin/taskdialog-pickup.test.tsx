@@ -45,7 +45,7 @@ jest.mock('@/utils/pdf', () => ({
 // Mock fetch
 global.fetch = jest.fn() as jest.Mock;
 
-describe('TaskDialog Validation for Pickup Vehicle / Transport (איסוף רכב/שינוע)', () => {
+describe('TaskDialog Validation for Pickup Vehicle / Transport (איסוף רכב/שינוע פרטי)', () => {
   const mockDrivers = [{ id: 'd1', name: 'Driver 1' }];
   const mockClients = [{ id: 'c1', name: 'Client 1', phone: '0501234567' }];
   const mockVehicles = [
@@ -95,13 +95,13 @@ describe('TaskDialog Validation for Pickup Vehicle / Transport (איסוף רכ�
     );
   };
 
-  test('validates all required fields for איסוף רכב/שינוע', async () => {
+  test('validates all required fields for איסוף רכב/שינוע פרטי', async () => {
     setup();
 
     // 1. Select task type
     const typeTrigger = screen.getByRole('button', { name: /סוג/i });
     await userEvent.click(typeTrigger);
-    const typeOption = await screen.findByText('איסוף רכב/שינוע');
+    const typeOption = await screen.findByText('איסוף רכב/שינוע פרטי');
     await userEvent.click(typeOption);
 
     const submitBtn = screen.getByRole('button', { name: /צור משימה/i });
@@ -118,7 +118,7 @@ describe('TaskDialog Validation for Pickup Vehicle / Transport (איסוף רכ�
 
     // 3. Validate Client Vehicle
     await userEvent.click(submitBtn);
-    expect(toastError).toHaveBeenCalledWith('חובה לבחור רכב לקוח עבור משימת איסוף רכב/שינוע');
+    expect(toastError).toHaveBeenCalledWith('חובה לבחור רכב לקוח עבור משימת איסוף רכב/שינוע פרטי');
 
     // Enter client vehicle and select from suggestion
     const vehicleInput = screen.getByPlaceholderText(/רכב לקוח \(חפש לפי מספר רישוי או דגם\)/i);
@@ -128,14 +128,14 @@ describe('TaskDialog Validation for Pickup Vehicle / Transport (איסוף רכ�
 
     // 4. Validate Address
     await userEvent.click(submitBtn);
-    expect(toastError).toHaveBeenCalledWith('חובה להזין כתובת עבור משימת איסוף רכב/שינוע');
+    expect(toastError).toHaveBeenCalledWith('חובה להזין כתובת עבור משימת איסוף רכב/שינוע פרטי');
 
     const addressInput = screen.getByPlaceholderText(/הקלד כתובת/i);
     await userEvent.type(addressInput, 'Main St 1, Tel Aviv');
 
     // 5. Validate Advisor
     await userEvent.click(submitBtn);
-    expect(toastError).toHaveBeenCalledWith('חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת איסוף רכב/שינוע');
+    expect(toastError).toHaveBeenCalledWith('חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת איסוף רכב/שינוע פרטי');
 
     const advisorInput = screen.getByPlaceholderText(/הזן שם יועץ/i);
     await userEvent.type(advisorInput, 'Advisor 1');
@@ -157,7 +157,7 @@ describe('TaskDialog Validation for Pickup Vehicle / Transport (איסוף רכ�
     // Select task type
     const typeTrigger = screen.getByRole('button', { name: /סוג/i });
     await userEvent.click(typeTrigger);
-    const typeOption = await screen.findByText('איסוף רכב/שינוע');
+    const typeOption = await screen.findByText('איסוף רכב/שינוע פרטי');
     await userEvent.click(typeOption);
 
     // Click "New Client"

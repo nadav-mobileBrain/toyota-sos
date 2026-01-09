@@ -77,7 +77,7 @@ describe('TasksBoard Loading Skeletons and Empty States (7.1.6)', () => {
     expect(
       screen.getByRole('main', { name: /לוח משימות/i })
     ).toBeInTheDocument();
-    expect(screen.getByText('איסוף רכב/שינוע')).toBeInTheDocument();
+    expect(screen.getByText('איסוף רכב/שינוע פרטי')).toBeInTheDocument();
   });
 
   test('shows empty state when no tasks exist', () => {
@@ -166,7 +166,7 @@ describe('TasksBoard Loading Skeletons and Empty States (7.1.6)', () => {
     );
 
     // Task card should display with all parts (using type label)
-    expect(screen.getByText('איסוף רכב/שינוע')).toBeInTheDocument();
+    expect(screen.getByText('איסוף רכב/שינוע פרטי')).toBeInTheDocument();
     expect(screen.getByText('דוד כהן')).toBeInTheDocument(); // Driver name
   });
 

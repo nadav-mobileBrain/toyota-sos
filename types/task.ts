@@ -10,10 +10,10 @@ export type TaskPriority =
   | 'בינונית'
   | 'גבוהה';
 export type TaskType =
-  | 'איסוף רכב/שינוע'
+  | 'איסוף רכב/שינוע פרטי'
   | 'איסוף רכב/שינוע+טסט'
   | 'איסוף רכב/שינוע+טסט מוביליטי'
-  | 'החזרת רכב/שינוע'
+  | 'החזרת רכב/שינוע פרטי'
   | 'מסירת רכב חלופי'
   | 'הסעת לקוח הביתה'
   | 'הסעת לקוח למוסך'
@@ -71,6 +71,7 @@ export interface TaskStop {
   lng?: number | null;
   created_at: string;
   updated_at: string;
+  is_picked_up?: boolean;
 }
 
 // Calendar view types

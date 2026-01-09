@@ -236,7 +236,7 @@ describe('TasksBoard DnD Setup (7.1.3)', () => {
     );
 
     // Verify cards render (using type label)
-    expect(screen.getByText('איסוף רכב/שינוע')).toBeInTheDocument();
+    expect(screen.getByText('איסוף רכב/שינוע פרטי')).toBeInTheDocument();
     expect(screen.getByText('הסעת לקוח הביתה')).toBeInTheDocument();
 
     // Verify column regions exist

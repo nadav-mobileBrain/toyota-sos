@@ -123,7 +123,7 @@ describe('TasksBoard Drag Handlers and Optimistic Preview (7.1.4)', () => {
       screen.getByRole('main', { name: /לוח משימות/i })
     ).toBeInTheDocument();
     // Check for type labels (used as title)
-    expect(screen.getByText('איסוף רכב/שינוע')).toBeInTheDocument();
+    expect(screen.getByText('איסוף רכב/שינוע פרטי')).toBeInTheDocument();
     expect(screen.getByText('הסעת לקוח הביתה')).toBeInTheDocument();
   });
 

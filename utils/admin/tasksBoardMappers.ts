@@ -55,19 +55,53 @@ export function computeColumns(params: {
   assignees: TaskAssignee[];
   driverMap: Map<string, Driver>;
   statusLabel?: (status: TaskStatus) => string;
+  filteredSortedTasks?: Task[];
 }): Array<{
   id: string;
   label: string;
   type: 'driver' | 'status';
 }> {
-  const { groupBy, assignees, driverMap, statusLabel } = params;
+  const { groupBy, assignees, driverMap, statusLabel, filteredSortedTasks } =
+    params;
 
   if (groupBy === 'driver') {
-    const driverIds = new Set<string>();
-    assignees.forEach((ta) => driverIds.add(ta.driver_id));
-    const columns = Array.from(driverIds).map((driverId) => ({
-      id: driverId,
-      label: driverMap.get(driverId)?.name || 'Unknown Driver',
+    // Get all drivers to ensure we can assign to anyone
+    const allDrivers = Array.from(driverMap.values());
+
+    // Determine which drivers have visible tasks in the current filter
+    const driversWithVisibleTasks = new Set<string>();
+
+    if (filteredSortedTasks) {
+      const visibleTaskIds = new Set(filteredSortedTasks.map((t) => t.id));
+      assignees.forEach((ta) => {
+        if (visibleTaskIds.has(ta.task_id)) {
+          driversWithVisibleTasks.add(ta.driver_id);
+        }
+      });
+    } else {
+      // Fallback if filteredSortedTasks is not provided (e.g. initial load or legacy call)
+      // Just consider all assignees as "visible" or just don't sort by visibility?
+      // For safety, we can default to the old behavior of using assignments if needed,
+      // but sticking to "all drivers" is better.
+      // We just won't be able to prioritize active ones accurately without the filter.
+    }
+
+    // Sort drivers:
+    // 1. Drivers with visible tasks (sorted by name)
+    // 2. Drivers without visible tasks (sorted by name)
+    const sortedDrivers = allDrivers.sort((a, b) => {
+      const aHas = driversWithVisibleTasks.has(a.id);
+      const bHas = driversWithVisibleTasks.has(b.id);
+
+      if (aHas && !bHas) return -1;
+      if (!aHas && bHas) return 1;
+
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+    const columns = sortedDrivers.map((driver) => ({
+      id: driver.id,
+      label: driver.name || 'Unknown Driver',
       type: 'driver' as const,
     }));
 

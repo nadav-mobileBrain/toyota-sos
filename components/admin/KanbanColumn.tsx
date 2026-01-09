@@ -10,6 +10,7 @@ export function KanbanColumn({
   selectedIds,
   taskAssigneeMap,
   driverMap,
+  userMap,
   clientMap,
   vehicleMap,
   clientVehicleMap,
@@ -31,7 +32,7 @@ export function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex h-full min-h-0 min-w-[320px] shrink-0 flex-col rounded-lg border-2 transition-all ${
+      className={`flex h-full min-h-0 w-[320px] shrink-0 flex-col rounded-lg border-2 transition-all ${
         isOver
           ? 'border-primary/50 bg-toyota-50/30 shadow-md'
           : 'border-gray-200 bg-gray-50'
@@ -91,6 +92,7 @@ export function KanbanColumn({
               isActive={activeTaskId === task.id}
               assignees={taskAssigneeMap.get(task.id) || []}
               driverMap={driverMap}
+              userMap={userMap}
               clientMap={clientMap}
               vehicleMap={vehicleMap}
               clientVehicleMap={clientVehicleMap}

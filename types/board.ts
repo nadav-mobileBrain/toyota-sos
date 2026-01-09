@@ -20,6 +20,7 @@ export interface DragItem {
 export interface TasksBoardProps {
   initialTasks: Task[];
   drivers: Driver[];
+  users: Driver[]; // All system users for creator lookup
   taskAssignees: TaskAssignee[];
   clients: Client[];
   vehicles: Vehicle[];
@@ -35,6 +36,7 @@ export interface KanbanColumnProps {
   selectedIds: Set<string>;
   taskAssigneeMap: Map<string, TaskAssignee[]>;
   driverMap: Map<string, Driver>;
+  userMap: Map<string, Driver>; // Map of all users
   clientMap: Map<string, Client>;
   vehicleMap: Map<string, Vehicle>;
   clientVehicleMap: Map<string, ClientVehicle>;
@@ -54,6 +56,7 @@ export interface TaskCardProps {
   isActive: boolean;
   assignees: TaskAssignee[];
   driverMap: Map<string, Driver>;
+  userMap: Map<string, Driver>; // Map of all users
   clientMap: Map<string, Client>;
   vehicleMap: Map<string, Vehicle>;
   clientVehicleMap: Map<string, ClientVehicle>;
