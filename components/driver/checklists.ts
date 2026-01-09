@@ -67,6 +67,17 @@ export function getStartChecklistForTaskType(
     ];
   }
 
+  if (taskType === 'איסוף רכב/שינוע+טסט') {
+    return [
+      {
+        id: 'has_order',
+        type: 'boolean',
+        title: 'האם יש לך הזמנה?',
+        required: true,
+      },
+    ];
+  }
+
   if (taskType === 'החזרת רכב/שינוע') {
     return [
       {
@@ -136,6 +147,29 @@ export function getCompletionChecklistForTaskType(
         id: 'vehicle_photo_nesher',
         type: 'boolean',
         title: 'האם יש צילום רכב בנשר?',
+        required: true,
+      },
+    ];
+  }
+
+  if (taskType === 'איסוף רכב/שינוע+טסט') {
+    return [
+      {
+        id: 'new_vehicle_license_paid',
+        type: 'boolean',
+        title: 'האם יש רשיון רכב חדש משולם?',
+        required: true,
+      },
+      {
+        id: 'vehicle_photo_nesher_km',
+        type: 'boolean',
+        title: 'האם יש צילום הרכב בנשר(כולל ק״מ)?',
+        required: true,
+      },
+      {
+        id: 'client_id_card',
+        type: 'boolean',
+        title: 'האם יש תעודת זהות של הלקוח?',
         required: true,
       },
     ];

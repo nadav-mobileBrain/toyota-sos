@@ -64,6 +64,7 @@ export function priorityColor(priority: TaskPriority | string): string {
 export function typeLabel(type: TaskType | string): string {
   const labels: Record<string, string> = {
     'איסוף רכב/שינוע': 'איסוף רכב/שינוע',
+    'איסוף רכב/שינוע+טסט': 'איסוף רכב/שינוע+טסט',
     'החזרת רכב/שינוע': 'החזרת רכב/שינוע',
     'מסירת רכב חלופי': 'מסירת רכב חלופי',
     'הסעת לקוח הביתה': 'הסעת לקוח הביתה',

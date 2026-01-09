@@ -128,6 +128,7 @@ interface TaskDialogProps {
 
 const types: TaskType[] = [
   'איסוף רכב/שינוע',
+  'איסוף רכב/שינוע+טסט',
   'החזרת רכב/שינוע',
   'מסירת רכב חלופי',
   'הסעת לקוח הביתה',
@@ -847,6 +848,7 @@ export function TaskDialog(props: TaskDialogProps) {
         'חילוץ רכב תקוע',
         'מסירת רכב חלופי',
         'איסוף רכב/שינוע',
+        'איסוף רכב/שינוע+טסט',
         'החזרת רכב/שינוע',
       ];
 
@@ -1296,19 +1298,19 @@ export function TaskDialog(props: TaskDialogProps) {
       }
 
       // Validation for "Pickup Vehicle / Transport" (איסוף רכב/שינוע)
-      if (type === 'איסוף רכב/שינוע') {
+      if (type === 'איסוף רכב/שינוע' || type === 'איסוף רכב/שינוע+טסט') {
         if (!finalClientId) {
-          throw new Error('חובה לבחור לקוח עבור משימת איסוף רכב/שינוע');
+          throw new Error(`חובה לבחור לקוח עבור משימת ${type}`);
         }
         if (!clientVehicleId) {
-          throw new Error('חובה לבחור רכב לקוח עבור משימת איסוף רכב/שינוע');
+          throw new Error(`חובה לבחור רכב לקוח עבור משימת ${type}`);
         }
         if (!addressForTask.trim()) {
-          throw new Error('חובה להזין כתובת עבור משימת איסוף רכב/שינוע');
+          throw new Error(`חובה להזין כתובת עבור משימת ${type}`);
         }
         if (!finalAdvisorForTask.trim() && !finalAdvisorColor) {
           throw new Error(
-            'חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת איסוף רכב/שינוע'
+            `חובה להזין שם יועץ או לבחור צבע יועץ עבור משימת ${type}`
           );
         }
       }
@@ -1608,7 +1610,8 @@ export function TaskDialog(props: TaskDialogProps) {
                         <span className="text-sm font-medium text-blue-600">
                           שם יועץ{' '}
                           {(type === 'הסעת לקוח הביתה' ||
-                            type === 'איסוף רכב/שינוע') && (
+                            type === 'איסוף רכב/שינוע' ||
+                            type === 'איסוף רכב/שינוע+טסט') && (
                             <span className="text-red-500">*</span>
                           )}
                         </span>
@@ -1623,7 +1626,8 @@ export function TaskDialog(props: TaskDialogProps) {
                         <span className="text-sm font-medium text-blue-600">
                           צבע יועץ{' '}
                           {(type === 'הסעת לקוח הביתה' ||
-                            type === 'איסוף רכב/שינוע') && (
+                            type === 'איסוף רכב/שינוע' ||
+                            type === 'איסוף רכב/שינוע+טסט') && (
                             <span className="text-red-500">*</span>
                           )}
                         </span>
@@ -1737,6 +1741,7 @@ export function TaskDialog(props: TaskDialogProps) {
                             type === 'מסירת רכב חלופי' ||
                             type === 'הסעת לקוח הביתה' ||
                             type === 'איסוף רכב/שינוע' ||
+                            type === 'איסוף רכב/שינוע+טסט' ||
                             type === 'החזרת רכב/שינוע') && (
                             <span className="text-red-500"> *</span>
                           )}
@@ -1893,6 +1898,7 @@ export function TaskDialog(props: TaskDialogProps) {
                             type === 'חילוץ רכב תקוע' ||
                             type === 'מסירת רכב חלופי' ||
                             type === 'איסוף רכב/שינוע' ||
+                            type === 'איסוף רכב/שינוע+טסט' ||
                             type === 'החזרת רכב/שינוע') && (
                             <span className="text-red-500"> *</span>
                           )}
@@ -1918,6 +1924,7 @@ export function TaskDialog(props: TaskDialogProps) {
                             type === 'חילוץ רכב תקוע' ||
                             type === 'מסירת רכב חלופי' ||
                             type === 'איסוף רכב/שינוע' ||
+                            type === 'איסוף רכב/שינוע+טסט' ||
                             type === 'החזרת רכב/שינוע') && (
                             <p className="text-[11px] text-gray-600">
                               בחר/צור לקוח כדי להזין טלפון
@@ -1930,6 +1937,7 @@ export function TaskDialog(props: TaskDialogProps) {
                           כתובת
                           {(type === 'חילוץ רכב תקוע' ||
                             type === 'איסוף רכב/שינוע' ||
+                            type === 'איסוף רכב/שינוע+טסט' ||
                             type === 'החזרת רכב/שינוע') && (
                             <span className="text-red-500"> *</span>
                           )}
@@ -1949,12 +1957,14 @@ export function TaskDialog(props: TaskDialogProps) {
                       </div>
 
                       {(type === 'איסוף רכב/שינוע' ||
+                        type === 'איסוף רכב/שינוע+טסט' ||
                         type === 'החזרת רכב/שינוע' ||
                         type === 'ביצוע טסט') && (
                         <div className="flex flex-col gap-1">
                           <Label className="text-blue-600">
                             רכב לקוח{' '}
                             {(type === 'איסוף רכב/שינוע' ||
+                              type === 'איסוף רכב/שינוע+טסט' ||
                               type === 'החזרת רכב/שינוע') && (
                               <span className="text-red-500"> *</span>
                             )}
@@ -2902,7 +2912,8 @@ export function TaskDialog(props: TaskDialogProps) {
                     <Label className="text-blue-600">
                       שם יועץ{' '}
                       {(type === 'הסעת לקוח הביתה' ||
-                        type === 'איסוף רכב/שינוע') && (
+                        type === 'איסוף רכב/שינוע' ||
+                        type === 'איסוף רכב/שינוע+טסט') && (
                         <span className="text-red-500">*</span>
                       )}
                     </Label>
@@ -2917,7 +2928,8 @@ export function TaskDialog(props: TaskDialogProps) {
                     <Label className="text-blue-600">
                       צבע יועץ{' '}
                       {(type === 'הסעת לקוח הביתה' ||
-                        type === 'איסוף רכב/שינוע') && (
+                        type === 'איסוף רכב/שינוע' ||
+                        type === 'איסוף רכב/שינוע+טסט') && (
                         <span className="text-red-500">*</span>
                       )}
                     </Label>
@@ -3024,6 +3036,7 @@ export function TaskDialog(props: TaskDialogProps) {
                         type === 'מסירת רכב חלופי' ||
                         type === 'הסעת לקוח הביתה' ||
                         type === 'איסוף רכב/שינוע' ||
+                        type === 'איסוף רכב/שינוע+טסט' ||
                         type === 'החזרת רכב/שינוע') && (
                         <span className="text-red-500"> *</span>
                       )}
@@ -3180,6 +3193,7 @@ export function TaskDialog(props: TaskDialogProps) {
                         type === 'חילוץ רכב תקוע' ||
                         type === 'מסירת רכב חלופי' ||
                         type === 'איסוף רכב/שינוע' ||
+                        type === 'איסוף רכב/שינוע+טסט' ||
                         type === 'החזרת רכב/שינוע') && (
                         <span className="text-red-500"> *</span>
                       )}
@@ -3205,6 +3219,7 @@ export function TaskDialog(props: TaskDialogProps) {
                         type === 'חילוץ רכב תקוע' ||
                         type === 'מסירת רכב חלופי' ||
                         type === 'איסוף רכב/שינוע' ||
+                        type === 'איסוף רכב/שינוע+טסט' ||
                         type === 'החזרת רכב/שינוע') && (
                         <p className="text-[11px] text-gray-600">
                           בחר/צור לקוח כדי להזין טלפון
@@ -3217,6 +3232,7 @@ export function TaskDialog(props: TaskDialogProps) {
                       כתובת
                       {(type === 'חילוץ רכב תקוע' ||
                         type === 'איסוף רכב/שינוע' ||
+                        type === 'איסוף רכב/שינוע+טסט' ||
                         type === 'החזרת רכב/שינוע') && (
                         <span className="text-red-500"> *</span>
                       )}
@@ -3236,12 +3252,14 @@ export function TaskDialog(props: TaskDialogProps) {
                   </div>
 
                   {(type === 'איסוף רכב/שינוע' ||
+                    type === 'איסוף רכב/שינוע+טסט' ||
                     type === 'החזרת רכב/שינוע' ||
                     type === 'ביצוע טסט') && (
                     <div className="flex flex-col gap-1">
                       <Label className="text-blue-600">
                         רכב לקוח{' '}
                         {(type === 'איסוף רכב/שינוע' ||
+                          type === 'איסוף רכב/שינוע+טסט' ||
                           type === 'החזרת רכב/שינוע') && (
                           <span className="text-red-500"> *</span>
                         )}
