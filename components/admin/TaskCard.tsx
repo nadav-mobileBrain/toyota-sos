@@ -42,6 +42,7 @@ export function TaskCard({
   isActive,
   assignees,
   driverMap,
+  userMap,
   clientMap,
   vehicleMap,
   clientVehicleMap,
@@ -55,6 +56,7 @@ export function TaskCard({
   const client = clientMap.get(task.client_id || '');
   const vehicle = vehicleMap.get(task.vehicle_id || '');
   const clientVehicle = clientVehicleMap.get(task.client_vehicle_id || '');
+  const creator = task.created_by ? userMap.get(task.created_by) : null;
   const leadAssignee = assignees.find((a) => a.is_lead);
   const leadDriver = leadAssignee
     ? driverMap.get(leadAssignee.driver_id)
@@ -376,15 +378,22 @@ export function TaskCard({
         taskStatus={task.status}
       />
 
-      {/* Footer: Status + Actions */}
-      <div className="mt-2 flex items-center justify-between">
-        <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${statusColor(
-            task.status
-          )}`}
-        >
-          {statusLabel(task.status)}
-        </span>
+      {/* Footer: Status + Created By + Actions */}
+      <div className="mt-2 flex items-end justify-between">
+        <div className="flex flex-col gap-1">
+          <span
+            className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-semibold ${statusColor(
+              task.status
+            )}`}
+          >
+            {statusLabel(task.status)}
+          </span>
+          {creator && (
+            <span className="text-[10px] text-gray-400">
+              נוצר ע&quot;י {creator.name || 'משתמש לא ידוע'}
+            </span>
+          )}
+        </div>
         <div className="flex flex-row items-end gap-4">
           <button
             className="text-xs text-blue-500 hover:underline flex items-center gap-1"

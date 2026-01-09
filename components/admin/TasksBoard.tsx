@@ -106,6 +106,7 @@ export type {
 export function TasksBoard({
   initialTasks,
   drivers,
+  users,
   taskAssignees,
   clients,
   vehicles,
@@ -321,6 +322,7 @@ export function TasksBoard({
 
   // Create lookup maps
   const driverMap = useMemo(() => buildDriverMap(drivers), [drivers]);
+  const userMap = useMemo(() => buildDriverMap(users), [users]);
 
   const taskAssigneeMap = useMemo(
     () => buildTaskAssigneeMap(assignees),
@@ -1525,6 +1527,7 @@ export function TasksBoard({
                       selectedIds={selectedIds}
                       taskAssigneeMap={taskAssigneeMap}
                       driverMap={driverMap}
+                      userMap={userMap}
                       clientMap={clientMap}
                       vehicleMap={vehicleMap}
                       clientVehicleMap={clientVehicleMap}

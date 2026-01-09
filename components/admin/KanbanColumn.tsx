@@ -10,6 +10,7 @@ export function KanbanColumn({
   selectedIds,
   taskAssigneeMap,
   driverMap,
+  userMap,
   clientMap,
   vehicleMap,
   clientVehicleMap,
@@ -91,6 +92,7 @@ export function KanbanColumn({
               isActive={activeTaskId === task.id}
               assignees={taskAssigneeMap.get(task.id) || []}
               driverMap={driverMap}
+              userMap={userMap}
               clientMap={clientMap}
               vehicleMap={vehicleMap}
               clientVehicleMap={clientVehicleMap}

@@ -89,21 +89,49 @@ export default async function AdminTasksPage() {
     tasksError = e instanceof Error ? e.message : 'Failed to fetch tasks';
   }
 
+  // Fetch all users (profiles) for creator lookup
+  let users: Driver[] = [];
+  try {
+    const { data, error } = await admin
+      .from('profiles')
+      .select('id, name, email, role')
+      .order('name', { ascending: true });
+
+    if (!error) {
+      users = data || [];
+    }
+  } catch (e) {
+    console.log('Failed to fetch users:', e);
+  }
+
   // Fetch drivers (profiles with role='driver')
   let drivers: Driver[] = [];
   let driversError: string | null = null;
 
   try {
-    const { data, error } = await admin
-      .from('profiles')
-      .select('id, name, email, role')
-      .eq('role', 'driver')
-      .order('name', { ascending: true });
-
-    if (error) {
-      driversError = error.message;
+    // We can just filter from the already fetched users to save a query, 
+    // but to keep logic isolated and safe (pagination etc) let's keep separate or filter.
+    // Filtering local users list is safe since we fetched all profiles above (assuming not huge count)
+    // Actually, let's just filter `users` array to get `drivers` array if we fetch all.
+    // But `admin.from('profiles')` might be paginated if huge.
+    // Given the previous code fetched drivers separately, I'll keep it or optimize.
+    // Optimization: Filter from `users` if fetched successfully.
+    
+    if (users.length > 0) {
+        drivers = users.filter(u => u.role === 'driver');
     } else {
-      drivers = data || [];
+        // Fallback fetch if users failed for some reason or logic changes
+        const { data, error } = await admin
+        .from('profiles')
+        .select('id, name, email, role')
+        .eq('role', 'driver')
+        .order('name', { ascending: true });
+
+        if (error) {
+        driversError = error.message;
+        } else {
+        drivers = data || [];
+        }
     }
   } catch (e) {
     driversError = e instanceof Error ? e.message : 'Failed to fetch drivers';
@@ -233,6 +261,7 @@ export default async function AdminTasksPage() {
         <AdminTasksShell
           initialTasks={tasks}
           drivers={drivers}
+          users={users}
           taskAssignees={taskAssignees}
           clients={clients}
           vehicles={vehicles}
