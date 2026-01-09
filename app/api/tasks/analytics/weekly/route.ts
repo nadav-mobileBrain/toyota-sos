@@ -27,7 +27,12 @@ export async function GET(req: Request) {
 
     const byDate = new Map<
       string,
-      { completed: number; notCompleted: number; overdue: number; total: number }
+      {
+        completed: number;
+        notCompleted: number;
+        overdue: number;
+        total: number;
+      }
     >();
 
     data.datasets.createdCompletedSeries.forEach((p) => {
@@ -89,5 +94,3 @@ export async function GET(req: Request) {
     );
   }
 }
-
-

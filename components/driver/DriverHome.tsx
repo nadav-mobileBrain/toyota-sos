@@ -31,7 +31,7 @@ function getChecklistInfo(type: string) {
         title: 'צ׳ק-ליסט לפני יציאה לטסט',
         description: 'לפני תחילת ביצוע טסט, אשר שאספת את כל המסמכים הנדרשים.',
       };
-    case 'איסוף רכב/שינוע':
+    case 'איסוף רכב/שינוע פרטי':
       return {
         title: 'צ׳ק-ליסט איסוף רכב',
         description: 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני האיסוף.',
@@ -46,7 +46,7 @@ function getChecklistInfo(type: string) {
         title: 'צ׳ק-ליסט איסוף רכב וטסט מוביליטי',
         description: 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני האיסוף והטסט.',
       };
-    case 'החזרת רכב/שינוע':
+    case 'החזרת רכב/שינוע פרטי':
       return {
         title: 'צ׳ק-ליסט החזרת רכב',
         description: 'אנא וודא שביצעת את כל הפעולות הנדרשות לפני ההחזרה.',
@@ -908,7 +908,7 @@ export function DriverHome() {
         />
       ) : null}
 
-      {/* Mandatory completion checklist for specific task types (e.g. "איסוף רכב/שינוע") */}
+      {/* Mandatory completion checklist for specific task types (e.g. "איסוף רכב/שינוע פרטי") */}
       {completionChecklistState ? (
         <ChecklistModal
           open={!!completionChecklistState}

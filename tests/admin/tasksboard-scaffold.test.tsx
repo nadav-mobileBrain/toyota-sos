@@ -79,7 +79,7 @@ describe('TasksBoard Scaffold (7.1.1)', () => {
     expect(regions.length).toBeGreaterThan(0);
 
     // Check for task cards (now using type label)
-    expect(screen.getByText('איסוף רכב/שינוע')).toBeInTheDocument();
+    expect(screen.getByText('איסוף רכב/שינוע פרטי')).toBeInTheDocument();
     expect(screen.getByText('הסעת לקוח הביתה')).toBeInTheDocument();
   });
 

@@ -49,7 +49,7 @@ export function getStartChecklistForTaskType(
     ];
   }
 
-  if (taskType === 'איסוף רכב/שינוע') {
+  if (taskType === 'איסוף רכב/שינוע פרטי') {
     // Phase 1: When moving from 'בהמתנה' to 'בעבודה'
     return [
       {
@@ -101,14 +101,8 @@ export function getStartChecklistForTaskType(
     ];
   }
 
-  if (taskType === 'החזרת רכב/שינוע') {
+  if (taskType === 'החזרת רכב/שינוע פרטי') {
     return [
-      {
-        id: 'mobility_approval',
-        type: 'boolean',
-        title: 'אישור תקינות - לרכבי מוביליטי',
-        required: true,
-      },
       {
         id: 'invoice',
         type: 'boolean',
@@ -151,7 +145,7 @@ export function getStartChecklistForTaskType(
 export function getCompletionChecklistForTaskType(
   taskType: string | null | undefined
 ): ChecklistSchema | null {
-  if (taskType === 'איסוף רכב/שינוע') {
+  if (taskType === 'איסוף רכב/שינוע פרטי') {
     // Phase 2: When moving from 'בעבודה' to 'הושלמה'
     return [
       {
@@ -231,7 +225,11 @@ export function getCompletionChecklistForTaskType(
  */
 export function getCompletionFlowForTaskType(
   taskType: string | null | undefined
-): 'replacement_car_delivery' | 'test_completion' | 'mobility_test_completion' | null {
+):
+  | 'replacement_car_delivery'
+  | 'test_completion'
+  | 'mobility_test_completion'
+  | null {
   if (taskType === 'מסירת רכב חלופי') {
     return 'replacement_car_delivery';
   }
