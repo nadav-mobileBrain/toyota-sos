@@ -146,6 +146,17 @@ export function getStartChecklistForTaskType(
     ];
   }
 
+  if (taskType === 'איסוף רכב מוביליטי') {
+    return [
+      {
+        id: 'transport_form',
+        type: 'boolean',
+        title: 'האם יש טופס שינוע?',
+        required: true,
+      },
+    ];
+  }
+
   return null;
 }
 
