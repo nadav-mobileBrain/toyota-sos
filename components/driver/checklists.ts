@@ -124,6 +124,17 @@ export function getStartChecklistForTaskType(
     ];
   }
 
+  if (taskType === 'החזרת רכב מוביליטי') {
+    return [
+      {
+        id: 'mobility_maintenance_form',
+        type: 'boolean',
+        title: 'האם יש טופס תקינות מוביליטי(אישור טיפול)?',
+        required: true,
+      },
+    ];
+  }
+
   if (taskType === 'מסירת רכב חלופי') {
     return [
       {

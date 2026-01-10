@@ -131,6 +131,7 @@ const types: TaskType[] = [
   'איסוף רכב/שינוע+טסט',
   'איסוף רכב/שינוע+טסט מוביליטי',
   'החזרת רכב/שינוע פרטי',
+  'החזרת רכב מוביליטי',
   'מסירת רכב חלופי',
   'הסעת לקוח הביתה',
   'הסעת לקוח למוסך',
@@ -1347,6 +1348,25 @@ export function TaskDialog(props: TaskDialogProps) {
         }
       }
 
+      // Validation for "Return Mobility Vehicle" (החזרת רכב מוביליטי)
+      if (type === 'החזרת רכב מוביליטי') {
+        if (!finalClientId) {
+          throw new Error('חובה לבחור לקוח עבור משימת החזרת רכב מוביליטי');
+        }
+        if (!clientVehicleId) {
+          throw new Error(
+            'חובה לבחור רכב לקוח עבור משימת החזרת רכב מוביליטי'
+          );
+        }
+        // Phone is required (can be overridden in the form)
+        if (!clientPhone?.trim()) {
+          throw new Error('חובה להכניס טלפון');
+        }
+        if (!addressForTask.trim()) {
+          throw new Error('חובה להזין כתובת עבור משימת החזרת רכב מוביליטי');
+        }
+      }
+
       // Validation for "Test Execution" (ביצוע טסט) - must have client.
       // Vehicle (agency OR client) is required only when a lead driver is assigned.
       if (type === 'ביצוע טסט') {
@@ -1771,7 +1791,8 @@ export function TaskDialog(props: TaskDialogProps) {
                             type === 'איסוף רכב/שינוע פרטי' ||
                             type === 'איסוף רכב/שינוע+טסט' ||
                             type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
-                            type === 'החזרת רכב/שינוע פרטי') && (
+                            type === 'החזרת רכב/שינוע פרטי' ||
+                            type === 'החזרת רכב מוביליטי') && (
                             <span className="text-red-500"> *</span>
                           )}
                         </Label>
@@ -1929,7 +1950,8 @@ export function TaskDialog(props: TaskDialogProps) {
                             type === 'איסוף רכב/שינוע פרטי' ||
                             type === 'איסוף רכב/שינוע+טסט' ||
                             type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
-                            type === 'החזרת רכב/שינוע פרטי') && (
+                            type === 'החזרת רכב/שינוע פרטי' ||
+                            type === 'החזרת רכב מוביליטי') && (
                             <span className="text-red-500"> *</span>
                           )}
                         </Label>
@@ -1943,7 +1965,8 @@ export function TaskDialog(props: TaskDialogProps) {
                               type === 'חילוץ רכב תקוע' ||
                               type === 'מסירת רכב חלופי' ||
                               type === 'איסוף רכב/שינוע פרטי' ||
-                              type === 'החזרת רכב/שינוע פרטי')
+                              type === 'החזרת רכב/שינוע פרטי' ||
+                              type === 'החזרת רכב מוביליטי')
                           }
                           onChange={(e) =>
                             setClientPhone(formatIsraeliPhone(e.target.value))
@@ -1956,7 +1979,8 @@ export function TaskDialog(props: TaskDialogProps) {
                             type === 'איסוף רכב/שינוע פרטי' ||
                             type === 'איסוף רכב/שינוע+טסט' ||
                             type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
-                            type === 'החזרת רכב/שינוע פרטי') && (
+                            type === 'החזרת רכב/שינוע פרטי' ||
+                            type === 'החזרת רכב מוביליטי') && (
                             <p className="text-[11px] text-gray-600">
                               בחר/צור לקוח כדי להזין טלפון
                             </p>
@@ -1970,7 +1994,8 @@ export function TaskDialog(props: TaskDialogProps) {
                             type === 'איסוף רכב/שינוע פרטי' ||
                             type === 'איסוף רכב/שינוע+טסט' ||
                             type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
-                            type === 'החזרת רכב/שינוע פרטי') && (
+                            type === 'החזרת רכב/שינוע פרטי' ||
+                            type === 'החזרת רכב מוביליטי') && (
                             <span className="text-red-500"> *</span>
                           )}
                         </Label>
@@ -1992,18 +2017,20 @@ export function TaskDialog(props: TaskDialogProps) {
                         type === 'איסוף רכב/שינוע+טסט' ||
                         type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
                         type === 'החזרת רכב/שינוע פרטי' ||
+                        type === 'החזרת רכב מוביליטי' ||
                         type === 'ביצוע טסט') && (
                         <div className="flex flex-col gap-1">
                           <Label className="text-blue-600">
                             רכב לקוח{' '}
                             {(type === 'איסוף רכב/שינוע פרטי' ||
-                              type === 'איסוף רכב/שינוע+טסט' ||
-                              type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
-                              type === 'החזרת רכב/שינוע פרטי') && (
-                              <span className="text-red-500"> *</span>
-                            )}
-                          </Label>
-                          <div className="flex items-center gap-2">
+                            type === 'איסוף רכב/שינוע+טסט' ||
+                            type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
+                            type === 'החזרת רכב/שינוע פרטי' ||
+                            type === 'החזרת רכב מוביליטי') && (
+                            <span className="text-red-500"> *</span>
+                          )}
+                        </Label>
+                        <div className="flex items-center gap-2">
                             <div className="relative w-full max-w-sm">
                               <Input
                                 type="text"
@@ -3113,13 +3140,14 @@ export function TaskDialog(props: TaskDialogProps) {
                         type === 'מסירת רכב חלופי' ||
                         type === 'הסעת לקוח הביתה' ||
                         type === 'איסוף רכב/שינוע פרטי' ||
-                        type === 'איסוף רכב/שינוע+טסט' ||
-                        type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
-                        type === 'החזרת רכב/שינוע פרטי') && (
-                        <span className="text-red-500"> *</span>
-                      )}
-                    </Label>
-                    <div className="flex items-center gap-2">
+                            type === 'איסוף רכב/שינוע+טסט' ||
+                            type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
+                            type === 'החזרת רכב/שינוע פרטי' ||
+                            type === 'החזרת רכב מוביליטי') && (
+                            <span className="text-red-500"> *</span>
+                          )}
+                        </Label>
+                        <div className="flex items-center gap-2">
                       <div className="relative w-full">
                         <Input
                           type="text"
@@ -3273,7 +3301,8 @@ export function TaskDialog(props: TaskDialogProps) {
                         type === 'איסוף רכב/שינוע פרטי' ||
                         type === 'איסוף רכב/שינוע+טסט' ||
                         type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
-                        type === 'החזרת רכב/שינוע פרטי') && (
+                        type === 'החזרת רכב/שינוע פרטי' ||
+                        type === 'החזרת רכב מוביליטי') && (
                         <span className="text-red-500"> *</span>
                       )}
                     </Label>
@@ -3287,7 +3316,8 @@ export function TaskDialog(props: TaskDialogProps) {
                           type === 'חילוץ רכב תקוע' ||
                           type === 'מסירת רכב חלופי' ||
                           type === 'איסוף רכב/שינוע פרטי' ||
-                          type === 'החזרת רכב/שינוע פרטי')
+                          type === 'החזרת רכב/שינוע פרטי' ||
+                          type === 'החזרת רכב מוביליטי')
                       }
                       onChange={(e) =>
                         setClientPhone(formatIsraeliPhone(e.target.value))
@@ -3300,7 +3330,8 @@ export function TaskDialog(props: TaskDialogProps) {
                         type === 'איסוף רכב/שינוע פרטי' ||
                         type === 'איסוף רכב/שינוע+טסט' ||
                         type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
-                        type === 'החזרת רכב/שינוע פרטי') && (
+                        type === 'החזרת רכב/שינוע פרטי' ||
+                        type === 'החזרת רכב מוביליטי') && (
                         <p className="text-[11px] text-gray-600">
                           בחר/צור לקוח כדי להזין טלפון
                         </p>
@@ -3314,7 +3345,8 @@ export function TaskDialog(props: TaskDialogProps) {
                         type === 'איסוף רכב/שינוע פרטי' ||
                         type === 'איסוף רכב/שינוע+טסט' ||
                         type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
-                        type === 'החזרת רכב/שינוע פרטי') && (
+                        type === 'החזרת רכב/שינוע פרטי' ||
+                        type === 'החזרת רכב מוביליטי') && (
                         <span className="text-red-500"> *</span>
                       )}
                     </Label>
@@ -3336,18 +3368,20 @@ export function TaskDialog(props: TaskDialogProps) {
                     type === 'איסוף רכב/שינוע+טסט' ||
                     type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
                     type === 'החזרת רכב/שינוע פרטי' ||
+                    type === 'החזרת רכב מוביליטי' ||
                     type === 'ביצוע טסט') && (
                     <div className="flex flex-col gap-1">
                       <Label className="text-blue-600">
                         רכב לקוח{' '}
                         {(type === 'איסוף רכב/שינוע פרטי' ||
-                          type === 'איסוף רכב/שינוע+טסט' ||
-                          type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
-                          type === 'החזרת רכב/שינוע פרטי') && (
-                          <span className="text-red-500"> *</span>
-                        )}
-                      </Label>
-                      <div className="flex items-center gap-2">
+                            type === 'איסוף רכב/שינוע+טסט' ||
+                            type === 'איסוף רכב/שינוע+טסט מוביליטי' ||
+                            type === 'החזרת רכב/שינוע פרטי' ||
+                            type === 'החזרת רכב מוביליטי') && (
+                            <span className="text-red-500"> *</span>
+                          )}
+                        </Label>
+                        <div className="flex items-center gap-2">
                         <div className="relative w-full max-w-sm">
                           <Input
                             type="text"
