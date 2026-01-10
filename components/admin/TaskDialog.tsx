@@ -323,6 +323,7 @@ export function TaskDialog(props: TaskDialogProps) {
   );
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [checkingConflicts, setCheckingConflicts] = useState(false);
+  const [createReturnTask, setCreateReturnTask] = useState(false);
 
   useEffect(() => {
     setClientsLocal(clients);
@@ -528,6 +529,7 @@ export function TaskDialog(props: TaskDialogProps) {
       if (!isMulti) {
         setStops([]);
       }
+      setCreateReturnTask(false);
     }
   }, [
     open,
@@ -1402,6 +1404,7 @@ export function TaskDialog(props: TaskDialogProps) {
           lead_driver_id: leadDriverId || null,
           co_driver_ids: coDriverIds,
           stops: stopsPayload.length > 0 ? stopsPayload : undefined,
+          create_return_task: createReturnTask,
         };
         const res = await fetch('/api/admin/tasks', {
           method: 'POST',
@@ -1414,7 +1417,11 @@ export function TaskDialog(props: TaskDialogProps) {
         }
         const json = await res.json();
         const created: Task = json.data;
-        toastSuccess('המשימה נוצרה בהצלחה!');
+        if (createReturnTask) {
+          toastSuccess('נוצרו 2 משימות: איסוף והחזרה ✓');
+        } else {
+          toastSuccess('המשימה נוצרה בהצלחה!');
+        }
         onCreated?.(created, leadDriverId || undefined, coDriverIds);
         try {
           trackFormSubmitted({
@@ -1454,6 +1461,7 @@ export function TaskDialog(props: TaskDialogProps) {
             lng: number | null;
             distance_from_garage: number | null;
           }[];
+          create_return_task?: boolean;
         } = {
           type,
           priority,
@@ -1474,6 +1482,7 @@ export function TaskDialog(props: TaskDialogProps) {
           lead_driver_id: leadDriverId || null,
           co_driver_ids: coDriverIds,
           stops: stopsPayload.length > 0 ? stopsPayload : undefined,
+          create_return_task: createReturnTask,
         };
         const res = await fetch(`/api/admin/tasks/${task.id}`, {
           method: 'PATCH',
@@ -1486,7 +1495,11 @@ export function TaskDialog(props: TaskDialogProps) {
         }
         const json = await res.json();
         const updated: Task = json.data;
-        toastSuccess('המשימה עודכנה בהצלחה!');
+        if (createReturnTask) {
+          toastSuccess('המשימה עודכנה ונוצרה משימת החזרה ✓');
+        } else {
+          toastSuccess('המשימה עודכנה בהצלחה!');
+        }
         onUpdated?.(updated, leadDriverId || undefined, coDriverIds);
         try {
           trackFormSubmitted({
@@ -2792,6 +2805,30 @@ export function TaskDialog(props: TaskDialogProps) {
                     )}
                   </div>
 
+                  {type === 'איסוף רכב/שינוע פרטי' && (
+                    <div className="col-span-1 md:col-span-2 mt-4 mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        id="createReturnTask_edit"
+                        checked={createReturnTask}
+                        onChange={(e) => setCreateReturnTask(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="createReturnTask_edit"
+                        className="text-sm text-gray-700 cursor-pointer select-none"
+                      >
+                        <span className="font-semibold block text-gray-900 mb-0.5">
+                          האם להוסיף רכב זה להחזרה?
+                        </span>
+                        <span className="text-gray-500 text-xs block">
+                          משימת החזרה תיווצר אוטומטית עם אותם פרטי לקוח ורכב, 3
+                          שעות אחרי האיסוף.
+                        </span>
+                      </label>
+                    </div>
+                  )}
+
                   <div className="col-span-1 md:col-span-2 mt-2 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       {mode === 'edit' && task && (
@@ -4074,6 +4111,30 @@ export function TaskDialog(props: TaskDialogProps) {
                   </div>
                 )}
               </div>
+
+              {type === 'איסוף רכב/שינוע פרטי' && (
+                <div className="col-span-1 md:col-span-2 mt-4 mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="createReturnTask_create"
+                    checked={createReturnTask}
+                    onChange={(e) => setCreateReturnTask(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label
+                    htmlFor="createReturnTask_create"
+                    className="text-sm text-gray-700 cursor-pointer select-none"
+                  >
+                    <span className="font-semibold block text-gray-900 mb-0.5">
+                      האם להוסיף רכב זה להחזרה?
+                    </span>
+                    <span className="text-gray-500 text-xs block">
+                      משימת החזרה תיווצר אוטומטית עם אותם פרטי לקוח ורכב, 3 שעות
+                      אחרי האיסוף.
+                    </span>
+                  </label>
+                </div>
+              )}
 
               <div className="col-span-1 md:col-span-2 mt-2 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">

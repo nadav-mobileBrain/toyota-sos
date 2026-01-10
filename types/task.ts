@@ -46,6 +46,7 @@ export interface Task {
   lat?: number | null;
   lng?: number | null;
   deleted_at?: string | null;
+  source_task_id?: string | null;
   stops?: TaskStop[];
 }
 

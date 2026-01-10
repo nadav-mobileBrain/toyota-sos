@@ -176,7 +176,7 @@ export async function PATCH(
     const { data: currentTask, error: existingError } = await admin
       .from('tasks')
       .select(
-        'type, client_id, client_vehicle_id, vehicle_id, address, advisor_name, advisor_color, status'
+        'type, client_id, client_vehicle_id, vehicle_id, address, advisor_name, advisor_color, status, estimated_start, estimated_end, phone, priority, lat, lng, distance_from_garage'
       )
       .eq('id', taskId)
       .is('deleted_at', null)
@@ -479,6 +479,72 @@ export async function PATCH(
     } catch (notifyErr) {
       console.error('Failed to notify drivers on update:', notifyErr);
       // Do not fail the response
+    }
+
+    // Auto-create return task if requested
+    const { create_return_task } = body || {};
+    if (
+      !error &&
+      effectiveType === 'איסוף רכב/שינוע פרטי' &&
+      create_return_task === true
+    ) {
+      try {
+        // Use updated values or fall back to current values
+        const finalStart =
+          updatePayload.estimated_start || currentTask.estimated_start;
+        const finalEnd =
+          updatePayload.estimated_end || currentTask.estimated_end;
+        const finalClientId = updatePayload.client_id || currentTask.client_id;
+        const finalClientVehicleId =
+          updatePayload.client_vehicle_id || currentTask.client_vehicle_id;
+        const finalAddress = updatePayload.address || currentTask.address;
+        const finalAdvisorName =
+          updatePayload.advisor_name || currentTask.advisor_name;
+        const finalAdvisorColor =
+          updatePayload.advisor_color || currentTask.advisor_color;
+        const finalPhone = updatePayload.phone || currentTask.phone;
+        const finalPriority = updatePayload.priority || currentTask.priority;
+        const finalLat = updatePayload.lat || currentTask.lat;
+        const finalLng = updatePayload.lng || currentTask.lng;
+        const finalDistance =
+          updatePayload.distance_from_garage ||
+          currentTask.distance_from_garage;
+
+        const originalStartDate = new Date(finalStart || new Date());
+        const originalEndDate = new Date(finalEnd || new Date());
+
+        // Add 3 hours
+        const returnStart = new Date(
+          originalStartDate.getTime() + 3 * 60 * 60 * 1000
+        );
+        const returnEnd = new Date(
+          originalEndDate.getTime() + 3 * 60 * 60 * 1000
+        );
+
+        await admin.from('tasks').insert({
+          type: 'החזרת רכב/שינוע פרטי',
+          priority: finalPriority,
+          status: 'בהמתנה',
+          estimated_start: returnStart.toISOString(),
+          estimated_end: returnEnd.toISOString(),
+          address: finalAddress || '',
+          details: null,
+          client_id: finalClientId || null,
+          client_vehicle_id: finalClientVehicleId || null,
+          vehicle_id: null,
+          advisor_name: finalAdvisorName || null,
+          advisor_color: finalAdvisorColor || null,
+          phone: finalPhone || null,
+          distance_from_garage: finalDistance || null,
+          lat: finalLat || null,
+          lng: finalLng || null,
+          created_by: userIdCookie || null,
+          updated_by: userIdCookie || null,
+          source_task_id: taskId,
+        });
+      } catch (err) {
+        console.error('Failed to auto-create return task on update:', err);
+      }
     }
 
     return NextResponse.json(

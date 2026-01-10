@@ -349,6 +349,51 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Auto-create return task if requested
+    const { create_return_task } = body || {};
+    if (
+      created &&
+      !error &&
+      type === 'איסוף רכב/שינוע פרטי' &&
+      create_return_task === true
+    ) {
+      try {
+        const originalStart = new Date(estimated_start || new Date());
+        const originalEnd = new Date(estimated_end || new Date());
+
+        // Add 3 hours
+        const returnStart = new Date(
+          originalStart.getTime() + 3 * 60 * 60 * 1000
+        );
+        const returnEnd = new Date(originalEnd.getTime() + 3 * 60 * 60 * 1000);
+
+        await admin.from('tasks').insert({
+          type: 'החזרת רכב/שינוע פרטי',
+          priority, // Copy priority
+          status: 'בהמתנה', // Default status
+          estimated_start: returnStart.toISOString(),
+          estimated_end: returnEnd.toISOString(),
+          address: address || '', // Copy address
+          details: null, // Empty details
+          client_id: client_id || null, // Copy client
+          client_vehicle_id: client_vehicle_id || null, // Copy client vehicle
+          vehicle_id: null, // Empty agency vehicle
+          advisor_name: advisor_name || null, // Copy advisor
+          advisor_color: advisor_color || null, // Copy advisor color
+          phone: phone || null, // Copy phone
+          distance_from_garage: distance_from_garage || null, // Copy distance
+          lat: lat || null, // Copy location
+          lng: lng || null, // Copy location
+          created_by: userIdCookie || null,
+          updated_by: userIdCookie || null,
+          source_task_id: created.id, // Link to source task
+        });
+      } catch (err) {
+        console.error('Failed to auto-create return task:', err);
+        // We don't fail the request if the return task fails, but logging is important
+      }
+    }
+
     const responseTask = isMulti
       ? { ...created, stops: createdStops }
       : created;
