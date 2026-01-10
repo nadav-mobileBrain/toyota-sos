@@ -326,6 +326,8 @@ export function TaskDialog(props: TaskDialogProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [checkingConflicts, setCheckingConflicts] = useState(false);
   const [createReturnTask, setCreateReturnTask] = useState(false);
+  const [hasExistingReturnTask, setHasExistingReturnTask] = useState(false);
+  const [checkingReturnTask, setCheckingReturnTask] = useState(false);
 
   useEffect(() => {
     setClientsLocal(clients);
@@ -532,6 +534,7 @@ export function TaskDialog(props: TaskDialogProps) {
         setStops([]);
       }
       setCreateReturnTask(false);
+      setHasExistingReturnTask(false);
     }
   }, [
     open,
@@ -561,6 +564,47 @@ export function TaskDialog(props: TaskDialogProps) {
       }
     }
   }, [assignees, task, mode, open]);
+
+  // Check if there's an existing return task for this pickup task (edit mode only)
+  useEffect(() => {
+    if (
+      mode === 'edit' &&
+      task &&
+      open &&
+      task.type === 'איסוף רכב/שינוע פרטי'
+    ) {
+      setCheckingReturnTask(true);
+      fetch(`/api/admin/tasks?source_task_id=${task.id}`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.ok && json.data) {
+            // Check if there's a return task
+            const returnTask = json.data.find(
+              (t: Task) =>
+                t.type === 'החזרת רכב/שינוע פרטי' && !t.deleted_at
+            );
+            if (returnTask) {
+              setHasExistingReturnTask(true);
+              setCreateReturnTask(true);
+            } else {
+              setHasExistingReturnTask(false);
+              setCreateReturnTask(false);
+            }
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to check for existing return task:', err);
+          setHasExistingReturnTask(false);
+          setCreateReturnTask(false);
+        })
+        .finally(() => {
+          setCheckingReturnTask(false);
+        });
+    } else {
+      setHasExistingReturnTask(false);
+      setCheckingReturnTask(false);
+    }
+  }, [mode, task, open]);
 
   const isMultiStopType = useMemo(() => isMultiStopTaskType(type), [type]);
 
@@ -2844,19 +2888,29 @@ export function TaskDialog(props: TaskDialogProps) {
                         type="checkbox"
                         id="createReturnTask_edit"
                         checked={createReturnTask}
-                        onChange={(e) => setCreateReturnTask(e.target.checked)}
-                        className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        onChange={(e) => {
+                          if (!hasExistingReturnTask) {
+                            setCreateReturnTask(e.target.checked);
+                          }
+                        }}
+                        disabled={hasExistingReturnTask || checkingReturnTask}
+                        className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                       <label
                         htmlFor="createReturnTask_edit"
-                        className="text-sm text-gray-700 cursor-pointer select-none"
+                        className={`text-sm ${hasExistingReturnTask ? 'cursor-default' : 'cursor-pointer'} select-none ${hasExistingReturnTask ? 'text-gray-500' : 'text-gray-700'}`}
                       >
                         <span className="font-semibold block text-gray-900 mb-0.5">
-                          האם להוסיף רכב זה להחזרה?
+                          {checkingReturnTask
+                            ? 'בודק משימות קיימות...'
+                            : hasExistingReturnTask
+                            ? '✓ משימת החזרה כבר קיימת'
+                            : 'האם להוסיף רכב זה להחזרה?'}
                         </span>
                         <span className="text-gray-500 text-xs block">
-                          משימת החזרה תיווצר אוטומטית עם אותם פרטי לקוח ורכב, 3
-                          שעות אחרי האיסוף.
+                          {hasExistingReturnTask
+                            ? 'משימת החזרה כבר נוצרה למשימה זו ועומדת בפני עצמה.'
+                            : 'משימת החזרה תיווצר אוטומטית עם אותם פרטי לקוח ורכב, 3 שעות אחרי האיסוף.'}
                         </span>
                       </label>
                     </div>

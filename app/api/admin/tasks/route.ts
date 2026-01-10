@@ -8,6 +8,57 @@ import { notify } from '@/lib/notify';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+/**
+ * GET /api/admin/tasks?source_task_id=<id>
+ * Get tasks by source_task_id (for checking if return task exists)
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const roleCookie = cookieStore.get('toyota_role')?.value;
+
+    if (
+      !roleCookie ||
+      (roleCookie !== 'admin' &&
+        roleCookie !== 'manager' &&
+        roleCookie !== 'viewer')
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const sourceTaskId = searchParams.get('source_task_id');
+
+    if (!sourceTaskId) {
+      return NextResponse.json(
+        { error: 'Missing source_task_id parameter' },
+        { status: 400 }
+      );
+    }
+
+    const admin = getSupabaseAdmin();
+
+    const { data, error } = await admin
+      .from('tasks')
+      .select('*')
+      .eq('source_task_id', sourceTaskId)
+      .is('deleted_at', null);
+
+    if (error) {
+      console.error('Error fetching tasks by source_task_id:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true, data });
+  } catch (err) {
+    console.error('Unexpected error in GET /api/admin/tasks:', err);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 const multiStopTypes = new Set(['הסעת לקוח הביתה', 'הסעת לקוח למוסך']);
 const multiStopAliases = new Set([
   'drive_client_home',
@@ -358,36 +409,50 @@ export async function POST(request: NextRequest) {
       create_return_task === true
     ) {
       try {
-        const originalStart = new Date(estimated_start || new Date());
-        const originalEnd = new Date(estimated_end || new Date());
+        // Check if a return task already exists for this pickup task
+        const { data: existingReturnTask } = await admin
+          .from('tasks')
+          .select('id')
+          .eq('source_task_id', created.id)
+          .eq('type', 'החזרת רכב/שינוע פרטי')
+          .is('deleted_at', null)
+          .maybeSingle();
 
-        // Add 3 hours
-        const returnStart = new Date(
-          originalStart.getTime() + 3 * 60 * 60 * 1000
-        );
-        const returnEnd = new Date(originalEnd.getTime() + 3 * 60 * 60 * 1000);
+        // Only create if no return task exists
+        if (!existingReturnTask) {
+          const originalStart = new Date(estimated_start || new Date());
+          const originalEnd = new Date(estimated_end || new Date());
 
-        await admin.from('tasks').insert({
-          type: 'החזרת רכב/שינוע פרטי',
-          priority, // Copy priority
-          status: 'בהמתנה', // Default status
-          estimated_start: returnStart.toISOString(),
-          estimated_end: returnEnd.toISOString(),
-          address: address || '', // Copy address
-          details: null, // Empty details
-          client_id: client_id || null, // Copy client
-          client_vehicle_id: client_vehicle_id || null, // Copy client vehicle
-          vehicle_id: null, // Empty agency vehicle
-          advisor_name: advisor_name || null, // Copy advisor
-          advisor_color: advisor_color || null, // Copy advisor color
-          phone: phone || null, // Copy phone
-          distance_from_garage: distance_from_garage || null, // Copy distance
-          lat: lat || null, // Copy location
-          lng: lng || null, // Copy location
-          created_by: userIdCookie || null,
-          updated_by: userIdCookie || null,
-          source_task_id: created.id, // Link to source task
-        });
+          // Add 3 hours
+          const returnStart = new Date(
+            originalStart.getTime() + 3 * 60 * 60 * 1000
+          );
+          const returnEnd = new Date(
+            originalEnd.getTime() + 3 * 60 * 60 * 1000
+          );
+
+          await admin.from('tasks').insert({
+            type: 'החזרת רכב/שינוע פרטי',
+            priority, // Copy priority
+            status: 'בהמתנה', // Default status
+            estimated_start: returnStart.toISOString(),
+            estimated_end: returnEnd.toISOString(),
+            address: address || '', // Copy address
+            details: null, // Empty details
+            client_id: client_id || null, // Copy client
+            client_vehicle_id: client_vehicle_id || null, // Copy client vehicle
+            vehicle_id: null, // Empty agency vehicle
+            advisor_name: advisor_name || null, // Copy advisor
+            advisor_color: advisor_color || null, // Copy advisor color
+            phone: phone || null, // Copy phone
+            distance_from_garage: distance_from_garage || null, // Copy distance
+            lat: lat || null, // Copy location
+            lng: lng || null, // Copy location
+            created_by: userIdCookie || null,
+            updated_by: userIdCookie || null,
+            source_task_id: created.id, // Link to source task
+          });
+        }
       } catch (err) {
         console.error('Failed to auto-create return task:', err);
         // We don't fail the request if the return task fails, but logging is important
