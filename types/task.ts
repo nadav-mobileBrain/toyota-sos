@@ -13,7 +13,9 @@ export type TaskType =
   | 'איסוף רכב/שינוע פרטי'
   | 'איסוף רכב/שינוע+טסט'
   | 'איסוף רכב/שינוע+טסט מוביליטי'
+  | 'איסוף רכב מוביליטי'
   | 'החזרת רכב/שינוע פרטי'
+  | 'החזרת רכב מוביליטי'
   | 'מסירת רכב חלופי'
   | 'הסעת לקוח הביתה'
   | 'הסעת לקוח למוסך'
@@ -46,6 +48,7 @@ export interface Task {
   lat?: number | null;
   lng?: number | null;
   deleted_at?: string | null;
+  source_task_id?: string | null;
   stops?: TaskStop[];
 }
 

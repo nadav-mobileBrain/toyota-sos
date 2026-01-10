@@ -1237,7 +1237,7 @@ export function TasksBoard({
           <div className="relative z-50 flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-2 bg-white shrink-0">
             <input
               type="text"
-              placeholder="חפש משימות (כותרת / לקוח / רכב סוכנות)"
+              placeholder="חפש משימות ( לקוח / רכב סוכנות)"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-64 rounded border border-gray-300 px-2 py-1 text-sm"
@@ -1260,6 +1260,10 @@ export function TasksBoard({
                 {
                   value: 'החזרת רכב/שינוע פרטי',
                   label: 'החזרת רכב/שינוע פרטי',
+                },
+                {
+                  value: 'החזרת רכב מוביליטי',
+                  label: 'החזרת רכב מוביליטי',
                 },
                 { value: 'מסירת רכב חלופי', label: 'מסירת רכב חלופי' },
                 { value: 'הסעת לקוח הביתה', label: 'הסעת לקוח הביתה' },

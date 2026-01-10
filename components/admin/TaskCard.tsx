@@ -390,6 +390,11 @@ export function TaskCard({
           >
             {statusLabel(task.status)}
           </span>
+          {task.source_task_id && (
+            <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 rounded border border-blue-100 w-fit">
+              🔄 נוצר אוטומטית
+            </span>
+          )}
           {creator && (
             <span className="text-[10px] text-gray-400">
               נוצר ע&quot;י {creator.name || 'משתמש לא ידוע'}
