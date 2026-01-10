@@ -16,6 +16,7 @@ const typeColors: Record<TaskType, string> = {
   'איסוף רכב/שינוע פרטי': 'bg-blue-500 hover:bg-blue-600',
   'איסוף רכב/שינוע+טסט': 'bg-blue-600 hover:bg-blue-700',
   'איסוף רכב/שינוע+טסט מוביליטי': 'bg-blue-700 hover:bg-blue-800',
+  'איסוף רכב מוביליטי': 'bg-blue-400 hover:bg-blue-500',
   'החזרת רכב/שינוע פרטי': 'bg-green-500 hover:bg-green-600',
   'החזרת רכב מוביליטי': 'bg-teal-500 hover:bg-teal-600',
   'מסירת רכב חלופי': 'bg-purple-500 hover:bg-purple-600',
